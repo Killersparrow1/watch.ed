@@ -1,5 +1,6 @@
 export type MediaType = 'movie' | 'series'
 export type WatchStatus = 'watching' | 'completed' | 'on_hold' | 'dropped' | 'plan_to_watch'
+export type BadgeType = 'golden' | 'shit' | null
 export type ReactionType = 'like' | 'dislike'
 
 export interface Profile {
@@ -18,7 +19,7 @@ export interface Entry {
   status: WatchStatus
   rating: number | null
   progress_season: number | null
-  progress_episode: number | null
+  progress_episode: string | null
   watch_date: string | null
   notes: string | null
   tmdb_id: number | null
@@ -26,6 +27,7 @@ export interface Entry {
   year: number | null
   genres: string[] | null
   overview: string | null
+  badge: BadgeType
   created_at: string
   updated_at: string
 }

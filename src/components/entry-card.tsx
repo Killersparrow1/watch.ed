@@ -1,6 +1,6 @@
 import { getPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
-import { Film, Tv, Star } from 'lucide-react'
+import { Film, Tv, Star, Award, ThumbsDown } from 'lucide-react'
 import Link from 'next/link'
 
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -42,6 +42,18 @@ export default function EntryCard({ entry, isPublic }: Props) {
             )}
           </div>
         )}
+        {entry.badge === 'golden' && (
+          <div className="absolute top-2 left-2 bg-rating/90 px-1.5 py-0.5 rounded-sm flex items-center gap-1 text-xs font-medium text-white">
+            <Award className="w-3 h-3 fill-current" />
+            Golden ticket
+          </div>
+        )}
+        {entry.badge === 'shit' && (
+          <div className="absolute top-2 left-2 bg-text-primary/80 px-1.5 py-0.5 rounded-sm flex items-center gap-1 text-xs font-medium text-white">
+            <ThumbsDown className="w-3 h-3 fill-current" />
+            Shit
+          </div>
+        )}
         {entry.rating && (
           <div className="absolute top-2 right-2 bg-surface/90 backdrop-blur-sm px-1.5 py-0.5 rounded-sm flex items-center gap-1 text-xs font-medium">
             <Star className="w-3 h-3 text-rating fill-current" />
@@ -72,7 +84,7 @@ export default function EntryCard({ entry, isPublic }: Props) {
 
         {entry.type === 'series' && (entry.progress_season || entry.progress_episode) && (
           <p className="body-xs text-text-secondary">
-            S{entry.progress_season || '?'} E{entry.progress_episode || '?'}
+            {entry.progress_season ? `S${entry.progress_season}` : ''}{entry.progress_episode ? ` E${entry.progress_episode}` : ''}
           </p>
         )}
       </div>

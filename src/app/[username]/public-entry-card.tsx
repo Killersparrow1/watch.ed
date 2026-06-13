@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { getPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
-import { Film, Tv, Star, ThumbsUp, ThumbsDown } from 'lucide-react'
+import { Film, Tv, Star, ThumbsUp, ThumbsDown, Award } from 'lucide-react'
 
 interface Props {
   entry: Entry
@@ -96,16 +96,30 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
           </span>
         </div>
 
-        {entry.rating && (
-          <div className="flex items-center gap-1 text-sm">
-            <Star className="w-4 h-4 text-rating fill-current" />
-            <span className="font-medium">{entry.rating}/10</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {entry.rating && (
+            <div className="flex items-center gap-1 text-sm">
+              <Star className="w-4 h-4 text-rating fill-current" />
+              <span className="font-medium">{entry.rating}/10</span>
+            </div>
+          )}
+          {entry.badge === 'golden' && (
+            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium bg-rating/10 text-rating">
+              <Award className="w-3 h-3 fill-current" />
+              Golden ticket
+            </span>
+          )}
+          {entry.badge === 'shit' && (
+            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium bg-text-primary/10 text-text-primary">
+              <ThumbsDown className="w-3 h-3 fill-current" />
+              Shit
+            </span>
+          )}
+        </div>
 
         {entry.type === 'series' && (entry.progress_season || entry.progress_episode) && (
           <p className="body-xs text-text-secondary">
-            S{entry.progress_season || '—'} E{entry.progress_episode || '—'}
+            {entry.progress_season ? `S${entry.progress_season}` : ''}{entry.progress_episode ? ` E${entry.progress_episode}` : ''}
           </p>
         )}
 

@@ -52,7 +52,7 @@ export async function PATCH(
     const body = await request.json()
     const allowedFields = [
       'title', 'type', 'status', 'rating', 'progress_season', 'progress_episode',
-      'watch_date', 'notes', 'tmdb_id', 'poster_path', 'year', 'genres', 'overview'
+      'watch_date', 'notes', 'tmdb_id', 'poster_path', 'year', 'genres', 'overview', 'badge'
     ]
 
     const updates: Record<string, unknown> = {}
@@ -80,6 +80,10 @@ export async function PATCH(
       if (!Number.isInteger(r) || r < 1 || r > 10) {
         return NextResponse.json({ error: 'Rating must be an integer between 1 and 10' }, { status: 400 })
       }
+    }
+
+    if (updates.badge && typeof updates.badge === 'string' && !['golden', 'shit'].includes(updates.badge)) {
+      return NextResponse.json({ error: 'Invalid badge' }, { status: 400 })
     }
 
     const serviceClient = await createServiceClient()

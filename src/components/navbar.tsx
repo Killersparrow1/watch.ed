@@ -43,7 +43,7 @@ export default function Navbar() {
             <img src="/logo.svg" alt="watch.ed" className="h-9" />
           </Link>
 
-          <nav className="hidden sm:flex items-center gap-1">
+          <nav className="flex items-center gap-1">
             {navLinks.map((link) => {
               const Icon = link.icon
               const isActive = pathname === link.href

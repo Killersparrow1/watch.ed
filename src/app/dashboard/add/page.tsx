@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { TMDBResult, getPosterUrl } from '@/lib/tmdb'
-import { Search, Plus, Star, Film, Tv, ArrowLeft } from 'lucide-react'
+import { Search, Plus, Star, Film, Tv, ArrowLeft, Award, ThumbsDown } from 'lucide-react'
 import Link from 'next/link'
 
 export default function AddEntryPage() {
@@ -20,6 +20,7 @@ export default function AddEntryPage() {
     type: 'movie' as 'movie' | 'series',
     status: 'plan_to_watch' as string,
     rating: '',
+    badge: '' as string,
     progress_season: '',
     progress_episode: '',
     watch_date: '',
@@ -82,8 +83,9 @@ export default function AddEntryPage() {
       type: form.type,
       status: form.status,
       rating: form.rating ? parseInt(form.rating) : null,
+      badge: form.badge || null,
       progress_season: form.progress_season ? parseInt(form.progress_season) : null,
-      progress_episode: form.progress_episode ? parseInt(form.progress_episode) : null,
+      progress_episode: form.progress_episode || null,
       watch_date: form.watch_date || null,
       notes: form.notes || null,
     }
@@ -285,6 +287,38 @@ export default function AddEntryPage() {
           </div>
         </div>
 
+        <div>
+          <label className="block text-sm font-medium text-text-primary mb-1.5">
+            Badge
+          </label>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setForm(prev => ({ ...prev, badge: prev.badge === 'golden' ? '' : 'golden' }))}
+              className={`flex items-center gap-2 px-4 py-2.5 border rounded-sm text-sm transition-colors ${
+                form.badge === 'golden'
+                  ? 'border-rating bg-rating/10 text-rating'
+                  : 'border-border text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              <Award className="w-4 h-4" />
+              Golden ticket
+            </button>
+            <button
+              type="button"
+              onClick={() => setForm(prev => ({ ...prev, badge: prev.badge === 'shit' ? '' : 'shit' }))}
+              className={`flex items-center gap-2 px-4 py-2.5 border rounded-sm text-sm transition-colors ${
+                form.badge === 'shit'
+                  ? 'border-text-primary bg-text-primary/10 text-text-primary'
+                  : 'border-border text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              <ThumbsDown className="w-4 h-4" />
+              Shit
+            </button>
+          </div>
+        </div>
+
         {form.type === 'series' && (
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -303,16 +337,15 @@ export default function AddEntryPage() {
             </div>
             <div>
               <label htmlFor="episode" className="block text-sm font-medium text-text-primary mb-1.5">
-                Episode
+                Episodes watched
               </label>
               <input
                 id="episode"
-                type="number"
-                min="1"
+                type="text"
                 value={form.progress_episode}
                 onChange={(e) => setForm(prev => ({ ...prev, progress_episode: e.target.value }))}
                 className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-                placeholder="Episode #"
+                placeholder='e.g. "1-5" or "1,3,5-7" or "all"'
               />
             </div>
           </div>

@@ -118,6 +118,12 @@ CREATE POLICY "Visitors can delete their own reactions"
   ON reactions FOR DELETE
   USING (true);
 
+-- Badge column for golden ticket / shit awards
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS badge TEXT CHECK (badge IS NULL OR badge IN ('golden', 'shit'));
+
+-- Change progress_episode to text so you can enter ranges like "1-5" or "1,3,5-7"
+ALTER TABLE entries ALTER COLUMN progress_episode TYPE TEXT USING progress_episode::TEXT;
+
 -- Function to auto-update updated_at on entries
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$

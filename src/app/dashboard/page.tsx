@@ -8,37 +8,19 @@ import {
   Plus,
   Search,
   SlidersHorizontal,
-  ImageIcon,
 } from 'lucide-react'
 
-type SortKey = 'created_at' | 'title' | 'rating' | 'year'
+type SortKey = 'watch_date' | 'title' | 'rating' | 'year'
 
 export default function DashboardPage() {
   const [entries, setEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
   const [filterType, setFilterType] = useState<string>('')
   const [filterStatus, setFilterStatus] = useState<string>('')
-  const [sort, setSort] = useState<SortKey>('created_at')
+  const [sort, setSort] = useState<SortKey>('watch_date')
   const [order, setOrder] = useState<'asc' | 'desc'>('desc')
   const [search, setSearch] = useState('')
   const [showFilters, setShowFilters] = useState(false)
-  const [fetchingPosters, setFetchingPosters] = useState(false)
-  const [posterResult, setPosterResult] = useState<string | null>(null)
-
-  async function handleFetchPosters() {
-    setFetchingPosters(true)
-    setPosterResult(null)
-    try {
-      const res = await fetch('/api/entries/fetch-posters', { method: 'POST' })
-      const data = await res.json()
-      setPosterResult(data.message || 'Done')
-      window.location.reload()
-    } catch {
-      setPosterResult('Failed to fetch posters')
-    }
-    setFetchingPosters(false)
-  }
-
   useEffect(() => {
     const controller = new AbortController()
 
@@ -71,27 +53,14 @@ export default function DashboardPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="heading-lg">Entries</h1>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleFetchPosters}
-            disabled={fetchingPosters}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-border bg-surface rounded-sm text-sm text-text-secondary hover:text-text-primary transition-colors disabled:opacity-50"
-          >
-            <ImageIcon className="w-4 h-4" />
-            {fetchingPosters ? 'Fetching...' : 'Fetch missing posters'}
-          </button>
-          <Link
-            href="/dashboard/add"
-            className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-sm hover:bg-accent-hover transition-colors text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            Add entry
-          </Link>
-        </div>
+        <Link
+          href="/dashboard/add"
+          className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-sm hover:bg-accent-hover transition-colors text-sm font-medium"
+        >
+          <Plus className="w-4 h-4" />
+          Add entry
+        </Link>
       </div>
-      {posterResult && (
-        <p className="text-sm text-success bg-success/10 px-3 py-2 rounded-sm mb-4">{posterResult}</p>
-      )}
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
@@ -111,7 +80,7 @@ export default function DashboardPage() {
             onChange={(e) => setSort(e.target.value as SortKey)}
             className="px-3 py-2 border border-border bg-surface rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
           >
-            <option value="created_at">Last logged</option>
+            <option value="watch_date">Last logged</option>
             <option value="title">Title</option>
             <option value="rating">Rating</option>
             <option value="year">Year</option>

@@ -27,10 +27,14 @@ export async function GET(request: NextRequest) {
     if (status) query = query.eq('status', status)
     if (search) query = query.ilike('title', `%${search}%`)
 
-    const allowedSorts = ['created_at', 'title', 'rating', 'year', 'updated_at']
-    const sortCol = allowedSorts.includes(sort) ? sort : 'created_at'
+    const allowedSorts = ['watch_date', 'title', 'rating', 'year']
+    const sortCol = allowedSorts.includes(sort) ? sort : 'watch_date'
     const sortOrder = order === 'asc' ? true : false
-    query = query.order(sortCol, { ascending: sortOrder })
+    if (sortCol === 'watch_date') {
+      query = query.order(sortCol, { ascending: sortOrder, nullsFirst: false })
+    } else {
+      query = query.order(sortCol, { ascending: sortOrder })
+    }
 
     const { data: entries, error } = await query
 
@@ -53,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, type, status, rating, progress_season, progress_episode, watch_date, notes, tmdb_id, poster_path, year, genres, overview } = body
+    const { title, type, status, rating, progress_season, progress_episode, watch_date, notes, tmdb_id, poster_path, year, genres, overview, badge } = body
 
     if (!title || !type) {
       return NextResponse.json({ error: 'Title and type are required' }, { status: 400 })
@@ -75,6 +79,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (badge && !['golden', 'shit'].includes(badge)) {
+      return NextResponse.json({ error: 'Invalid badge' }, { status: 400 })
+    }
+
     const serviceClient = await createServiceClient()
     const { data, error } = await serviceClient
       .from('entries')
@@ -93,6 +101,7 @@ export async function POST(request: NextRequest) {
         year: year || null,
         genres: genres || null,
         overview: overview || null,
+        badge: badge || null,
       })
       .select()
       .single()

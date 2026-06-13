@@ -1,12 +1,28 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Entry } from '@/types/database'
-import { Film, Tv, Star, Clock, BarChart3, PieChart } from 'lucide-react'
+import { Film, Tv, Star, Clock, BarChart3, PieChart, Trash2 } from 'lucide-react'
 
 export default function StatsPage() {
   const [entries, setEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const router = useRouter()
+
+  async function handleDeleteAccount() {
+    setDeleting(true)
+    try {
+      const res = await fetch('/api/account/delete', { method: 'POST' })
+      if (res.ok) {
+        router.push('/')
+        router.refresh()
+      }
+    } catch {}
+    setDeleting(false)
+  }
 
   useEffect(() => {
     async function load() {
@@ -65,7 +81,7 @@ export default function StatsPage() {
     : '—'
 
   const totalEpisodes = series.reduce((sum, e) => {
-    return sum + (e.progress_episode || 0)
+    return sum + (e.progress_episode ? parseInt(e.progress_episode) || 0 : 0)
   }, 0)
 
   return (
@@ -155,6 +171,39 @@ export default function StatsPage() {
         <MiniStat label="Rated entries" value={String(rated.length)} />
         <MiniStat label="Total seasons" value={String(series.reduce((s, e) => s + (e.progress_season || 0), 0))} />
         <MiniStat label="Total episodes" value={String(totalEpisodes)} />
+      </div>
+
+      <div className="mt-16 pt-8 border-t border-border">
+        <h2 className="heading-sm text-accent mb-2">Danger zone</h2>
+        <p className="text-sm text-text-secondary mb-4">
+          Permanently delete your account and all entries. This cannot be undone.
+        </p>
+        {!confirmDelete ? (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="flex items-center gap-2 px-4 py-2 border border-accent text-accent rounded-sm text-sm hover:bg-accent-light transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete my account
+          </button>
+        ) : (
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-accent font-medium">Are you sure?</span>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deleting}
+              className="px-4 py-2 bg-accent text-white rounded-sm text-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
+            >
+              {deleting ? 'Deleting...' : 'Yes, delete everything'}
+            </button>
+            <button
+              onClick={() => setConfirmDelete(false)}
+              className="px-4 py-2 border border-border rounded-sm text-sm text-text-secondary hover:text-text-primary transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

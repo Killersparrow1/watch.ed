@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
       tmdb_id: e.tmdb_id ? Number(e.tmdb_id) : null,
       genres: Array.isArray(e.genres) ? e.genres : null,
       overview: (e.overview as string) || null,
+      badge: (e.badge as string) || null,
     })).filter((e) => e.title.length > 0)
 
     if (validEntries.length === 0) {
