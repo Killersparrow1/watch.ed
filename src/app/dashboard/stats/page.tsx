@@ -10,6 +10,9 @@ export default function StatsPage() {
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deletingEntries, setDeletingEntries] = useState(false)
+  const [confirmDeleteEntries, setConfirmDeleteEntries] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [fetchingRuntime, setFetchingRuntime] = useState(false)
   const router = useRouter()
 
@@ -23,6 +26,19 @@ export default function StatsPage() {
       }
     } catch {}
     setDeleting(false)
+  }
+
+  async function handleDeleteAllEntries() {
+    setDeletingEntries(true)
+    try {
+      const res = await fetch('/api/entries', { method: 'DELETE' })
+      if (res.ok) {
+        setEntries([])
+        setDeleteConfirmText('')
+        setConfirmDeleteEntries(false)
+      }
+    } catch {}
+    setDeletingEntries(false)
   }
 
   useEffect(() => {
@@ -236,6 +252,49 @@ export default function StatsPage() {
             </button>
           </div>
         )}
+
+        <div className="mt-6 pt-6 border-t border-border">
+          <p className="text-sm text-text-secondary mb-4">
+            Delete all entries but keep your account.
+          </p>
+          {!confirmDeleteEntries ? (
+            <button
+              onClick={() => setConfirmDeleteEntries(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-accent text-accent rounded-sm text-sm hover:bg-accent-light transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete all entries
+            </button>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-accent font-medium">
+                Type <span className="font-mono">DELETE</span> to confirm
+              </p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={e => setDeleteConfirmText(e.target.value)}
+                  placeholder="DELETE"
+                  className="px-3 py-2 border border-border rounded-sm text-sm bg-background text-text-primary w-32"
+                />
+                <button
+                  onClick={handleDeleteAllEntries}
+                  disabled={deleteConfirmText !== 'DELETE' || deletingEntries}
+                  className="px-4 py-2 bg-accent text-white rounded-sm text-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
+                >
+                  {deletingEntries ? 'Deleting...' : 'Confirm delete all'}
+                </button>
+                <button
+                  onClick={() => { setConfirmDeleteEntries(false); setDeleteConfirmText('') }}
+                  className="px-4 py-2 border border-border rounded-sm text-sm text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

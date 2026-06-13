@@ -47,6 +47,30 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function DELETE() {
+  try {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const serviceClient = await createServiceClient()
+    const { error } = await serviceClient
+      .from('entries')
+      .delete()
+      .eq('user_id', user.id)
+
+    if (error) throw error
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('DELETE /api/entries error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient()
