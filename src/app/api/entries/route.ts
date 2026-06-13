@@ -1,0 +1,107 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createServerSupabaseClient, createServiceClient } from '@/lib/supabase/server'
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const type = searchParams.get('type')
+    const status = searchParams.get('status')
+    const sort = searchParams.get('sort') || 'created_at'
+    const order = searchParams.get('order') || 'desc'
+    const search = searchParams.get('search')
+
+    const supabase = await createServerSupabaseClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const serviceClient = await createServiceClient()
+    let query = serviceClient
+      .from('entries')
+      .select('*')
+      .eq('user_id', user.id)
+
+    if (type) query = query.eq('type', type)
+    if (status) query = query.eq('status', status)
+    if (search) query = query.ilike('title', `%${search}%`)
+
+    const allowedSorts = ['created_at', 'title', 'rating', 'year', 'updated_at']
+    const sortCol = allowedSorts.includes(sort) ? sort : 'created_at'
+    const sortOrder = order === 'asc' ? true : false
+    query = query.order(sortCol, { ascending: sortOrder })
+
+    const { data: entries, error } = await query
+
+    if (error) throw error
+
+    return NextResponse.json({ entries: entries || [] })
+  } catch (error) {
+    console.error('GET /api/entries error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { title, type, status, rating, progress_season, progress_episode, watch_date, notes, tmdb_id, poster_path, year, genres, overview } = body
+
+    if (!title || !type) {
+      return NextResponse.json({ error: 'Title and type are required' }, { status: 400 })
+    }
+
+    if (!['movie', 'series'].includes(type)) {
+      return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
+    }
+
+    const validStatuses = ['watching', 'completed', 'on_hold', 'dropped', 'plan_to_watch']
+    if (status && !validStatuses.includes(status)) {
+      return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+    }
+
+    if (rating !== null && rating !== undefined) {
+      const r = Number(rating)
+      if (!Number.isInteger(r) || r < 1 || r > 10) {
+        return NextResponse.json({ error: 'Rating must be an integer between 1 and 10' }, { status: 400 })
+      }
+    }
+
+    const serviceClient = await createServiceClient()
+    const { data, error } = await serviceClient
+      .from('entries')
+      .insert({
+        user_id: user.id,
+        title: title.trim(),
+        type,
+        status: status || 'plan_to_watch',
+        rating: rating || null,
+        progress_season: progress_season || null,
+        progress_episode: progress_episode || null,
+        watch_date: watch_date || null,
+        notes: notes || null,
+        tmdb_id: tmdb_id || null,
+        poster_path: poster_path || null,
+        year: year || null,
+        genres: genres || null,
+        overview: overview || null,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return NextResponse.json({ entry: data }, { status: 201 })
+  } catch (error) {
+    console.error('POST /api/entries error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
