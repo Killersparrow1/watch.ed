@@ -10,6 +10,7 @@ export default function StatsPage() {
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [fetchingRuntime, setFetchingRuntime] = useState(false)
   const router = useRouter()
 
   async function handleDeleteAccount() {
@@ -117,7 +118,23 @@ export default function StatsPage() {
         <StatCard
           icon={<Timer className="w-5 h-5" />}
           label="Total Watch Time"
-          value={totalHours ? `${totalHours}h` : '—'}
+          value={
+            <span className="flex items-center gap-2">
+              {totalHours ? `${totalHours}h` : '—'}
+              <button
+                onClick={async () => {
+                  setFetchingRuntime(true)
+                  try { await fetch('/api/entries/fetch-runtimes', { method: 'POST' });
+                    window.location.reload() }
+                  catch {}
+                }}
+                disabled={fetchingRuntime}
+                className="text-xs px-2 py-0.5 rounded bg-crimson text-white hover:bg-crimson/80 transition-colors disabled:opacity-50"
+              >
+                {fetchingRuntime ? '...' : 'Fetch'}
+              </button>
+            </span>
+          }
           sub={totalMinutes ? `~${totalMinutes} min` : undefined}
         />
         <StatCard
@@ -224,7 +241,7 @@ export default function StatsPage() {
   )
 }
 
-function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
+function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: React.ReactNode; sub?: string }) {
   return (
     <div className="bg-surface border border-border rounded-sm p-5">
       <div className="text-text-muted mb-2">{icon}</div>

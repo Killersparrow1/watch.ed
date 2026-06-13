@@ -41,7 +41,7 @@ export default function ImportPage() {
   const [mappings, setMappings] = useState<ColumnMapping[]>([])
   const [previewRows, setPreviewRows] = useState<Record<string, string>[]>([])
   const [importing, setImporting] = useState(false)
-  const [result, setResult] = useState<{ imported: number; total: number } | null>(null)
+  const [result, setResult] = useState<{ imported: number; total: number; duplicates?: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -373,6 +373,11 @@ export default function ImportPage() {
             <h2 className="heading-md mb-2">Import complete</h2>
             <p className="text-text-secondary mb-6">
               Successfully imported {result.imported} of {result.total} entries.
+              {(result.duplicates ?? 0) > 0 && (
+                <span className="block text-text-muted mt-1">
+                  {result.duplicates} duplicate(s) skipped.
+                </span>
+              )}
             </p>
             <div className="flex gap-3 justify-center">
               <button

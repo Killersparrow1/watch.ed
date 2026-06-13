@@ -61,6 +61,17 @@ export default function AddEntryPage() {
     }))
     setQuery('')
     setResults([])
+
+    if (!item.runtime && item.tmdb_id) {
+      fetch(`/api/tmdb?tmdb_id=${item.tmdb_id}&type=${item.media_type}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.result?.runtime) {
+            setSelected(prev => prev ? { ...prev, runtime: data.result.runtime } : prev)
+          }
+        })
+        .catch(() => {})
+    }
   }
 
   function clearSelected() {

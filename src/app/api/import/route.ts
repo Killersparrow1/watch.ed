@@ -41,9 +41,34 @@ export async function POST(request: NextRequest) {
 
     const serviceClient = await createServiceClient()
 
+    const { data: existing } = await serviceClient
+      .from('entries')
+      .select('title, year')
+      .eq('user_id', user.id)
+
+    const existingSet = new Set(
+      (existing || []).map(e => `${e.title.toLowerCase()}|${e.year || ''}`)
+    )
+
+    const newEntries = validEntries.filter(e => {
+      const key = `${e.title.toLowerCase()}|${e.year || ''}`
+      return !existingSet.has(key)
+    })
+
+    let duplicates = validEntries.length - newEntries.length
+
+    if (newEntries.length === 0) {
+      return NextResponse.json({
+        imported: 0,
+        duplicates,
+        total: validEntries.length,
+        message: `${duplicates} duplicate(s) found, nothing new to import`,
+      })
+    }
+
     const { data, error } = await serviceClient
       .from('entries')
-      .insert(validEntries)
+      .insert(newEntries)
       .select()
 
     if (error) throw error
@@ -80,6 +105,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       imported: data.length,
+      duplicates,
       total: validEntries.length,
       posters_fetched: postersFetched,
       entries: data,
