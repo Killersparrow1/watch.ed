@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient, createServiceClient } from '@/lib/supabase/server'
+import { searchBestMatch, searchBestMatchMulti, getTMDBDetails } from '@/lib/tmdb'
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     const serviceClient = await createServiceClient()
+
     const { data, error } = await serviceClient
       .from('entries')
       .insert(validEntries)
@@ -46,9 +48,40 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error
 
+    let postersFetched = 0
+    for (const entry of data) {
+      if (entry.poster_path) continue
+      try {
+        let result = null
+        if (entry.tmdb_id) {
+          result = await getTMDBDetails(entry.tmdb_id, entry.type as 'movie' | 'series')
+        } else {
+          result = await searchBestMatch(entry.title, entry.year, entry.type as 'movie' | 'series')
+          if (!result || !result.poster_path) {
+            result = await searchBestMatchMulti(entry.title, entry.year)
+          }
+        }
+        if (result?.poster_path) {
+          await serviceClient
+            .from('entries')
+            .update({
+              poster_path: result.poster_path,
+              tmdb_id: result.tmdb_id,
+              year: result.year || entry.year,
+              overview: result.overview || null,
+              runtime: result.runtime,
+            })
+            .eq('id', entry.id)
+          postersFetched++
+        }
+        await new Promise(r => setTimeout(r, 200))
+      } catch {}
+    }
+
     return NextResponse.json({
       imported: data.length,
       total: validEntries.length,
+      posters_fetched: postersFetched,
       entries: data,
     }, { status: 201 })
   } catch (error) {
