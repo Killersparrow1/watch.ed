@@ -158,8 +158,14 @@ export default function ImportPage() {
           case 'rating': {
             const parsed = value ? parseFloat(value) : null
             let ratingVal = parsed
-            if (ratingVal !== null && ratingVal > 10) ratingVal = ratingVal / 2
-            if (ratingVal !== null) ratingVal = Math.round(ratingVal)
+            if (ratingVal !== null) {
+              if (ratingVal > 10) {
+                ratingVal = ratingVal / 2
+              } else if (ratingVal <= 5) {
+                ratingVal = ratingVal * 2
+              }
+              ratingVal = Math.round(ratingVal)
+            }
             entry.rating = ratingVal
             break
           }

@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Playfair_Display, Outfit } from "next/font/google"
 import "./globals.css"
 
@@ -17,6 +17,19 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "watch.ed",
   description: "Tracking what I watch.",
+  icons: {
+    icon: "/favicon.svg",
+  },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "watch.ed",
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: "#C0392B",
 }
 
 export default function RootLayout({

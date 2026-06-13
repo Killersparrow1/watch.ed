@@ -45,7 +45,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-10 text-center">
           <div className="flex justify-center mb-4">
-            <img src="/logo.svg" alt="watch.ed" className="h-10" />
+            <img src="/logo.svg" alt="watch.ed" className="h-14" />
           </div>
           <p className="text-text-secondary body-small">
             Sign in to manage your watch list
