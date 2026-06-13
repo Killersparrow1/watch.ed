@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Film, LogIn } from 'lucide-react'
+import { LogIn } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -44,9 +44,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-10 text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Film className="w-6 h-6 text-accent" />
-            <h1 className="heading text-2xl tracking-tight">watch.ed</h1>
+          <div className="flex justify-center mb-4">
+            <img src="/logo.svg" alt="watch.ed" className="h-10" />
           </div>
           <p className="text-text-secondary body-small">
             Sign in to manage your watch list

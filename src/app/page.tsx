@@ -1,13 +1,11 @@
 import Link from 'next/link'
-import { Film } from 'lucide-react'
 
 export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 bg-bg">
       <div className="text-center max-w-md">
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <Film className="w-8 h-8 text-accent" />
-          <h1 className="heading text-4xl tracking-tight">watch.ed</h1>
+        <div className="mb-6 flex justify-center">
+          <img src="/logo.svg" alt="watch.ed" className="h-12" />
         </div>
         <p className="text-lg text-text-secondary mb-2">
           Personal film &amp; TV tracking

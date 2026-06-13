@@ -15,8 +15,8 @@ const outfit = Outfit({
 })
 
 export const metadata: Metadata = {
-  title: "watch.ed — personal film & TV log",
-  description: "Tracking what I watch, when I watch it.",
+  title: "watch.ed",
+  description: "Tracking what I watch.",
 }
 
 export default function RootLayout({

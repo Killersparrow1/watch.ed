@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
-  Film,
   List,
   BarChart3,
   Upload,
@@ -40,9 +39,8 @@ export default function Navbar() {
     <header className="border-b border-border bg-surface">
       <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-8">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <Film className="w-5 h-5 text-accent" />
-            <span className="heading text-lg tracking-tight">watch.ed</span>
+          <Link href="/dashboard">
+            <img src="/logo.svg" alt="watch.ed" className="h-7" />
           </Link>
 
           <nav className="hidden sm:flex items-center gap-1">

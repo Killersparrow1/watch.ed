@@ -96,3 +96,62 @@ export function getPosterUrl(path: string | null, size: 'w185' | 'w342' | 'w500'
   if (!path) return null
   return `https://image.tmdb.org/t/p/${size}${path}`
 }
+
+export async function searchBestMatch(
+  title: string,
+  year: number | null,
+  mediaType: 'movie' | 'series'
+): Promise<TMDBResult | null> {
+  const endpoint = mediaType === 'movie' ? '/search/movie' : '/search/tv'
+  const params: Record<string, string> = { query: title }
+  if (year) {
+    params[mediaType === 'movie' ? 'year' : 'first_air_date_year'] = String(year)
+  }
+
+  const data = await tmdbFetch(endpoint, params) as { results: TMDBMultiResult[] }
+  const results = data.results || []
+
+  if (results.length === 0) return null
+
+  const exact = results.find((r) => {
+    const t = (r.title || r.name || '').toLowerCase()
+    return t === title.toLowerCase()
+  }) || results[0]
+
+  return {
+    tmdb_id: exact.id,
+    title: exact.title || exact.name || '',
+    year: exact.release_date
+      ? parseInt(exact.release_date.slice(0, 4))
+      : exact.first_air_date
+        ? parseInt(exact.first_air_date.slice(0, 4))
+        : null,
+    poster_path: exact.poster_path,
+    overview: exact.overview || null,
+    genres: [],
+    media_type: mediaType,
+  }
+}
+
+export async function searchBestMatchMulti(title: string, year: number | null): Promise<TMDBResult | null> {
+  const data = await tmdbFetch('/search/multi', { query: title }) as { results: TMDBMultiResult[] }
+  const results = (data.results || [])
+    .filter((r) => r.media_type === 'movie' || r.media_type === 'tv')
+
+  if (results.length === 0) return null
+
+  const r = results[0]
+  return {
+    tmdb_id: r.id,
+    title: r.title || r.name || '',
+    year: r.release_date
+      ? parseInt(r.release_date.slice(0, 4))
+      : r.first_air_date
+        ? parseInt(r.first_air_date.slice(0, 4))
+        : null,
+    poster_path: r.poster_path,
+    overview: r.overview || null,
+    genres: [],
+    media_type: r.media_type === 'movie' ? 'movie' : 'series',
+  }
+}

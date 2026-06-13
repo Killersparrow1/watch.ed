@@ -1,0 +1,15 @@
+<svg viewBox="0 0 640 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="640" height="200" fill="#F7F4EE"/>
+
+  <!-- Icon: flat film/play mark -->
+  <g>
+    <rect x="40" y="50" width="100" height="100" rx="14" fill="#1C1B1A"/>
+    <path d="M75 75 L75 125 L115 100 Z" fill="#E8552E"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="165" y="125" font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="700" fill="#1C1B1A" letter-spacing="1">
+    watch<tspan fill="#E8552E">.</tspan>ed
+  </text>
+</svg>

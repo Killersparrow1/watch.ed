@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { Film, Star, Calendar } from 'lucide-react'
+import { Film, Tv, Star, Calendar } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import PublicEntryCard from './public-entry-card'
@@ -59,10 +59,10 @@ export default async function PublicProfilePage({ params }: Props) {
     <div className="min-h-screen bg-bg">
       <header className="border-b border-border bg-surface">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center">
-          <Link href={`/${username}`} className="flex items-center gap-2">
-            <Film className="w-5 h-5 text-accent" />
-            <span className="heading text-lg tracking-tight">
-              {profile.display_name}&apos;s watch.ed
+          <Link href={`/${username}`} className="flex items-center gap-3">
+            <img src="/logo.svg" alt="watch.ed" className="h-6" />
+            <span className="text-sm text-text-muted border-l border-border pl-3">
+              {profile.display_name}
             </span>
           </Link>
         </div>
@@ -80,7 +80,7 @@ export default async function PublicProfilePage({ params }: Props) {
               {movies} movies
             </span>
             <span className="flex items-center gap-1.5">
-              <Film className="w-3.5 h-3.5" />
+              <Tv className="w-3.5 h-3.5" />
               {totalSeries} series
             </span>
             <span className="flex items-center gap-1.5">
