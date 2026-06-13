@@ -61,7 +61,7 @@ export default async function PublicProfilePage({ params }: Props) {
     .reduce((sum, e) => sum + (e.runtime || 0), 0)
 
   const totalSeriesMinutes = (entries || [])
-    .filter(e => e.type === 'series' && e.runtime && e.progress_episode)
+    .filter(e => e.type === 'series' && e.runtime && e.progress_episode && e.progress_episode.trim() !== '')
     .reduce((sum, e) => {
       const eps = String(e.progress_episode).split(/[,;]/).reduce((acc, part) => {
         const range = part.trim().split('-')
