@@ -102,6 +102,12 @@ export default function EntryCard({ entry, isPublic }: Props) {
           {entry.year && <span>{entry.year}</span>}
           <span className="w-1 h-1 rounded-full bg-border" />
           {entry.type === 'movie' ? 'Film' : 'Series'}
+          {entry.runtime && (
+            <>
+              <span className="w-1 h-1 rounded-full bg-border" />
+              <span>{entry.runtime >= 60 ? `${Math.floor(entry.runtime / 60)}h ${entry.runtime % 60}m` : `${entry.runtime}m`}</span>
+            </>
+          )}
         </div>
 
         <span className={`inline-flex self-start text-xs px-2 py-0.5 rounded-sm font-medium ${status.color}`}>

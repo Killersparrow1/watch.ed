@@ -19,11 +19,13 @@ export default function AddEntryPage() {
     type: 'movie' as 'movie' | 'series',
     status: 'plan_to_watch' as string,
     rating: '',
-    badge: '' as string,
+    notes: '',
+    watch_date: '',
     progress_season: '',
     progress_episode: '',
-    watch_date: '',
-    notes: '',
+    badge: '' as string,
+    tagline: '' as string,
+    cast_crew: '' as string,
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -61,12 +63,12 @@ export default function AddEntryPage() {
     setQuery('')
     setResults([])
 
-    if (!item.runtime && item.tmdb_id) {
+    if (item.tmdb_id) {
       fetch(`/api/tmdb?tmdb_id=${item.tmdb_id}&type=${item.media_type}`)
         .then(r => r.json())
         .then(data => {
-          if (data.result?.runtime) {
-            setSelected(prev => prev ? { ...prev, runtime: data.result.runtime } : prev)
+          if (data.result) {
+            setSelected(prev => prev ? { ...prev, ...data.result } : prev)
           }
         })
         .catch(() => {})
@@ -107,6 +109,8 @@ export default function AddEntryPage() {
       body.genres = selected.genres
       body.overview = selected.overview
       body.runtime = selected.runtime
+      body.tagline = selected.tagline || null
+      body.cast_crew = selected.cast_crew || null
     }
 
     const res = await fetch('/api/entries', {

@@ -89,6 +89,12 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
               {entry.year && <span>{entry.year}</span>}
               <span className="w-1 h-1 rounded-full bg-border" />
               <span>{entry.type === 'movie' ? 'Film' : 'Series'}</span>
+              {entry.runtime && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-border" />
+                  <span>{entry.runtime >= 60 ? `${Math.floor(entry.runtime / 60)}h ${entry.runtime % 60}m` : `${entry.runtime}m`}</span>
+                </>
+              )}
             </div>
           </div>
           <span className={`inline-flex text-xs px-2 py-0.5 rounded-sm font-medium whitespace-nowrap ${statusColors[entry.status]}`}>

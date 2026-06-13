@@ -145,12 +145,6 @@ export default async function PublicProfilePage({ params }: Props) {
           />
         )}
       </main>
-
-      <footer className="border-t border-border mt-16">
-        <div className="max-w-6xl mx-auto px-6 py-6 text-center text-xs text-text-muted">
-          Built on June 13, 2026
-        </div>
-      </footer>
     </div>
   )
 }

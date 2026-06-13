@@ -29,6 +29,8 @@ export default function EditEntryPage() {
     progress_episode: '',
     watch_date: '',
     notes: '',
+    tagline: '',
+    cast_crew: '',
   })
 
   useEffect(() => {
@@ -50,6 +52,8 @@ export default function EditEntryPage() {
         progress_episode: data.entry.progress_episode || '',
         watch_date: data.entry.watch_date || '',
         notes: data.entry.notes || '',
+        tagline: data.entry.tagline || '',
+        cast_crew: data.entry.cast_crew || '',
       })
       setLoading(false)
     }
@@ -71,6 +75,8 @@ export default function EditEntryPage() {
       progress_episode: form.progress_episode || null,
       watch_date: form.watch_date || null,
       notes: form.notes || null,
+      tagline: form.tagline || null,
+      cast_crew: form.cast_crew || null,
     }
 
     const res = await fetch(`/api/entries/${id}`, {

@@ -52,7 +52,8 @@ export async function PATCH(
     const body = await request.json()
     const allowedFields = [
       'title', 'type', 'status', 'rating', 'progress_season', 'progress_episode',
-      'watch_date', 'notes', 'tmdb_id', 'poster_path', 'year', 'genres', 'overview', 'badge', 'runtime'
+      'watch_date', 'notes', 'tmdb_id', 'poster_path', 'year', 'genres', 'overview', 'badge', 'runtime',
+      'tagline', 'cast_crew',
     ]
 
     const updates: Record<string, unknown> = {}
@@ -82,7 +83,7 @@ export async function PATCH(
       }
     }
 
-    if (updates.badge && typeof updates.badge === 'string' && !['golden', 'shit'].includes(updates.badge)) {
+    if (updates.badge && typeof updates.badge === 'string' && !['golden', 'shit', 'lamo'].includes(updates.badge)) {
       return NextResponse.json({ error: 'Invalid badge' }, { status: 400 })
     }
 
