@@ -22,6 +22,7 @@ export interface TMDBResult {
   overview: string | null
   genres: string[]
   media_type: 'movie' | 'series'
+  runtime: number | null
 }
 
 interface TMDBMultiResult {
@@ -45,6 +46,8 @@ interface TMDBDetailResult {
   poster_path: string | null
   overview?: string
   genres?: { id: number; name: string }[]
+  runtime?: number
+  episode_run_time?: number[]
 }
 
 export async function searchTMDB(query: string): Promise<TMDBResult[]> {
@@ -65,6 +68,7 @@ export async function searchTMDB(query: string): Promise<TMDBResult[]> {
       overview: r.overview || null,
       genres: r.genre_ids?.map(String) || [],
       media_type: r.media_type === 'movie' ? 'movie' : 'series',
+      runtime: null,
     }))
 
   return results
@@ -89,6 +93,7 @@ export async function getTMDBDetails(
     overview: data.overview || null,
     genres: (data.genres || []).map((g) => g.name),
     media_type: type,
+    runtime: type === 'movie' ? data.runtime || null : (data.episode_run_time?.[0] || null),
   }
 }
 
@@ -130,6 +135,7 @@ export async function searchBestMatch(
     overview: exact.overview || null,
     genres: [],
     media_type: mediaType,
+    runtime: null,
   }
 }
 
@@ -153,5 +159,6 @@ export async function searchBestMatchMulti(title: string, year: number | null): 
     overview: r.overview || null,
     genres: [],
     media_type: r.media_type === 'movie' ? 'movie' : 'series',
+    runtime: null,
   }
 }

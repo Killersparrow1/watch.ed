@@ -27,6 +27,7 @@ export interface Entry {
   year: number | null
   genres: string[] | null
   overview: string | null
+  runtime: number | null
   badge: BadgeType
   created_at: string
   updated_at: string

@@ -1,6 +1,6 @@
 import { getPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
-import { Film, Tv, Star, Award, ThumbsDown } from 'lucide-react'
+import { Film, Tv, Star, Award } from 'lucide-react'
 import Link from 'next/link'
 
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -50,7 +50,7 @@ export default function EntryCard({ entry, isPublic }: Props) {
         )}
         {entry.badge === 'shit' && (
           <div className="absolute top-2 left-2 bg-text-primary/80 px-1.5 py-0.5 rounded-sm flex items-center gap-1 text-xs font-medium text-white">
-            <ThumbsDown className="w-3 h-3 fill-current" />
+            💩
             Shit
           </div>
         )}

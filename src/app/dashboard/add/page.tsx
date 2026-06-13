@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { TMDBResult, getPosterUrl } from '@/lib/tmdb'
-import { Search, Plus, Star, Film, Tv, ArrowLeft, Award, ThumbsDown } from 'lucide-react'
+import { Search, Plus, Star, Film, Tv, ArrowLeft, Award } from 'lucide-react'
 import Link from 'next/link'
 
 export default function AddEntryPage() {
@@ -96,6 +96,7 @@ export default function AddEntryPage() {
       body.year = selected.year
       body.genres = selected.genres
       body.overview = selected.overview
+      body.runtime = selected.runtime
     }
 
     const res = await fetch('/api/entries', {
@@ -313,7 +314,7 @@ export default function AddEntryPage() {
                   : 'border-border text-text-secondary hover:text-text-primary'
               }`}
             >
-              <ThumbsDown className="w-4 h-4" />
+              💩
               Shit
             </button>
           </div>

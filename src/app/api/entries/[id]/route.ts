@@ -52,7 +52,7 @@ export async function PATCH(
     const body = await request.json()
     const allowedFields = [
       'title', 'type', 'status', 'rating', 'progress_season', 'progress_episode',
-      'watch_date', 'notes', 'tmdb_id', 'poster_path', 'year', 'genres', 'overview', 'badge'
+      'watch_date', 'notes', 'tmdb_id', 'poster_path', 'year', 'genres', 'overview', 'badge', 'runtime'
     ]
 
     const updates: Record<string, unknown> = {}

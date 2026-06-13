@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Entry } from '@/types/database'
-import { Film, Tv, Star, Clock, BarChart3, PieChart, Trash2 } from 'lucide-react'
+import { Film, Tv, Star, Clock, BarChart3, PieChart, Trash2, Timer } from 'lucide-react'
 
 export default function StatsPage() {
   const [entries, setEntries] = useState<Entry[]>([])
@@ -84,6 +84,15 @@ export default function StatsPage() {
     return sum + (e.progress_episode ? parseInt(e.progress_episode) || 0 : 0)
   }, 0)
 
+  const totalMovieMinutes = movies.reduce((sum, e) => sum + (e.runtime || 0), 0)
+  const seriesWithRuntime = series.filter(e => e.runtime && e.progress_episode)
+  const totalSeriesMinutes = seriesWithRuntime.reduce((sum, e) => {
+    const eps = parseInt(e.progress_episode!) || 0
+    return sum + (e.runtime || 0) * eps
+  }, 0)
+  const totalMinutes = totalMovieMinutes + totalSeriesMinutes
+  const totalHours = totalMinutes > 0 ? Math.round(totalMinutes / 60) : null
+
   return (
     <div>
       <h1 className="heading-lg mb-8">Stats</h1>
@@ -104,6 +113,12 @@ export default function StatsPage() {
           label="Avg Rating"
           value={avgRating}
           sub={rated.length ? `from ${rated.length} ratings` : undefined}
+        />
+        <StatCard
+          icon={<Timer className="w-5 h-5" />}
+          label="Total Watch Time"
+          value={totalHours ? `${totalHours}h` : '—'}
+          sub={totalMinutes ? `~${totalMinutes} min` : undefined}
         />
         <StatCard
           icon={<Clock className="w-5 h-5" />}
@@ -169,8 +184,8 @@ export default function StatsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
         <MiniStat label="Year range" value={yearRange} />
         <MiniStat label="Rated entries" value={String(rated.length)} />
-        <MiniStat label="Total seasons" value={String(series.reduce((s, e) => s + (e.progress_season || 0), 0))} />
-        <MiniStat label="Total episodes" value={String(totalEpisodes)} />
+        <MiniStat label="Movie hours" value={totalMovieMinutes ? `${Math.round(totalMovieMinutes / 60)}h` : '—'} />
+        <MiniStat label="Series hours" value={totalSeriesMinutes ? `${Math.round(totalSeriesMinutes / 60)}h` : '—'} />
       </div>
 
       <div className="mt-16 pt-8 border-t border-border">

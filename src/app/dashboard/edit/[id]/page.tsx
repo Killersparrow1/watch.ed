@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { Entry } from '@/types/database'
 import { getPosterUrl } from '@/lib/tmdb'
-import { Save, ArrowLeft, Trash2, Star, Award, ThumbsDown } from 'lucide-react'
+import { Save, ArrowLeft, Trash2, Star, Award } from 'lucide-react'
 import Link from 'next/link'
 
 export default function EditEntryPage() {
@@ -257,7 +257,7 @@ export default function EditEntryPage() {
                   : 'border-border text-text-secondary hover:text-text-primary'
               }`}
             >
-              <ThumbsDown className="w-4 h-4" />
+              💩
               Shit
             </button>
           </div>

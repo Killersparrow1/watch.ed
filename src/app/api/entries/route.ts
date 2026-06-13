@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, type, status, rating, progress_season, progress_episode, watch_date, notes, tmdb_id, poster_path, year, genres, overview, badge } = body
+    const { title, type, status, rating, progress_season, progress_episode, watch_date, notes, tmdb_id, poster_path, year, genres, overview, badge, runtime } = body
 
     if (!title || !type) {
       return NextResponse.json({ error: 'Title and type are required' }, { status: 400 })
@@ -102,6 +102,7 @@ export async function POST(request: NextRequest) {
         genres: genres || null,
         overview: overview || null,
         badge: badge || null,
+        runtime: runtime || null,
       })
       .select()
       .single()

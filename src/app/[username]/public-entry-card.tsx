@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { getPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
-import { Film, Tv, Star, ThumbsUp, ThumbsDown, Award } from 'lucide-react'
+import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award } from 'lucide-react'
 
 interface Props {
   entry: Entry
@@ -111,7 +111,7 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
           )}
           {entry.badge === 'shit' && (
             <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium bg-text-primary/10 text-text-primary">
-              <ThumbsDown className="w-3 h-3 fill-current" />
+              💩
               Shit
             </span>
           )}
@@ -136,7 +136,7 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
               userReaction === 'like' ? 'text-like' : 'text-text-muted hover:text-like'
             }`}
           >
-            <ThumbsUp className={`w-3.5 h-3.5 ${userReaction === 'like' ? 'fill-current' : ''}`} />
+            <ArrowBigUp className={`w-4 h-4 ${userReaction === 'like' ? 'fill-current' : ''}`} />
             {likes > 0 && <span>{likes}</span>}
           </button>
           <button
@@ -145,7 +145,7 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
               userReaction === 'dislike' ? 'text-dislike' : 'text-text-muted hover:text-dislike'
             }`}
           >
-            <ThumbsDown className={`w-3.5 h-3.5 ${userReaction === 'dislike' ? 'fill-current' : ''}`} />
+            <ArrowBigDown className={`w-4 h-4 ${userReaction === 'dislike' ? 'fill-current' : ''}`} />
             {dislikes > 0 && <span>{dislikes}</span>}
           </button>
         </div>

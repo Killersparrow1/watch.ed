@@ -47,6 +47,7 @@ export async function POST() {
               tmdb_id: result.tmdb_id,
               year: result.year || entry.year,
               overview: result.overview || null,
+              runtime: result.runtime,
             })
             .eq('id', entry.id)
 
