@@ -26,6 +26,7 @@ export default function AddEntryPage() {
     badge: '' as string,
     tagline: '' as string,
     cast_crew: '' as string,
+    runtime: '' as string,
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -100,6 +101,7 @@ export default function AddEntryPage() {
       progress_episode: form.progress_episode || null,
       watch_date: form.watch_date || null,
       notes: form.notes || null,
+      runtime: form.runtime ? parseInt(form.runtime) : null,
     }
 
     if (selected) {
@@ -337,6 +339,21 @@ export default function AddEntryPage() {
               LAMO
             </button>
           </div>
+        </div>
+
+        <div>
+          <label htmlFor="runtime" className="block text-sm font-medium text-text-primary mb-1.5">
+            Runtime (minutes)
+          </label>
+          <input
+            id="runtime"
+            type="number"
+            min="1"
+            value={form.runtime || ''}
+            onChange={(e) => setForm(prev => ({ ...prev, runtime: e.target.value }))}
+            className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+            placeholder="Leave empty to auto-fetch from TMDB"
+          />
         </div>
 
         {form.type === 'series' && (

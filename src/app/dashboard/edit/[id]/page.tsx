@@ -31,6 +31,7 @@ export default function EditEntryPage() {
     notes: '',
     tagline: '',
     cast_crew: '',
+    runtime: '' as string,
   })
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export default function EditEntryPage() {
         notes: data.entry.notes || '',
         tagline: data.entry.tagline || '',
         cast_crew: data.entry.cast_crew || '',
+        runtime: data.entry.runtime ? String(data.entry.runtime) : '',
       })
       setLoading(false)
     }
@@ -77,6 +79,7 @@ export default function EditEntryPage() {
       notes: form.notes || null,
       tagline: form.tagline || null,
       cast_crew: form.cast_crew || null,
+      runtime: form.runtime ? parseInt(form.runtime) : null,
     }
 
     const res = await fetch(`/api/entries/${id}`, {
@@ -279,6 +282,21 @@ export default function EditEntryPage() {
               LAMO
             </button>
           </div>
+        </div>
+
+        <div>
+          <label htmlFor="runtime" className="block text-sm font-medium text-text-primary mb-1.5">
+            Runtime (minutes)
+          </label>
+          <input
+            id="runtime"
+            type="number"
+            min="1"
+            value={form.runtime}
+            onChange={(e) => setForm(prev => ({ ...prev, runtime: e.target.value }))}
+            className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+            placeholder="Leave empty to auto-fetch from TMDB"
+          />
         </div>
 
         {form.type === 'series' && (

@@ -62,8 +62,8 @@ export default function PublicFilters({ entries, reactionCounts }: Props) {
               onClick={() => setFilter(t.key)}
               className={`px-3 py-1 text-xs rounded-sm font-medium transition-colors ${
                 filter === t.key
-                  ? 'bg-text-primary text-background'
-                  : 'text-text-muted hover:text-text-primary'
+                  ? 'bg-crimson text-white shadow-sm'
+                  : 'text-text-muted hover:text-text-primary hover:bg-background'
               }`}
             >
               {t.label}
