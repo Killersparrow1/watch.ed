@@ -80,7 +80,7 @@ export default async function PublicProfilePage({ params }: Props) {
       <header className="border-b border-border bg-surface">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center">
           <Link href={`/${username}`} className="flex items-center gap-3">
-            <img src="/logo.svg" alt="watch.ed" className="h-6" />
+            <img src="/logo.svg" alt="watch.ed" className="h-10" />
             <span className="text-sm text-text-muted border-l border-border pl-3">
               {profile.display_name}
             </span>
