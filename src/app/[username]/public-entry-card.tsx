@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { getPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
-import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award } from 'lucide-react'
+import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award, Zap } from 'lucide-react'
 
 interface Props {
   entry: Entry
@@ -110,9 +110,14 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
             </span>
           )}
           {entry.badge === 'shit' && (
-            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium bg-text-primary/10 text-text-primary">
-              💩
-              Shit
+            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium bg-text-primary/10 text-text-primary tracking-widest text-[10px] uppercase">
+              Not recommended
+            </span>
+          )}
+          {entry.badge === 'lamo' && (
+            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium bg-[#8B5CF6]/10 text-[#8B5CF6]">
+              <Zap className="w-3 h-3" />
+              LAMO
             </span>
           )}
         </div>
@@ -121,6 +126,14 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
           <p className="body-xs text-text-secondary">
             {entry.progress_season ? `S${entry.progress_season}` : ''}{entry.progress_episode ? ` E${entry.progress_episode}` : ''}
           </p>
+        )}
+
+        {entry.tagline && (
+          <p className="text-xs italic text-text-muted line-clamp-1">&ldquo;{entry.tagline}&rdquo;</p>
+        )}
+
+        {entry.cast_crew && (
+          <p className="text-xs text-text-muted line-clamp-1">{entry.cast_crew}</p>
         )}
 
         {entry.notes && (

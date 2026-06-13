@@ -1,6 +1,6 @@
 export type MediaType = 'movie' | 'series'
 export type WatchStatus = 'watching' | 'completed' | 'on_hold' | 'dropped' | 'plan_to_watch'
-export type BadgeType = 'golden' | 'shit' | null
+export type BadgeType = 'golden' | 'shit' | 'lamo' | null
 export type ReactionType = 'like' | 'dislike'
 
 export interface Profile {
@@ -27,6 +27,8 @@ export interface Entry {
   year: number | null
   genres: string[] | null
   overview: string | null
+  tagline: string | null
+  cast_crew: string | null
   runtime: number | null
   badge: BadgeType
   created_at: string

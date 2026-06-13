@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, type, status, rating, progress_season, progress_episode, watch_date, notes, tmdb_id, poster_path, year, genres, overview, badge, runtime } = body
+    const { title, type, status, rating, progress_season, progress_episode, watch_date, notes, tmdb_id, poster_path, year, genres, overview, badge, runtime, tagline, cast_crew } = body
 
     if (!title || !type) {
       return NextResponse.json({ error: 'Title and type are required' }, { status: 400 })
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (badge && !['golden', 'shit'].includes(badge)) {
+    if (badge && !['golden', 'shit', 'lamo'].includes(badge)) {
       return NextResponse.json({ error: 'Invalid badge' }, { status: 400 })
     }
 
@@ -127,6 +127,8 @@ export async function POST(request: NextRequest) {
         overview: overview || null,
         badge: badge || null,
         runtime: runtime || null,
+        tagline: tagline || null,
+        cast_crew: cast_crew || null,
       })
       .select()
       .single()

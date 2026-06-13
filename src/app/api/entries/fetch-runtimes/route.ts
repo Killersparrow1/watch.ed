@@ -29,12 +29,20 @@ export async function POST() {
     for (const entry of entries) {
       try {
         const details = await getTMDBDetails(entry.tmdb_id, entry.type as 'movie' | 'series')
-        if (details?.runtime) {
-          await serviceClient
-            .from('entries')
-            .update({ runtime: details.runtime })
-            .eq('id', entry.id)
-          updated++
+        if (details) {
+          const updateData: Record<string, unknown> = {}
+          if (details.runtime) updateData.runtime = details.runtime
+          if (details.tagline) updateData.tagline = details.tagline
+          if (details.cast_crew) updateData.cast_crew = details.cast_crew
+          if (Object.keys(updateData).length > 0) {
+            await serviceClient
+              .from('entries')
+              .update(updateData)
+              .eq('id', entry.id)
+            updated++
+          } else {
+            failed++
+          }
         } else {
           failed++
         }

@@ -3,12 +3,11 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { TMDBResult, getPosterUrl } from '@/lib/tmdb'
-import { Search, Plus, Star, Film, Tv, ArrowLeft, Award } from 'lucide-react'
+import { Search, Plus, Star, Film, Tv, ArrowLeft, Award, Zap, ThumbsDown } from 'lucide-react'
 import Link from 'next/link'
 
 export default function AddEntryPage() {
   const router = useRouter()
-  const [, setStep] = useState<'search' | 'manual'>('search')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<TMDBResult[]>([])
   const [searching, setSearching] = useState(false)
@@ -153,13 +152,6 @@ export default function AddEntryPage() {
                 className="w-full pl-9 pr-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
               />
             </div>
-            <span className="text-xs text-text-muted">or</span>
-            <button
-              onClick={() => setStep('manual')}
-              className="px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-secondary hover:text-text-primary transition-colors"
-            >
-              Enter manually
-            </button>
           </div>
 
           {searching && (
@@ -325,8 +317,20 @@ export default function AddEntryPage() {
                   : 'border-border text-text-secondary hover:text-text-primary'
               }`}
             >
-              💩
-              Shit
+              <ThumbsDown className="w-4 h-4" />
+              Not recommended
+            </button>
+            <button
+              type="button"
+              onClick={() => setForm(prev => ({ ...prev, badge: prev.badge === 'lamo' ? '' : 'lamo' }))}
+              className={`flex items-center gap-2 px-4 py-2.5 border rounded-sm text-sm transition-colors ${
+                form.badge === 'lamo'
+                  ? 'border-[#8B5CF6] bg-[#8B5CF6]/10 text-[#8B5CF6]'
+                  : 'border-border text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              <Zap className="w-4 h-4" />
+              LAMO
             </button>
           </div>
         </div>

@@ -1,6 +1,9 @@
+'use client'
+
+import { useState } from 'react'
 import { getPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
-import { Film, Tv, Star, Award } from 'lucide-react'
+import { Film, Tv, Star, Award, Zap } from 'lucide-react'
 import Link from 'next/link'
 
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -19,9 +22,14 @@ interface Props {
 export default function EntryCard({ entry, isPublic }: Props) {
   const poster = getPosterUrl(entry.poster_path, 'w185')
   const status = statusConfig[entry.status]
+  const [showDetails, setShowDetails] = useState(false)
 
   return (
-    <div className="bg-surface border border-border rounded-sm overflow-hidden flex flex-col">
+    <div
+      className="bg-surface border border-border rounded-sm overflow-hidden flex flex-col group relative"
+      onMouseEnter={() => setShowDetails(true)}
+      onMouseLeave={() => setShowDetails(false)}
+    >
       <Link
         href={isPublic ? `/${entry.user_id}` : `/dashboard/edit/${entry.id}`}
         className="block aspect-[2/3] bg-tag-bg overflow-hidden relative"
@@ -42,6 +50,19 @@ export default function EntryCard({ entry, isPublic }: Props) {
             )}
           </div>
         )}
+
+        {/* Hover overlay with tagline and cast */}
+        {showDetails && (entry.tagline || entry.cast_crew) && (
+          <div className="absolute inset-0 bg-black/70 flex flex-col justify-end p-3 transition-opacity">
+            {entry.tagline && (
+              <p className="text-white/90 text-xs italic leading-tight mb-1.5">&ldquo;{entry.tagline}&rdquo;</p>
+            )}
+            {entry.cast_crew && (
+              <p className="text-white/60 text-xs line-clamp-2">{entry.cast_crew}</p>
+            )}
+          </div>
+        )}
+
         {entry.badge === 'golden' && (
           <div className="absolute top-2 left-2 bg-rating/90 px-1.5 py-0.5 rounded-sm flex items-center gap-1 text-xs font-medium text-white">
             <Award className="w-3 h-3 fill-current" />
@@ -49,9 +70,14 @@ export default function EntryCard({ entry, isPublic }: Props) {
           </div>
         )}
         {entry.badge === 'shit' && (
-          <div className="absolute top-2 left-2 bg-text-primary/80 px-1.5 py-0.5 rounded-sm flex items-center gap-1 text-xs font-medium text-white">
-            💩
-            Shit
+          <div className="absolute top-2 left-2 bg-text-primary/80 px-1.5 py-0.5 rounded-sm text-[10px] font-bold text-white tracking-widest uppercase">
+            Not recommended
+          </div>
+        )}
+        {entry.badge === 'lamo' && (
+          <div className="absolute top-2 left-2 bg-[#8B5CF6]/90 px-1.5 py-0.5 rounded-sm flex items-center gap-1 text-xs font-medium text-white">
+            <Zap className="w-3 h-3" />
+            LAMO
           </div>
         )}
         {entry.rating && (
@@ -86,6 +112,10 @@ export default function EntryCard({ entry, isPublic }: Props) {
           <p className="body-xs text-text-secondary">
             {entry.progress_season ? `S${entry.progress_season}` : ''}{entry.progress_episode ? ` E${entry.progress_episode}` : ''}
           </p>
+        )}
+
+        {entry.cast_crew && (
+          <p className="text-xs text-text-muted line-clamp-1">{entry.cast_crew}</p>
         )}
       </div>
     </div>

@@ -1,8 +1,9 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { Film, Tv, Star, Calendar } from 'lucide-react'
+import { Film, Tv, Star, Calendar, Timer } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import PublicEntryCard from './public-entry-card'
+import PublicFilters from './public-filters'
 
 interface Props {
   params: Promise<{ username: string }>
@@ -55,6 +56,25 @@ export default async function PublicProfilePage({ params }: Props) {
     ? (entries!.filter(e => e.rating).reduce((sum, e) => sum + (e.rating || 0), 0) / ratedEntries).toFixed(1)
     : null
 
+  const totalMovieMinutes = (entries || [])
+    .filter(e => e.type === 'movie')
+    .reduce((sum, e) => sum + (e.runtime || 0), 0)
+
+  const totalSeriesMinutes = (entries || [])
+    .filter(e => e.type === 'series' && e.runtime && e.progress_episode)
+    .reduce((sum, e) => {
+      const eps = String(e.progress_episode).split(/[,;]/).reduce((acc, part) => {
+        const range = part.trim().split('-')
+        if (range.length === 2) return acc + (parseInt(range[1]) - parseInt(range[0]) + 1)
+        if (parseInt(part.trim())) return acc + 1
+        return acc
+      }, 0)
+      return sum + (e.runtime || 0) * Math.max(eps, 0)
+    }, 0)
+
+  const totalMinutes = totalMovieMinutes + totalSeriesMinutes
+  const totalHours = totalMinutes ? Math.round(totalMinutes / 60) : null
+
   return (
     <div className="min-h-screen bg-bg">
       <header className="border-b border-border bg-surface">
@@ -70,7 +90,23 @@ export default async function PublicProfilePage({ params }: Props) {
 
       <main className="max-w-6xl mx-auto px-6 py-10">
         <div className="mb-10">
-          <h1 className="heading-xl mb-2">{profile.display_name}</h1>
+          <h1 className="heading-xl mb-1 flex items-center gap-2">
+            {profile.display_name}
+            <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-[#1DA1F2]/10 text-[#1DA1F2] font-semibold tracking-tight">
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+              </svg>
+              Verified
+            </span>
+          </h1>
+          <a
+            href="https://www.instagram.com/meeeeeeeeeeeelas/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-text-muted hover:text-text-primary transition-colors inline-block mb-4"
+          >
+            @meeeeeeeeeeeelas
+          </a>
           {profile.bio && (
             <p className="text-text-secondary mb-4 max-w-lg">{profile.bio}</p>
           )}
@@ -88,8 +124,12 @@ export default async function PublicProfilePage({ params }: Props) {
               {avgRating ? `${avgRating} avg` : 'No ratings yet'}
             </span>
             <span className="flex items-center gap-1.5">
+              <Timer className="w-3.5 h-3.5" />
+              {totalHours ? `${totalHours}h` : '—'}
+            </span>
+            <span className="flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5" />
-              {totalEntries} total entries
+              {totalEntries} total
             </span>
           </div>
         </div>
@@ -99,21 +139,18 @@ export default async function PublicProfilePage({ params }: Props) {
             <p className="text-text-secondary">No entries yet</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {entries.map((entry) => {
-              const counts = reactionCounts[entry.id] || { likes: 0, dislikes: 0 }
-              return (
-                <PublicEntryCard
-                  key={entry.id}
-                  entry={entry}
-                  likes={counts.likes}
-                  dislikes={counts.dislikes}
-                />
-              )
-            })}
-          </div>
+          <PublicFilters
+            entries={entries}
+            reactionCounts={reactionCounts}
+          />
         )}
       </main>
+
+      <footer className="border-t border-border mt-16">
+        <div className="max-w-6xl mx-auto px-6 py-6 text-center text-xs text-text-muted">
+          Built on June 13, 2026
+        </div>
+      </footer>
     </div>
   )
 }

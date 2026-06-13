@@ -86,15 +86,17 @@ export async function POST(request: NextRequest) {
             result = await searchBestMatchMulti(entry.title, entry.year)
           }
         }
-        if (result?.poster_path) {
+        if (result) {
           await serviceClient
             .from('entries')
             .update({
-              poster_path: result.poster_path,
-              tmdb_id: result.tmdb_id,
+              poster_path: result.poster_path || undefined,
+              tmdb_id: result.tmdb_id || undefined,
               year: result.year || entry.year,
               overview: result.overview || null,
-              runtime: result.runtime,
+              runtime: result.runtime || null,
+              tagline: result.tagline || null,
+              cast_crew: result.cast_crew || null,
             })
             .eq('id', entry.id)
           postersFetched++

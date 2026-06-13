@@ -23,6 +23,8 @@ export interface TMDBResult {
   genres: string[]
   media_type: 'movie' | 'series'
   runtime: number | null
+  tagline: string | null
+  cast_crew: string | null
 }
 
 interface TMDBMultiResult {
@@ -41,6 +43,7 @@ interface TMDBDetailResult {
   id: number
   title?: string
   name?: string
+  tagline?: string
   release_date?: string
   first_air_date?: string
   poster_path: string | null
@@ -48,6 +51,10 @@ interface TMDBDetailResult {
   genres?: { id: number; name: string }[]
   runtime?: number
   episode_run_time?: number[]
+}
+
+interface TMDBCreditsResult {
+  cast: { name: string }[]
 }
 
 export async function searchTMDB(query: string): Promise<TMDBResult[]> {
@@ -66,6 +73,8 @@ export async function searchTMDB(query: string): Promise<TMDBResult[]> {
           : null,
       poster_path: r.poster_path,
       overview: r.overview || null,
+      tagline: null,
+      cast_crew: null,
       genres: r.genre_ids?.map(String) || [],
       media_type: r.media_type === 'movie' ? 'movie' : 'series',
       runtime: null,
@@ -81,6 +90,13 @@ export async function getTMDBDetails(
   const endpoint = type === 'movie' ? `/movie/${tmdbId}` : `/tv/${tmdbId}`
   const data = await tmdbFetch(endpoint) as TMDBDetailResult
 
+  const [creditsData] = await Promise.all([
+    tmdbFetch(`${endpoint}/credits`).catch(() => ({ cast: [] as { name: string }[] })),
+  ])
+
+  const credits = creditsData as TMDBCreditsResult
+  const topCast = (credits.cast || []).slice(0, 3).map(c => c.name).join(', ')
+
   return {
     tmdb_id: data.id,
     title: data.title || data.name || '',
@@ -91,6 +107,8 @@ export async function getTMDBDetails(
         : null,
     poster_path: data.poster_path,
     overview: data.overview || null,
+    tagline: data.tagline || null,
+    cast_crew: topCast || null,
     genres: (data.genres || []).map((g) => g.name),
     media_type: type,
     runtime: type === 'movie' ? data.runtime || null : (data.episode_run_time?.[0] || null),
@@ -133,6 +151,8 @@ export async function searchBestMatch(
         : null,
     poster_path: exact.poster_path,
     overview: exact.overview || null,
+    tagline: null,
+    cast_crew: null,
     genres: [],
     media_type: mediaType,
     runtime: null,
@@ -157,6 +177,8 @@ export async function searchBestMatchMulti(title: string, year: number | null): 
         : null,
     poster_path: r.poster_path,
     overview: r.overview || null,
+    tagline: null,
+    cast_crew: null,
     genres: [],
     media_type: r.media_type === 'movie' ? 'movie' : 'series',
     runtime: null,

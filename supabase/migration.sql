@@ -118,14 +118,24 @@ CREATE POLICY "Visitors can delete their own reactions"
   ON reactions FOR DELETE
   USING (true);
 
--- Badge column for golden ticket / shit awards
-ALTER TABLE entries ADD COLUMN IF NOT EXISTS badge TEXT CHECK (badge IS NULL OR badge IN ('golden', 'shit'));
+-- Badge column for golden ticket / shit / lamo awards
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS badge TEXT CHECK (badge IS NULL OR badge IN ('golden', 'shit', 'lamo'));
 
 -- Change progress_episode to text so you can enter ranges like "1-5" or "1,3,5-7"
 ALTER TABLE entries ALTER COLUMN progress_episode TYPE TEXT USING progress_episode::TEXT;
 
 -- Runtime in minutes (for calculating total watch time)
 ALTER TABLE entries ADD COLUMN IF NOT EXISTS runtime INTEGER;
+
+-- Tagline (one-liner from TMDB)
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS tagline TEXT;
+
+-- Cast and crew (comma-separated top cast from TMDB)
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS cast_crew TEXT;
+
+-- Update badge constraint to include lamo
+ALTER TABLE entries DROP CONSTRAINT IF EXISTS entries_badge_check;
+ALTER TABLE entries ADD CONSTRAINT entries_badge_check CHECK (badge IS NULL OR badge IN ('golden', 'shit', 'lamo'));
 
 -- Function to auto-update updated_at on entries
 CREATE OR REPLACE FUNCTION update_updated_at()
