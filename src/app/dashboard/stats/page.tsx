@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Entry } from '@/types/database'
-import { Film, Tv, Star, Clock, BarChart3, PieChart, Trash2, Timer } from 'lucide-react'
+import { Film, Tv, Star, Clock, BarChart3, PieChart, Trash2, Timer, RefreshCw } from 'lucide-react'
 
 export default function StatsPage() {
   const [entries, setEntries] = useState<Entry[]>([])
@@ -135,7 +135,21 @@ export default function StatsPage() {
 
   return (
     <div>
-      <h1 className="heading-lg mb-8">Stats</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="heading-lg">Stats</h1>
+        <button
+          onClick={async () => {
+            setFetchingRuntime(true)
+            try { await fetch('/api/entries/fetch-runtimes', { method: 'POST' }); window.location.reload() }
+            catch {}
+          }}
+          disabled={fetchingRuntime}
+          className="p-2 bg-crimson text-white rounded-sm hover:bg-crimson/80 transition-colors disabled:opacity-50"
+          title="Refresh metadata from TMDB (posters, runtime, tagline, cast)"
+        >
+          <RefreshCw className={`w-5 h-5 ${fetchingRuntime ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         <StatCard
@@ -157,23 +171,7 @@ export default function StatsPage() {
         <StatCard
           icon={<Timer className="w-5 h-5" />}
           label="Total Watch Time"
-          value={
-            <span className="flex items-center gap-2">
-              {totalHours ? `${totalHours}h` : '—'}
-              <button
-                onClick={async () => {
-                  setFetchingRuntime(true)
-                  try { await fetch('/api/entries/fetch-runtimes', { method: 'POST' });
-                    window.location.reload() }
-                  catch {}
-                }}
-                disabled={fetchingRuntime}
-                className="text-xs px-2 py-0.5 rounded bg-crimson text-white hover:bg-crimson/80 transition-colors disabled:opacity-50"
-              >
-                {fetchingRuntime ? '...' : 'Fetch'}
-              </button>
-            </span>
-          }
+          value={totalHours ? `${totalHours}h` : '—'}
           sub={totalMinutes ? `~${totalMinutes} min` : undefined}
         />
         <StatCard
