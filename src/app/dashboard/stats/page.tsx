@@ -108,14 +108,26 @@ export default function StatsPage() {
     ? `${Math.min(...Object.keys(years).map(Number))}–${Math.max(...Object.keys(years).map(Number))}`
     : '—'
 
-  const totalEpisodes = series.reduce((sum, e) => {
-    return sum + (e.progress_episode ? parseInt(e.progress_episode) || 0 : 0)
-  }, 0)
+  function countEpisodes(progress: string | null): number {
+    if (!progress) return 0
+    return progress.split(/[,;]/).reduce((acc, part) => {
+      const range = part.trim().split('-')
+      if (range.length === 2) {
+        const start = parseInt(range[0]) || 0
+        const end = parseInt(range[1]) || 0
+        return acc + (end - start + 1)
+      }
+      if (parseInt(part.trim())) return acc + 1
+      return acc
+    }, 0)
+  }
+
+  const totalEpisodes = series.reduce((sum, e) => sum + countEpisodes(e.progress_episode), 0)
 
   const totalMovieMinutes = movies.reduce((sum, e) => sum + (e.runtime || 0), 0)
   const seriesWithRuntime = series.filter(e => e.runtime && e.progress_episode)
   const totalSeriesMinutes = seriesWithRuntime.reduce((sum, e) => {
-    const eps = parseInt(e.progress_episode!) || 0
+    const eps = countEpisodes(e.progress_episode)
     return sum + (e.runtime || 0) * eps
   }, 0)
   const totalMinutes = totalMovieMinutes + totalSeriesMinutes

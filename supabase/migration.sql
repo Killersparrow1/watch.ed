@@ -16,11 +16,13 @@ CREATE TABLE IF NOT EXISTS profiles (
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 -- Allow public read for profiles
+DROP POLICY IF EXISTS "Profiles are publicly viewable" ON profiles;
 CREATE POLICY "Profiles are publicly viewable"
   ON profiles FOR SELECT
   USING (true);
 
 -- Only the owner can update their profile
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id);
@@ -75,11 +77,13 @@ CREATE INDEX IF NOT EXISTS idx_entries_created_at ON entries(created_at DESC);
 ALTER TABLE entries ENABLE ROW LEVEL SECURITY;
 
 -- Owner can do everything
+DROP POLICY IF EXISTS "Users can CRUD their own entries" ON entries;
 CREATE POLICY "Users can CRUD their own entries"
   ON entries FOR ALL
   USING (auth.uid() = user_id);
 
 -- Public can view entries (for public profile page)
+DROP POLICY IF EXISTS "Anyone can view entries" ON entries;
 CREATE POLICY "Anyone can view entries"
   ON entries FOR SELECT
   USING (true);
@@ -100,26 +104,34 @@ CREATE INDEX IF NOT EXISTS idx_reactions_visitor_id ON reactions(visitor_id);
 ALTER TABLE reactions ENABLE ROW LEVEL SECURITY;
 
 -- Anyone can view reactions
+DROP POLICY IF EXISTS "Anyone can view reactions" ON reactions;
 CREATE POLICY "Anyone can view reactions"
   ON reactions FOR SELECT
   USING (true);
 
 -- Anyone can insert reactions (no auth needed)
+DROP POLICY IF EXISTS "Anyone can insert reactions" ON reactions;
 CREATE POLICY "Anyone can insert reactions"
   ON reactions FOR INSERT
   WITH CHECK (true);
 
 -- Owner can update/delete their own reaction (by visitor_id)
+DROP POLICY IF EXISTS "Visitors can update their own reactions" ON reactions;
 CREATE POLICY "Visitors can update their own reactions"
   ON reactions FOR UPDATE
   USING (true);
 
+DROP POLICY IF EXISTS "Visitors can delete their own reactions" ON reactions;
 CREATE POLICY "Visitors can delete their own reactions"
   ON reactions FOR DELETE
   USING (true);
 
 -- Badge column for golden ticket / shit / lamo awards
-ALTER TABLE entries ADD COLUMN IF NOT EXISTS badge TEXT CHECK (badge IS NULL OR badge IN ('golden', 'shit', 'lamo'));
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS badge TEXT;
+
+-- Drop old constraint and add updated one
+ALTER TABLE entries DROP CONSTRAINT IF EXISTS entries_badge_check;
+ALTER TABLE entries ADD CONSTRAINT entries_badge_check CHECK (badge IS NULL OR badge IN ('golden', 'shit', 'lamo'));
 
 -- Change progress_episode to text so you can enter ranges like "1-5" or "1,3,5-7"
 ALTER TABLE entries ALTER COLUMN progress_episode TYPE TEXT USING progress_episode::TEXT;
@@ -133,10 +145,6 @@ ALTER TABLE entries ADD COLUMN IF NOT EXISTS tagline TEXT;
 -- Cast and crew (comma-separated top cast from TMDB)
 ALTER TABLE entries ADD COLUMN IF NOT EXISTS cast_crew TEXT;
 
--- Update badge constraint to include lamo
-ALTER TABLE entries DROP CONSTRAINT IF EXISTS entries_badge_check;
-ALTER TABLE entries ADD CONSTRAINT entries_badge_check CHECK (badge IS NULL OR badge IN ('golden', 'shit', 'lamo'));
-
 -- Function to auto-update updated_at on entries
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
@@ -146,6 +154,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS set_updated_at ON entries;
 CREATE TRIGGER set_updated_at
   BEFORE UPDATE ON entries
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
