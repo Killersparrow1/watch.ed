@@ -67,7 +67,7 @@ export default function PublicFilters({ entries, reactionCounts }: Props) {
               }`}
             >
               {t.label}
-              <span className="ml-1 opacity-60">({counts[t.key]})</span>
+              <span className={`ml-1 ${filter === t.key ? 'text-white' : 'text-text-muted/60'}`}>({counts[t.key]})</span>
             </button>
           ))}
         </div>
