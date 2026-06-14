@@ -139,7 +139,7 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
         )}
 
         {entry.cast_crew && (
-          <p className="text-xs text-text-muted line-clamp-1">{entry.cast_crew}</p>
+          <p className="text-xs text-text-muted">{entry.cast_crew}</p>
         )}
 
         {entry.notes && (
