@@ -10,6 +10,7 @@ export default function SettingsPage() {
   const router = useRouter()
   const [bio, setBio] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
+  const [instagramUrl, setInstagramUrl] = useState('')
   const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -27,12 +28,13 @@ export default function SettingsPage() {
       }
       const { data } = await supabase
         .from('profiles')
-        .select('bio, avatar_url, username')
+        .select('bio, avatar_url, username, instagram_url')
         .eq('id', user.id)
         .single()
       if (data) {
         setBio(data.bio || '')
         setAvatarUrl(data.avatar_url || '')
+        setInstagramUrl(data.instagram_url || '')
         setUsername(data.username)
       }
       setLoading(false)
@@ -52,6 +54,7 @@ export default function SettingsPage() {
       body: JSON.stringify({
         bio: bio.trim() || null,
         avatar_url: avatarUrl.trim() || null,
+        instagram_url: instagramUrl.trim() || null,
       }),
     })
 
@@ -108,6 +111,20 @@ export default function SettingsPage() {
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
             />
           )}
+        </div>
+
+        <div>
+          <label htmlFor="instagram_url" className="block text-sm font-medium text-text-primary mb-1.5">
+            Instagram
+          </label>
+          <input
+            id="instagram_url"
+            type="url"
+            value={instagramUrl}
+            onChange={(e) => setInstagramUrl(e.target.value)}
+            className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+            placeholder="https://www.instagram.com/yourhandle/"
+          />
         </div>
 
         <div>

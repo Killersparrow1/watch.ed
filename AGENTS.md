@@ -6,3 +6,4 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## History
 - **Jun 13, 2026** — App creation date. Public profile now shows Instagram link (@meeeeeeeeeeeelas) and "Built on" footer.
+- **Jun 14, 2026** — Users can now set their own Instagram URL in settings. Instagram link on public profiles is dynamic per user (hidden if unset).

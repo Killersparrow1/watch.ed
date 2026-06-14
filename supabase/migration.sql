@@ -173,3 +173,6 @@ DROP TRIGGER IF EXISTS set_updated_at ON entries;
 CREATE TRIGGER set_updated_at
   BEFORE UPDATE ON entries
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- Instagram URL for profiles
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS instagram_url TEXT;

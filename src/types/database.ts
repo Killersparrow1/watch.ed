@@ -9,6 +9,7 @@ export interface Profile {
   display_name: string
   bio: string | null
   avatar_url: string | null
+  instagram_url: string | null
   status: 'pending' | 'approved' | 'rejected'
   is_admin: boolean
   created_at: string

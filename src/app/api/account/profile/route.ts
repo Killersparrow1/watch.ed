@@ -10,7 +10,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { bio, avatar_url } = await request.json()
+    const { bio, avatar_url, instagram_url } = await request.json()
 
     if (bio !== null && (typeof bio !== 'string' || bio.length > 200)) {
       return NextResponse.json({ error: 'Bio must be under 200 characters' }, { status: 400 })
@@ -20,9 +20,14 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid avatar URL' }, { status: 400 })
     }
 
+    if (instagram_url !== null && typeof instagram_url !== 'string') {
+      return NextResponse.json({ error: 'Invalid Instagram URL' }, { status: 400 })
+    }
+
     const updates: Record<string, unknown> = {}
     if (bio !== undefined) updates.bio = bio || null
     if (avatar_url !== undefined) updates.avatar_url = avatar_url || null
+    if (instagram_url !== undefined) updates.instagram_url = instagram_url || null
 
     const { error } = await supabase
       .from('profiles')

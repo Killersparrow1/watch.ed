@@ -112,14 +112,16 @@ export default async function PublicProfilePage({ params }: Props) {
               Verified
             </span>
           </h1>
-          <a
-            href="https://www.instagram.com/meeeeeeeeeeeelas/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-text-muted hover:text-text-primary transition-colors inline-block mb-4"
-          >
-            @meeeeeeeeeeeelas
-          </a>
+            {profile.instagram_url && (
+              <a
+                href={profile.instagram_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-text-muted hover:text-text-primary transition-colors inline-block mb-4"
+              >
+                @{profile.instagram_url.replace(/https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/$/, '')}
+              </a>
+            )}
           {profile.bio && (
             <p className="text-text-secondary mb-4 max-w-lg">{profile.bio}</p>
           )}
