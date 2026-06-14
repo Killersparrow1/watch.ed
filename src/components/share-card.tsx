@@ -109,12 +109,12 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
             display: 'flex',
             flexDirection: 'column',
             flex: 1,
-            padding: 32,
+            padding: '28px 32px 20px',
           }}
         >
-          <div style={{ display: 'flex', gap: 24, flex: 1 }}>
+          <div style={{ display: 'flex', gap: 20 }}>
             {poster && (
-              <div style={{ flexShrink: 0, width: 160 }}>
+              <div style={{ flexShrink: 0, width: 110 }}>
                 <img
                   src={proxyUrl(poster!)}
                   alt=""
@@ -128,38 +128,44 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
               </div>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, color: '#888', marginBottom: 4 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, color: '#888', marginBottom: 2 }}>
                 {entry.year || 'N/A'} &middot; {entry.type === 'movie' ? 'Film' : 'Series'}
               </div>
-              <h1 style={{ fontSize: 24, fontWeight: 700, color: '#fff', margin: 0, lineHeight: 1.2 }}>
+              <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0, lineHeight: 1.2 }}>
                 {entry.title}
               </h1>
 
               {entry.rating && (
-                <div style={{ marginTop: 12 }}>
+                <div style={{ marginTop: 8 }}>
                   <Stars rating={entry.rating} />
-                  <div style={{ fontSize: 13, color: '#F59E0B', marginTop: 2, fontWeight: 600 }}>
+                  <div style={{ fontSize: 12, color: '#F59E0B', marginTop: 1, fontWeight: 600 }}>
                     {entry.rating}/10
                   </div>
                 </div>
               )}
 
               {entry.badge === 'golden' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8, fontSize: 12, color: '#F59E0B' }}>
-                  <Award className="w-3.5 h-3.5 fill-current" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 11, color: '#F59E0B' }}>
+                  <Award className="w-3 h-3 fill-current" />
                   Golden ticket
                 </div>
               )}
               {entry.badge === 'literal shit' && (
-                <div style={{ marginTop: 8, fontSize: 10, color: '#bbb', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>
+                <div style={{ marginTop: 6, fontSize: 9, color: '#bbb', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>
                   Literal shit
                 </div>
               )}
               {entry.badge === 'lamo' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8, fontSize: 12, color: '#8B5CF6' }}>
-                  <Zap className="w-3.5 h-3.5" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 11, color: '#8B5CF6' }}>
+                  <Zap className="w-3 h-3" />
                   LAMO
+                </div>
+              )}
+
+              {entry.tagline && (
+                <div style={{ marginTop: 6, fontSize: 12, color: '#aaa', fontStyle: 'italic', lineHeight: 1.3 }}>
+                  &ldquo;{entry.tagline.length > 80 ? entry.tagline.slice(0, 80) + '...' : entry.tagline}&rdquo;
                 </div>
               )}
             </div>
@@ -168,13 +174,11 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
           {noteSegments.length > 0 && (
             <div
               style={{
-                marginTop: 16,
-                padding: '12px 16px',
+                marginTop: 10,
+                padding: '10px 14px',
                 backgroundColor: 'rgba(255,255,255,0.05)',
-                borderRadius: 8,
+                borderRadius: 6,
                 border: '1px solid rgba(255,255,255,0.08)',
-                maxHeight: 200,
-                overflow: 'hidden',
               }}
             >
               {noteSegments.slice(0, 6).map((seg, i) => {
@@ -185,19 +189,32 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
                       src={proxyUrl(seg.value)}
                       alt=""
                       crossOrigin="anonymous"
-                      style={{ maxWidth: '100%', maxHeight: 80, borderRadius: 4, margin: '4px 0', display: 'block' }}
+                      style={{ maxWidth: '100%', maxHeight: 70, borderRadius: 4, margin: '3px 0', display: 'block' }}
                     />
                   )
                 }
                 const text = seg.value.trim()
                 if (!text) return null
-                const truncated = text.length > 200 ? text.slice(0, 200) + '...' : text
+                const truncated = text.length > 300 ? text.slice(0, 300) + '...' : text
                 return (
-                  <span key={i} style={{ fontSize: 14, color: '#ccc', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                  <span key={i} style={{ fontSize: 13, color: '#ccc', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
                     {truncated}
                   </span>
                 )
               })}
+            </div>
+          )}
+
+          {entry.cast_crew && (
+            <div style={{ marginTop: 8, fontSize: 11, color: '#777', lineHeight: 1.4 }}>
+              <span style={{ color: '#999', fontWeight: 600 }}>Cast: </span>
+              {entry.cast_crew}
+            </div>
+          )}
+
+          {entry.overview && !noteSegments.length && (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#888', lineHeight: 1.4 }}>
+              {entry.overview.length > 200 ? entry.overview.slice(0, 200) + '...' : entry.overview}
             </div>
           )}
 
@@ -207,29 +224,29 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
               alignItems: 'center',
               justifyContent: 'space-between',
               marginTop: 'auto',
-              paddingTop: 20,
+              paddingTop: 16,
               borderTop: '1px solid rgba(255,255,255,0.08)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {avatarUrl ? (
                 <img
                   src={proxyUrl(avatarUrl!)}
                   alt=""
                   crossOrigin="anonymous"
-                  style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
+                  style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }}
                 />
               ) : (
                 <div
                   style={{
-                    width: 28,
-                    height: 28,
+                    width: 24,
+                    height: 24,
                     borderRadius: '50%',
                     backgroundColor: '#2A2A2A',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: 700,
                     color: '#888',
                   }}
@@ -237,11 +254,11 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
                   {displayName.charAt(0).toUpperCase()}
                 </div>
               )}
-              <span style={{ fontSize: 13, color: '#888' }}>@{username}</span>
+              <span style={{ fontSize: 12, color: '#888' }}>@{username}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#C0392B' }}>watch</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#555' }}>.ed</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#C0392B' }}>watch</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#555' }}>.ed</span>
             </div>
           </div>
         </div>
