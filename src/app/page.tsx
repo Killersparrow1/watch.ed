@@ -5,7 +5,7 @@ export default function HomePage() {
     <div className="flex min-h-screen flex-col items-center justify-center px-4 bg-bg">
       <div className="text-center max-w-md">
         <div className="mb-6 flex justify-center">
-          <img src="/logo.svg" alt="watch.ed" className="h-12" />
+          <img src="/logo.svg" alt="watch.ed" className="h-16" />
         </div>
         <p className="text-lg text-text-secondary mb-2">
           Personal film &amp; TV tracking

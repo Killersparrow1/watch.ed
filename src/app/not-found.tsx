@@ -4,7 +4,7 @@ export default function NotFound() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 bg-bg">
       <div className="text-center">
-        <img src="/logo.svg" alt="watch.ed" className="h-10 mx-auto mb-6" />
+        <img src="/logo.svg" alt="watch.ed" className="h-14 mx-auto mb-6" />
         <h1 className="heading-xl mb-2">Not found</h1>
         <p className="text-text-secondary mb-6">
           This page doesn&apos;t exist.

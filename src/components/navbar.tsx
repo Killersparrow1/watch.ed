@@ -42,7 +42,7 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link href="/dashboard">
-            <img src="/logo.svg" alt="watch.ed" className="h-10" />
+            <img src="/logo.svg" alt="watch.ed" className="h-14" />
           </Link>
 
           <nav className="flex items-center gap-1">
