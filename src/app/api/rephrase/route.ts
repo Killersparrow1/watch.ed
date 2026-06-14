@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const prompt = `Rephrase the following movie/show review to sound more polished and clear, but keep the same casual, personal tone, humor, and voice — don't make it sound generic or overly formal. Preserve emojis, quotes, and any signature phrases the user uses. Return ONLY the rephrased text, nothing else. Review: ${text}`
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
