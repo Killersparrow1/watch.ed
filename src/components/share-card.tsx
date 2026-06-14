@@ -74,13 +74,14 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
       if (!combined) return null
       const truncated = combined.length > 350 ? combined.slice(0, 350) + '...' : combined
       return (
-        <span style={{ fontSize: 13, color: '#ccc', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+        <span style={{ fontSize: 14, color: '#ccc', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
           {truncated}
         </span>
       )
     }
 
     const hasExtraInfo = entry.runtime || genreStr || entry.watch_date
+    const hasReview = Boolean(renderNoteText()) || imageSegments.length > 0
 
     return (
       <div
@@ -141,6 +142,7 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
             zIndex: 1,
             display: 'flex',
             flexDirection: 'column',
+            justifyContent: 'space-between',
             flex: 1,
             padding: '28px 28px 18px 22px',
             minWidth: 0,
@@ -195,114 +197,118 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
             )}
           </div>
 
-          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            {renderNoteText() && (
-              <div
-                style={{
-                  padding: '8px 12px',
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  borderRadius: 6,
-                  border: '1px solid rgba(255,255,255,0.06)',
-                }}
-              >
-                {renderNoteText()}
-              </div>
-            )}
-
-            {imageSegments.length > 0 && (
-              <div
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: 4,
-                  marginTop: renderNoteText() ? 6 : 0,
-                }}
-              >
-                {imageSegments.slice(0, 4).map((seg, i) => (
-                  <img
-                    key={i}
-                    src={proxyUrl(seg.value)}
-                    alt=""
-                    crossOrigin="anonymous"
-                    style={{
-                      width: imageSegments.length === 1 ? '100%' : 'calc(50% - 2px)',
-                      maxHeight: imageSegments.length === 1 ? 80 : 70,
-                      borderRadius: 4,
-                      objectFit: 'cover',
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {hasExtraInfo && (
-            <div style={{ fontSize: 10, color: '#666', lineHeight: 1.4, marginTop: 4 }}>
-              {entry.runtime && (
-                <span>
-                  {entry.runtime >= 60
-                    ? `${Math.floor(entry.runtime / 60)}h ${entry.runtime % 60}m`
-                    : `${entry.runtime}m`}
-                </span>
-              )}
-              {genreStr && (
-                <span> &middot; {genreStr}</span>
-              )}
-              {entry.watch_date && (
-                <div style={{ marginTop: 2 }}>
-                  Watched: {entry.watch_date}
-                </div>
-              )}
-            </div>
-          )}
-
-          {entry.overview && !renderNoteText() && (
-            <div style={{ fontSize: 11, color: '#888', lineHeight: 1.4, marginTop: 4 }}>
-              {entry.overview.length > 150 ? entry.overview.slice(0, 150) + '...' : entry.overview}
-            </div>
-          )}
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginTop: 10,
-              paddingTop: 12,
-              borderTop: '1px solid rgba(255,255,255,0.07)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {avatarUrl ? (
-                <img
-                  src={proxyUrl(avatarUrl!)}
-                  alt=""
-                  crossOrigin="anonymous"
-                  style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }}
-                />
-              ) : (
+          {hasReview && (
+            <div>
+              {renderNoteText() && (
                 <div
                   style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: '50%',
-                    backgroundColor: '#2A2A2A',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: '#888',
+                    padding: '10px 14px',
+                    backgroundColor: 'rgba(255,255,255,0.04)',
+                    borderRadius: 6,
+                    border: '1px solid rgba(255,255,255,0.06)',
                   }}
                 >
-                  {displayName.charAt(0).toUpperCase()}
+                  {renderNoteText()}
                 </div>
               )}
-              <span style={{ fontSize: 11, color: '#888' }}>@{username}</span>
+
+              {imageSegments.length > 0 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 4,
+                    marginTop: renderNoteText() ? 6 : 0,
+                  }}
+                >
+                  {imageSegments.slice(0, 4).map((seg, i) => (
+                    <img
+                      key={i}
+                      src={proxyUrl(seg.value)}
+                      alt=""
+                      crossOrigin="anonymous"
+                      style={{
+                        width: imageSegments.length === 1 ? '100%' : 'calc(50% - 2px)',
+                        maxHeight: imageSegments.length === 1 ? 80 : 70,
+                        borderRadius: 4,
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#C0392B' }}>watch</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#555' }}>.ed</span>
+          )}
+
+          <div>
+            {hasExtraInfo && (
+              <div style={{ fontSize: 10, color: '#666', lineHeight: 1.4 }}>
+                {entry.runtime && (
+                  <span>
+                    {entry.runtime >= 60
+                      ? `${Math.floor(entry.runtime / 60)}h ${entry.runtime % 60}m`
+                      : `${entry.runtime}m`}
+                  </span>
+                )}
+                {genreStr && (
+                  <span> &middot; {genreStr}</span>
+                )}
+                {entry.watch_date && (
+                  <div style={{ marginTop: 2 }}>
+                    Watched: {entry.watch_date}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {entry.overview && !hasReview && (
+              <div style={{ fontSize: 11, color: '#888', lineHeight: 1.4, marginTop: hasExtraInfo ? 4 : 0 }}>
+                {entry.overview.length > 150 ? entry.overview.slice(0, 150) + '...' : entry.overview}
+              </div>
+            )}
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginTop: 10,
+                paddingTop: 12,
+                borderTop: '1px solid rgba(255,255,255,0.07)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {avatarUrl ? (
+                  <img
+                    src={proxyUrl(avatarUrl!)}
+                    alt=""
+                    crossOrigin="anonymous"
+                    style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: '50%',
+                      backgroundColor: '#2A2A2A',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: '#888',
+                    }}
+                  >
+                    {displayName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span style={{ fontSize: 11, color: '#888' }}>@{username}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#C0392B' }}>watch</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#555' }}>.ed</span>
+              </div>
             </div>
           </div>
         </div>
