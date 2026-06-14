@@ -126,12 +126,12 @@ CREATE POLICY "Visitors can delete their own reactions"
   ON reactions FOR DELETE
   USING (true);
 
--- Badge column for golden ticket / shit / lamo awards
+-- Badge column for golden ticket / literal shit / lamo awards
 ALTER TABLE entries ADD COLUMN IF NOT EXISTS badge TEXT;
 
 -- Drop old constraint and add updated one
 ALTER TABLE entries DROP CONSTRAINT IF EXISTS entries_badge_check;
-ALTER TABLE entries ADD CONSTRAINT entries_badge_check CHECK (badge IS NULL OR badge IN ('golden', 'shit', 'lamo'));
+ALTER TABLE entries ADD CONSTRAINT entries_badge_check CHECK (badge IS NULL OR badge IN ('golden', 'literal shit', 'lamo'));
 
 -- Change progress_episode to text so you can enter ranges like "1-5" or "1,3,5-7"
 ALTER TABLE entries ALTER COLUMN progress_episode TYPE TEXT USING progress_episode::TEXT;

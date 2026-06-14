@@ -115,9 +115,9 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
               Golden ticket
             </span>
           )}
-          {entry.badge === 'shit' && (
+          {entry.badge === 'literal shit' && (
             <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium bg-text-primary/10 text-text-primary tracking-widest text-[10px] uppercase">
-              Not recommended
+              Literal shit
             </span>
           )}
           {entry.badge === 'lamo' && (

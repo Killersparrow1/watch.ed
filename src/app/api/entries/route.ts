@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (badge && !['golden', 'shit', 'lamo'].includes(badge)) {
+    if (badge && !['golden', 'literal shit', 'lamo'].includes(badge)) {
       return NextResponse.json({ error: 'Invalid badge' }, { status: 400 })
     }
 

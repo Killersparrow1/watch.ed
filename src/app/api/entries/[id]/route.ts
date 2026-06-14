@@ -83,7 +83,7 @@ export async function PATCH(
       }
     }
 
-    if (updates.badge && typeof updates.badge === 'string' && !['golden', 'shit', 'lamo'].includes(updates.badge)) {
+    if (updates.badge && typeof updates.badge === 'string' && !['golden', 'literal shit', 'lamo'].includes(updates.badge)) {
       return NextResponse.json({ error: 'Invalid badge' }, { status: 400 })
     }
 

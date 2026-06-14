@@ -69,9 +69,9 @@ export default function EntryCard({ entry, isPublic }: Props) {
             Golden ticket
           </div>
         )}
-        {entry.badge === 'shit' && (
+        {entry.badge === 'literal shit' && (
           <div className="absolute top-2 left-2 bg-text-primary/80 px-1.5 py-0.5 rounded-sm text-[10px] font-bold text-white tracking-widest uppercase">
-            Not recommended
+            Literal shit
           </div>
         )}
         {entry.badge === 'lamo' && (

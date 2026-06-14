@@ -259,15 +259,15 @@ export default function EditEntryPage() {
             </button>
             <button
               type="button"
-              onClick={() => setForm(prev => ({ ...prev, badge: prev.badge === 'shit' ? '' : 'shit' }))}
+              onClick={() => setForm(prev => ({ ...prev, badge: prev.badge === 'literal shit' ? '' : 'literal shit' }))}
               className={`flex items-center gap-2 px-4 py-2.5 border rounded-sm text-sm transition-colors ${
-                form.badge === 'shit'
+                form.badge === 'literal shit'
                   ? 'border-text-primary bg-text-primary/10 text-text-primary'
                   : 'border-border text-text-secondary hover:text-text-primary'
               }`}
             >
               <ThumbsDown className="w-4 h-4" />
-              Not recommended
+              Literal shit
             </button>
             <button
               type="button"
