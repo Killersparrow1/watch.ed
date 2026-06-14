@@ -3,17 +3,19 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Save } from 'lucide-react'
+import { Save, Copy, Check, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 
 export default function SettingsPage() {
   const router = useRouter()
   const [bio, setBio] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
+  const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -25,12 +27,13 @@ export default function SettingsPage() {
       }
       const { data } = await supabase
         .from('profiles')
-        .select('bio, avatar_url')
+        .select('bio, avatar_url, username')
         .eq('id', user.id)
         .single()
       if (data) {
         setBio(data.bio || '')
         setAvatarUrl(data.avatar_url || '')
+        setUsername(data.username)
       }
       setLoading(false)
     }
@@ -128,6 +131,50 @@ export default function SettingsPage() {
 
         {success && (
           <p className="text-sm text-success bg-success/10 px-3 py-2 rounded-sm">Bio saved</p>
+        )}
+
+        {username && (
+          <div className="pt-6 border-t border-border">
+            <h2 className="text-sm font-medium text-text-primary mb-3">Share your profile</h2>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={`https://watch-ed.vercel.app/${username}`}
+                className="flex-1 px-4 py-2.5 border border-border bg-bg rounded-sm text-sm text-text-primary focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(`https://watch-ed.vercel.app/${username}`)
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 2000)
+                  } catch {
+                    const ta = document.createElement('textarea')
+                    ta.value = `https://watch-ed.vercel.app/${username}`
+                    document.body.appendChild(ta)
+                    ta.select()
+                    document.execCommand('copy')
+                    document.body.removeChild(ta)
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 2000)
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2.5 bg-surface border border-border rounded-sm text-sm text-text-secondary hover:text-text-primary transition-colors"
+              >
+                {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+              <Link
+                href={`/${username}`}
+                target="_blank"
+                className="flex items-center gap-2 px-4 py-2.5 bg-surface border border-border rounded-sm text-sm text-text-secondary hover:text-text-primary transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
         )}
 
         <div className="flex gap-3">

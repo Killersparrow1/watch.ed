@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import Navbar from '@/components/navbar'
+import Footer from '@/components/footer'
 
 export default async function DashboardLayout({
   children,
@@ -25,11 +26,12 @@ export default async function DashboardLayout({
   }
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-8">
         {children}
       </main>
-    </>
+      <Footer />
+    </div>
   )
 }
