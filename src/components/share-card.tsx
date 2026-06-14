@@ -210,13 +210,12 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
                   </div>
                 )}
                 {imageSegments.length > 0 && (
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                     {imageSegments.slice(0, 2).map((seg, i) => (
                       <div
                         key={i}
                         style={{
                           flex: 1,
-                          height: 110,
                           borderRadius: 8,
                           overflow: 'hidden',
                           border: '1px solid rgba(255,255,255,0.08)',
@@ -227,7 +226,7 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
                           src={proxyUrl(seg.value)}
                           alt=""
                           crossOrigin="anonymous"
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          style={{ width: '100%', height: 'auto', display: 'block', maxHeight: 130 }}
                         />
                       </div>
                     ))}
