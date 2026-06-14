@@ -24,9 +24,39 @@ function Stars({ rating }: { rating: number }) {
   )
 }
 
+const DIRECT_IMAGE_RE = /(https?:\/\/[^\s]+?\.(?:gif|png|jpe?g|webp)(?:\?[^\s]*)?)/gi
+const GIPHY_PAGE_RE = /https?:\/\/(?:www\.)?giphy\.com\/gifs\/([^\s]+)/gi
+
+function giphyUrlToDirect(url: string): string {
+  return url.replace(GIPHY_PAGE_RE, (_, slug) => {
+    const parts = slug.split('-')
+    return `https://media.giphy.com/media/${parts[parts.length - 1]}/giphy.gif`
+  })
+}
+
+function parseNoteSegments(text: string): { type: 'text' | 'image'; value: string }[] {
+  const normalized = giphyUrlToDirect(text)
+  const parts: { type: 'text' | 'image'; value: string }[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+  const re = new RegExp(DIRECT_IMAGE_RE.source, 'gi')
+  while ((match = re.exec(normalized)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ type: 'text', value: normalized.slice(lastIndex, match.index) })
+    }
+    parts.push({ type: 'image', value: match[0] })
+    lastIndex = match.index + match[0].length
+  }
+  if (lastIndex < normalized.length) {
+    parts.push({ type: 'text', value: normalized.slice(lastIndex) })
+  }
+  return parts.length > 0 ? parts : [{ type: 'text', value: text }]
+}
+
 const ShareCard = forwardRef<HTMLDivElement, Props>(
   ({ entry, username, displayName, avatarUrl }, ref) => {
     const poster = getEntryPosterUrl(entry, 'w342')
+    const noteSegments = entry.notes ? parseNoteSegments(entry.notes) : []
 
     return (
       <div
@@ -128,7 +158,7 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
             </div>
           </div>
 
-          {entry.notes && (
+          {noteSegments.length > 0 && (
             <div
               style={{
                 marginTop: 16,
@@ -136,13 +166,30 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
                 backgroundColor: 'rgba(255,255,255,0.05)',
                 borderRadius: 8,
                 border: '1px solid rgba(255,255,255,0.08)',
-                maxHeight: 160,
+                maxHeight: 200,
                 overflow: 'hidden',
               }}
             >
-              <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.5, margin: 0 }}>
-                {entry.notes.length > 280 ? entry.notes.slice(0, 280) + '...' : entry.notes}
-              </p>
+              {noteSegments.slice(0, 6).map((seg, i) => {
+                if (seg.type === 'image') {
+                  return (
+                    <img
+                      key={i}
+                      src={seg.value}
+                      alt=""
+                      style={{ maxWidth: '100%', maxHeight: 80, borderRadius: 4, margin: '4px 0', display: 'block' }}
+                    />
+                  )
+                }
+                const text = seg.value.trim()
+                if (!text) return null
+                const truncated = text.length > 200 ? text.slice(0, 200) + '...' : text
+                return (
+                  <span key={i} style={{ fontSize: 14, color: '#ccc', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                    {truncated}
+                  </span>
+                )
+              })}
             </div>
           )}
 
