@@ -49,7 +49,7 @@ export default function AddEntryPage() {
       const res = await fetch('/api/rephrase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, title: selected?.title || form.title, year: selected?.year }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to rephrase')

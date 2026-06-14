@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { text } = await request.json()
+    const { text, title, year } = await request.json()
 
     if (!text || typeof text !== 'string' || !text.trim()) {
       return NextResponse.json({ error: 'No text provided' }, { status: 400 })
@@ -13,7 +13,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'AI service not configured' }, { status: 500 })
     }
 
-    const prompt = `Rephrase the following movie/show review to sound more polished and clear, but keep the same casual, personal tone, humor, and voice — don't make it sound generic or overly formal. Preserve emojis, quotes, and any signature phrases the user uses. Return ONLY the rephrased text, nothing else. Review: ${text}`
+    const context = title ? ` (${title}${year ? `, ${year}` : ''})` : ''
+    const prompt = `Rephrase the following review${context} to sound more polished and clear, but keep the same casual, personal tone, humor, and voice — don't make it sound generic or overly formal. Preserve emojis, quotes, and any signature phrases the user uses. Return ONLY the rephrased text, nothing else. Review: ${text}`
 
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`,
