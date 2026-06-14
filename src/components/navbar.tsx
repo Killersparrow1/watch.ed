@@ -8,12 +8,14 @@ import {
   List,
   BarChart3,
   Upload,
+  Settings,
   LogOut,
 } from 'lucide-react'
 
 const navLinks = [
   { href: '/dashboard', label: 'Entries', icon: List },
   { href: '/dashboard/stats', label: 'Stats', icon: BarChart3 },
+  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
   { href: '/dashboard/import', label: 'Import', icon: Upload },
 ]
 

@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { getPosterUrl } from '@/lib/tmdb'
+import { getEntryPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
 import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award, Zap } from 'lucide-react'
+import { renderNotes } from '@/lib/render-notes'
 
 interface Props {
   entry: Entry
@@ -32,7 +33,7 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
   const [dislikes, setDislikes] = useState(initialDislikes)
   const [userReaction, setUserReaction] = useState<string | null>(null)
 
-  const poster = getPosterUrl(entry.poster_path, 'w342')
+  const poster = getEntryPosterUrl(entry, 'w342')
 
   async function handleReaction(reaction: 'like' | 'dislike') {
     const res = await fetch('/api/reactions', {
@@ -143,9 +144,9 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
         )}
 
         {entry.notes && (
-          <p className="text-sm text-text-secondary line-clamp-3 leading-relaxed">
-            {entry.notes}
-          </p>
+          <div className="text-sm text-text-secondary leading-relaxed">
+            {renderNotes(entry.notes)}
+          </div>
         )}
 
         <div className="flex items-center gap-3 mt-auto pt-2 border-t border-border-light">

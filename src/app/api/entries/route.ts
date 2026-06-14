@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, type, status, rating, progress_season, progress_episode, watch_date, notes, tmdb_id, poster_path, year, genres, overview, badge, runtime, tagline, cast_crew } = body
+    const { title, type, status, rating, progress_season, progress_episode, watch_date, notes, tmdb_id, poster_path, year, genres, overview, badge, runtime, tagline, cast_crew, custom_poster_url } = body
 
     if (!title || !type) {
       return NextResponse.json({ error: 'Title and type are required' }, { status: 400 })
@@ -107,6 +107,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid badge' }, { status: 400 })
     }
 
+    if (custom_poster_url && !/^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i.test(custom_poster_url)) {
+      return NextResponse.json({ error: 'Invalid poster URL' }, { status: 400 })
+    }
+
     const serviceClient = await createServiceClient()
     const { data, error } = await serviceClient
       .from('entries')
@@ -129,6 +133,7 @@ export async function POST(request: NextRequest) {
         runtime: runtime || null,
         tagline: tagline || null,
         cast_crew: cast_crew || null,
+        custom_poster_url: custom_poster_url || null,
       })
       .select()
       .single()

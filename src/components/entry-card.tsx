@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { getPosterUrl } from '@/lib/tmdb'
+import { getEntryPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
 import { Film, Tv, Star, Award, Zap } from 'lucide-react'
 import Link from 'next/link'
@@ -20,7 +20,7 @@ interface Props {
 }
 
 export default function EntryCard({ entry, isPublic }: Props) {
-  const poster = getPosterUrl(entry.poster_path, 'w185')
+  const poster = getEntryPosterUrl(entry, 'w185')
   const status = statusConfig[entry.status]
   const [showDetails, setShowDetails] = useState(false)
 

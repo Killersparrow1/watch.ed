@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { Entry } from '@/types/database'
-import { getPosterUrl } from '@/lib/tmdb'
+import { getEntryPosterUrl } from '@/lib/tmdb'
 import { Save, ArrowLeft, Trash2, Star, Award, Zap, ThumbsDown, Sparkles, Undo2 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -35,6 +35,7 @@ export default function EditEntryPage() {
     tagline: '',
     cast_crew: '',
     runtime: '' as string,
+    custom_poster_url: '' as string,
   })
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export default function EditEntryPage() {
         tagline: data.entry.tagline || '',
         cast_crew: data.entry.cast_crew || '',
         runtime: data.entry.runtime ? String(data.entry.runtime) : '',
+        custom_poster_url: data.entry.custom_poster_url || '',
       })
       setLoading(false)
     }
@@ -83,6 +85,7 @@ export default function EditEntryPage() {
       tagline: form.tagline || null,
       cast_crew: form.cast_crew || null,
       runtime: form.runtime ? parseInt(form.runtime) : null,
+      custom_poster_url: form.custom_poster_url || null,
     }
 
     const res = await fetch(`/api/entries/${id}`, {
@@ -162,7 +165,7 @@ export default function EditEntryPage() {
 
   if (!entry) return null
 
-  const poster = getPosterUrl(entry.poster_path, 'w185')
+  const poster = getEntryPosterUrl(entry, 'w185')
 
   return (
     <div>
@@ -204,11 +207,34 @@ export default function EditEntryPage() {
         )}
       </div>
 
-      {poster && (
-        <div className="w-32 mb-6">
-          <img src={poster} alt={entry.title} className="w-full rounded-sm" />
+      <div className="flex gap-4 mb-6">
+        {poster && (
+          <div className="w-32">
+            <img src={poster} alt={entry.title} className="w-full rounded-sm" />
+          </div>
+        )}
+        <div className="flex-1">
+          <label htmlFor="custom_poster" className="block text-sm font-medium text-text-primary mb-1.5">
+            Custom poster URL
+          </label>
+          <input
+            id="custom_poster"
+            type="url"
+            value={form.custom_poster_url}
+            onChange={(e) => setForm(prev => ({ ...prev, custom_poster_url: e.target.value }))}
+            className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+            placeholder="https://example.com/poster.jpg"
+          />
+          {form.custom_poster_url && (
+            <img
+              src={form.custom_poster_url}
+              alt="Custom poster preview"
+              className="mt-2 w-20 rounded-sm"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+            />
+          )}
         </div>
-      )}
+      </div>
 
       <form onSubmit={handleSave} className="max-w-lg space-y-5">
         <div>

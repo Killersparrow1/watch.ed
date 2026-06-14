@@ -53,7 +53,7 @@ export async function PATCH(
     const allowedFields = [
       'title', 'type', 'status', 'rating', 'progress_season', 'progress_episode',
       'watch_date', 'notes', 'tmdb_id', 'poster_path', 'year', 'genres', 'overview', 'badge', 'runtime',
-      'tagline', 'cast_crew',
+      'tagline', 'cast_crew', 'custom_poster_url',
     ]
 
     const updates: Record<string, unknown> = {}
@@ -85,6 +85,10 @@ export async function PATCH(
 
     if (updates.badge && typeof updates.badge === 'string' && !['golden', 'literal shit', 'lamo'].includes(updates.badge)) {
       return NextResponse.json({ error: 'Invalid badge' }, { status: 400 })
+    }
+
+    if (updates.custom_poster_url && typeof updates.custom_poster_url === 'string' && !/^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i.test(updates.custom_poster_url)) {
+      return NextResponse.json({ error: 'Invalid poster URL' }, { status: 400 })
     }
 
     const serviceClient = await createServiceClient()

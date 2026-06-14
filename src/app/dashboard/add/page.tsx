@@ -27,6 +27,7 @@ export default function AddEntryPage() {
     tagline: '' as string,
     cast_crew: '' as string,
     runtime: '' as string,
+    custom_poster_url: '' as string,
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -140,6 +141,7 @@ export default function AddEntryPage() {
       watch_date: form.watch_date || null,
       notes: form.notes || null,
       runtime: form.runtime ? parseInt(form.runtime) : null,
+      custom_poster_url: form.custom_poster_url || null,
     }
 
     if (selected) {
@@ -480,6 +482,28 @@ export default function AddEntryPage() {
           />
           {rephraseError && (
             <p className="mt-1 text-xs text-accent">{rephraseError}</p>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="custom_poster" className="block text-sm font-medium text-text-primary mb-1.5">
+            Custom poster URL
+          </label>
+          <input
+            id="custom_poster"
+            type="url"
+            value={form.custom_poster_url}
+            onChange={(e) => setForm(prev => ({ ...prev, custom_poster_url: e.target.value }))}
+            className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+            placeholder="https://example.com/poster.jpg"
+          />
+          {form.custom_poster_url && (
+            <img
+              src={form.custom_poster_url}
+              alt="Poster preview"
+              className="mt-2 w-20 rounded-sm"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+            />
           )}
         </div>
 

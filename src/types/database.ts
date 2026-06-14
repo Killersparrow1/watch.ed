@@ -31,6 +31,7 @@ export interface Entry {
   cast_crew: string | null
   runtime: number | null
   badge: BadgeType
+  custom_poster_url: string | null
   created_at: string
   updated_at: string
 }

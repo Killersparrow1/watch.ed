@@ -145,6 +145,9 @@ ALTER TABLE entries ADD COLUMN IF NOT EXISTS tagline TEXT;
 -- Cast and crew (comma-separated top cast from TMDB)
 ALTER TABLE entries ADD COLUMN IF NOT EXISTS cast_crew TEXT;
 
+-- Custom poster URL (overrides TMDB poster)
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS custom_poster_url TEXT;
+
 -- Function to auto-update updated_at on entries
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
