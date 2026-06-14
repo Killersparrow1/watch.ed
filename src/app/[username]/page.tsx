@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { Film, Tv, Star, Calendar, Timer } from 'lucide-react'
+import { Film, Tv, Star, Calendar, Timer, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import PublicEntryCard from './public-entry-card'
@@ -24,11 +24,14 @@ export default async function PublicProfilePage({ params }: Props) {
     notFound()
   }
 
-  const { data: entries } = await supabase
+  const { data: allEntries } = await supabase
     .from('entries')
     .select('*')
     .eq('user_id', profile.id)
     .order('created_at', { ascending: false })
+
+  const planToWatch = (allEntries || []).filter(e => e.status === 'plan_to_watch')
+  const entries = (allEntries || []).filter(e => e.status !== 'plan_to_watch')
 
   const entryIds = (entries || []).map(e => e.id)
 
@@ -139,15 +142,35 @@ export default async function PublicProfilePage({ params }: Props) {
           </div>
         </div>
 
-        {(!entries || entries.length === 0) ? (
-          <div className="text-center py-20">
-            <p className="text-text-secondary">No entries yet</p>
-          </div>
-        ) : (
+        {entries.length > 0 ? (
           <PublicFilters
             entries={entries}
             reactionCounts={reactionCounts}
           />
+        ) : (
+          <div className="text-center py-20">
+            <p className="text-text-secondary">No entries yet</p>
+          </div>
+        )}
+
+        {planToWatch.length > 0 && (
+          <div className="mt-12">
+            <div className="flex items-center gap-2 mb-6">
+              <Clock className="w-5 h-5 text-text-secondary" />
+              <h2 className="heading-md">Watch List</h2>
+              <span className="text-sm text-text-muted">({planToWatch.length})</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {planToWatch.map((entry) => (
+                <PublicEntryCard
+                  key={entry.id}
+                  entry={entry}
+                  likes={0}
+                  dislikes={0}
+                />
+              ))}
+            </div>
+          </div>
         )}
       </main>
     </div>
