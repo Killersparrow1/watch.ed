@@ -121,116 +121,117 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
           }}
         />
 
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flex: 1, minHeight: 0 }}>
-          <div style={{ width: 140, display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-            {poster && (
-              <img
-                src={proxyUrl(poster!)}
-                alt=""
-                crossOrigin="anonymous"
-                style={{ width: '100%', display: 'block', backgroundColor: '#000' }}
-              />
-            )}
-            {hasReview && (
-              <div
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  padding: '6px 6px 8px',
-                  gap: 6,
-                  overflow: 'hidden',
-                }}
-              >
-                {renderNoteText() && (
-                  <div
-                    style={{
-                      padding: '8px 10px',
-                      backgroundColor: 'rgba(255,255,255,0.04)',
-                      borderRadius: 6,
-                      border: '1px solid rgba(255,255,255,0.06)',
-                    }}
-                  >
-                    {renderNoteText()}
-                  </div>
-                )}
-                {imageSegments.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                    {imageSegments.slice(0, 4).map((seg, i) => (
-                      <img
-                        key={i}
-                        src={proxyUrl(seg.value)}
-                        alt=""
-                        crossOrigin="anonymous"
-                        style={{
-                          width: imageSegments.length === 1 ? '100%' : 'calc(50% - 2px)',
-                          maxHeight: imageSegments.length === 1 ? 80 : 65,
-                          borderRadius: 4,
-                          objectFit: 'contain',
-                          backgroundColor: '#000',
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div style={{ flex: 1, padding: '28px 28px 0 20px', minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: '#888', marginBottom: 2 }}>
-              {entry.year || 'N/A'} &middot; {entry.type === 'movie' ? 'Film' : 'Series'}
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+          <div style={{ display: 'flex', flexShrink: 0 }}>
+            <div style={{ width: 140, flexShrink: 0 }}>
+              {poster && (
+                <img
+                  src={proxyUrl(poster!)}
+                  alt=""
+                  crossOrigin="anonymous"
+                  style={{ width: '100%', display: 'block', backgroundColor: '#000' }}
+                />
+              )}
             </div>
-            <h1 style={{ fontSize: 21, fontWeight: 700, color: '#fff', margin: 0, lineHeight: 1.2 }}>
-              {entry.title}
-            </h1>
 
-            {entry.rating && (
-              <div style={{ marginTop: 6 }}>
-                <Stars rating={entry.rating} />
-                <div style={{ fontSize: 11, color: '#F59E0B', marginTop: 1, fontWeight: 600 }}>
-                  {entry.rating}/10
+            <div style={{ flex: 1, padding: '28px 28px 0 20px', minWidth: 0 }}>
+              <div style={{ fontSize: 11, color: '#888', marginBottom: 2 }}>
+                {entry.year || 'N/A'} &middot; {entry.type === 'movie' ? 'Film' : 'Series'}
+              </div>
+              <h1 style={{ fontSize: 21, fontWeight: 700, color: '#fff', margin: 0, lineHeight: 1.2 }}>
+                {entry.title}
+              </h1>
+
+              {entry.rating && (
+                <div style={{ marginTop: 6 }}>
+                  <Stars rating={entry.rating} />
+                  <div style={{ fontSize: 11, color: '#F59E0B', marginTop: 1, fontWeight: 600 }}>
+                    {entry.rating}/10
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {entry.badge === 'golden' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 4, fontSize: 10, color: '#F59E0B' }}>
-                <Award className="w-2.5 h-2.5 fill-current" />
-                Golden ticket
-              </div>
-            )}
-            {entry.badge === 'literal shit' && (
-              <div style={{ marginTop: 4, fontSize: 8, color: '#bbb', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>
-                Literal shit
-              </div>
-            )}
-            {entry.badge === 'lamo' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 4, fontSize: 10, color: '#8B5CF6' }}>
-                <Zap className="w-2.5 h-2.5" />
-                LAMO
-              </div>
-            )}
+              {entry.badge === 'golden' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 4, fontSize: 10, color: '#F59E0B' }}>
+                  <Award className="w-2.5 h-2.5 fill-current" />
+                  Golden ticket
+                </div>
+              )}
+              {entry.badge === 'literal shit' && (
+                <div style={{ marginTop: 4, fontSize: 8, color: '#bbb', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>
+                  Literal shit
+                </div>
+              )}
+              {entry.badge === 'lamo' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 4, fontSize: 10, color: '#8B5CF6' }}>
+                  <Zap className="w-2.5 h-2.5" />
+                  LAMO
+                </div>
+              )}
 
-            {entry.tagline && (
-              <div style={{ marginTop: 4, fontSize: 11, color: '#aaa', fontStyle: 'italic', lineHeight: 1.3 }}>
-                &ldquo;{entry.tagline.length > 100 ? entry.tagline.slice(0, 100) + '...' : entry.tagline}&rdquo;
-              </div>
-            )}
+              {entry.tagline && (
+                <div style={{ marginTop: 4, fontSize: 11, color: '#aaa', fontStyle: 'italic', lineHeight: 1.3 }}>
+                  &ldquo;{entry.tagline.length > 100 ? entry.tagline.slice(0, 100) + '...' : entry.tagline}&rdquo;
+                </div>
+              )}
 
-            {entry.cast_crew && (
-              <div style={{ marginTop: 8, fontSize: 10, color: '#777', lineHeight: 1.4 }}>
-                <span style={{ color: '#999', fontWeight: 600 }}>Cast: </span>
-                {entry.cast_crew.length > 120 ? entry.cast_crew.slice(0, 120) + '...' : entry.cast_crew}
-              </div>
-            )}
+              {entry.cast_crew && (
+                <div style={{ marginTop: 8, fontSize: 10, color: '#777', lineHeight: 1.4 }}>
+                  <span style={{ color: '#999', fontWeight: 600 }}>Cast: </span>
+                  {entry.cast_crew.length > 120 ? entry.cast_crew.slice(0, 120) + '...' : entry.cast_crew}
+                </div>
+              )}
 
-            {entry.overview && !hasReview && (
-              <div style={{ marginTop: 8, fontSize: 11, color: '#888', lineHeight: 1.4 }}>
-                {entry.overview.length > 150 ? entry.overview.slice(0, 150) + '...' : entry.overview}
-              </div>
-            )}
+              {entry.overview && !hasReview && (
+                <div style={{ marginTop: 8, fontSize: 11, color: '#888', lineHeight: 1.4 }}>
+                  {entry.overview.length > 150 ? entry.overview.slice(0, 150) + '...' : entry.overview}
+                </div>
+              )}
+            </div>
           </div>
+
+          {hasReview && (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '10px 28px 0 20px', overflow: 'hidden' }}>
+              {renderNoteText() && (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    backgroundColor: 'rgba(255,255,255,0.04)',
+                    borderRadius: 6,
+                    border: '1px solid rgba(255,255,255,0.06)',
+                  }}
+                >
+                  {renderNoteText()}
+                </div>
+              )}
+              {imageSegments.length > 0 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 4,
+                    marginTop: renderNoteText() ? 8 : 0,
+                  }}
+                >
+                  {imageSegments.slice(0, 4).map((seg, i) => (
+                    <img
+                      key={i}
+                      src={proxyUrl(seg.value)}
+                      alt=""
+                      crossOrigin="anonymous"
+                      style={{
+                        width: imageSegments.length === 1 ? '100%' : 'calc(50% - 2px)',
+                        maxHeight: imageSegments.length === 1 ? 80 : 70,
+                        borderRadius: 4,
+                        objectFit: 'contain',
+                        backgroundColor: '#000',
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div
