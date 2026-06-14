@@ -1,8 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { Film, Tv, Star, Calendar, Timer, Clock } from 'lucide-react'
+import { Film, Tv, Star, Calendar, Timer } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import PublicEntryCard from './public-entry-card'
 import PublicFilters from './public-filters'
 
 interface Props {
@@ -24,14 +23,11 @@ export default async function PublicProfilePage({ params }: Props) {
     notFound()
   }
 
-  const { data: allEntries } = await supabase
+  const { data: entries } = await supabase
     .from('entries')
     .select('*')
     .eq('user_id', profile.id)
     .order('created_at', { ascending: false })
-
-  const planToWatch = (allEntries || []).filter(e => e.status === 'plan_to_watch')
-  const entries = (allEntries || []).filter(e => e.status !== 'plan_to_watch')
 
   const entryIds = (entries || []).map(e => e.id)
 
@@ -51,19 +47,20 @@ export default async function PublicProfilePage({ params }: Props) {
     }
   }
 
-  const movies = entries?.filter(e => e.type === 'movie').length || 0
-  const totalSeries = entries?.filter(e => e.type === 'series').length || 0
+  const watched = (entries || []).filter(e => e.status !== 'plan_to_watch')
+  const movies = watched?.filter(e => e.type === 'movie').length || 0
+  const totalSeries = watched?.filter(e => e.type === 'series').length || 0
   const totalEntries = entries?.length || 0
-  const ratedEntries = entries?.filter(e => e.rating !== null).length || 0
+  const ratedEntries = watched?.filter(e => e.rating !== null).length || 0
   const avgRating = ratedEntries
-    ? (entries!.filter(e => e.rating).reduce((sum, e) => sum + (e.rating || 0), 0) / ratedEntries).toFixed(1)
+    ? (watched!.filter(e => e.rating).reduce((sum, e) => sum + (e.rating || 0), 0) / ratedEntries).toFixed(1)
     : null
 
-  const totalMovieMinutes = (entries || [])
+  const totalMovieMinutes = (watched || [])
     .filter(e => e.type === 'movie')
     .reduce((sum, e) => sum + (e.runtime || 0), 0)
 
-  const totalSeriesMinutes = (entries || [])
+  const totalSeriesMinutes = (watched || [])
     .filter(e => e.type === 'series' && e.runtime && e.progress_episode && e.progress_episode.trim() !== '')
     .reduce((sum, e) => {
       const eps = String(e.progress_episode).split(/[,;]/).reduce((acc, part) => {
@@ -142,7 +139,7 @@ export default async function PublicProfilePage({ params }: Props) {
           </div>
         </div>
 
-        {entries.length > 0 ? (
+        {entries && entries.length > 0 ? (
           <PublicFilters
             entries={entries}
             reactionCounts={reactionCounts}
@@ -150,26 +147,6 @@ export default async function PublicProfilePage({ params }: Props) {
         ) : (
           <div className="text-center py-20">
             <p className="text-text-secondary">No entries yet</p>
-          </div>
-        )}
-
-        {planToWatch.length > 0 && (
-          <div className="mt-12">
-            <div className="flex items-center gap-2 mb-6">
-              <Clock className="w-5 h-5 text-text-secondary" />
-              <h2 className="heading-md">Watch List</h2>
-              <span className="text-sm text-text-muted">({planToWatch.length})</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {planToWatch.map((entry) => (
-                <PublicEntryCard
-                  key={entry.id}
-                  entry={entry}
-                  likes={0}
-                  dislikes={0}
-                />
-              ))}
-            </div>
           </div>
         )}
       </main>

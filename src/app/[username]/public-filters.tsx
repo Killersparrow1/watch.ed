@@ -10,7 +10,7 @@ interface Props {
   reactionCounts: Record<string, { likes: number; dislikes: number }>
 }
 
-type FilterType = 'all' | 'movie' | 'series'
+type FilterType = 'all' | 'movie' | 'series' | 'plan_to_watch'
 type SortKey = 'created_at' | 'rating' | 'title' | 'year'
 
 export default function PublicFilters({ entries, reactionCounts }: Props) {
@@ -18,8 +18,17 @@ export default function PublicFilters({ entries, reactionCounts }: Props) {
   const [sort, setSort] = useState<SortKey>('created_at')
   const [asc, setAsc] = useState(false)
 
+  const watched = entries.filter(e => e.status !== 'plan_to_watch')
+
   const filtered = useMemo(() => {
-    let list = filter === 'all' ? entries : entries.filter(e => e.type === filter)
+    let list: Entry[]
+    if (filter === 'plan_to_watch') {
+      list = entries.filter(e => e.status === 'plan_to_watch')
+    } else if (filter === 'all') {
+      list = watched
+    } else {
+      list = watched.filter(e => e.type === filter)
+    }
 
     list = [...list].sort((a, b) => {
       let cmp = 0
@@ -31,18 +40,20 @@ export default function PublicFilters({ entries, reactionCounts }: Props) {
     })
 
     return list
-  }, [entries, filter, sort, asc])
+  }, [entries, filter, sort, asc, watched])
 
   const counts = {
-    all: entries.length,
-    movie: entries.filter(e => e.type === 'movie').length,
-    series: entries.filter(e => e.type === 'series').length,
+    all: watched.length,
+    movie: watched.filter(e => e.type === 'movie').length,
+    series: watched.filter(e => e.type === 'series').length,
+    plan_to_watch: entries.filter(e => e.status === 'plan_to_watch').length,
   }
 
   const tabs = [
     { key: 'all' as const, label: 'All' },
     { key: 'movie' as const, label: 'Movies' },
     { key: 'series' as const, label: 'Series' },
+    { key: 'plan_to_watch' as const, label: 'Watch List' },
   ]
 
   const sortOptions = [
