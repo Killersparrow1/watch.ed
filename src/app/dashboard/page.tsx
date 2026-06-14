@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Entry } from '@/types/database'
 import EntryCard from '@/components/entry-card'
+import { createClient } from '@/lib/supabase/client'
 import {
   Plus,
   Search,
@@ -21,6 +22,27 @@ export default function DashboardPage() {
   const [order, setOrder] = useState<'asc' | 'desc'>('desc')
   const [search, setSearch] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+  const [profileUsername, setProfileUsername] = useState('')
+  const [profileDisplayName, setProfileDisplayName] = useState('')
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('username, display_name, avatar_url')
+        .eq('id', data.user.id)
+        .single()
+      if (prof) {
+        setProfileUsername(prof.username)
+        setProfileDisplayName(prof.display_name)
+        setProfileAvatarUrl(prof.avatar_url)
+      }
+    })
+  }, [])
+
   useEffect(() => {
     const controller = new AbortController()
 
@@ -163,7 +185,7 @@ export default function DashboardPage() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {entries.map((entry) => (
-            <EntryCard key={entry.id} entry={entry} />
+            <EntryCard key={entry.id} entry={entry} username={profileUsername} displayName={profileDisplayName} avatarUrl={profileAvatarUrl} />
           ))}
         </div>
       )}

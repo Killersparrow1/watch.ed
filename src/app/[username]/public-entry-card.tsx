@@ -3,13 +3,17 @@
 import { useState } from 'react'
 import { getEntryPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
-import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award, Zap } from 'lucide-react'
+import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award, Zap, Share2 } from 'lucide-react'
 import { renderNotes } from '@/lib/render-notes'
+import ShareModal from '@/components/share-modal'
 
 interface Props {
   entry: Entry
   likes: number
   dislikes: number
+  profileUsername: string
+  profileDisplayName: string
+  profileAvatarUrl: string | null
 }
 
 const statusColors: Record<string, string> = {
@@ -28,10 +32,11 @@ const statusLabels: Record<string, string> = {
   plan_to_watch: 'Plan to Watch',
 }
 
-export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: initialDislikes }: Props) {
+export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: initialDislikes, profileUsername, profileDisplayName, profileAvatarUrl }: Props) {
   const [likes, setLikes] = useState(initialLikes)
   const [dislikes, setDislikes] = useState(initialDislikes)
   const [userReaction, setUserReaction] = useState<string | null>(null)
+  const [showShare, setShowShare] = useState(false)
 
   const poster = getEntryPosterUrl(entry, 'w342')
 
@@ -151,6 +156,12 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
 
         <div className="flex items-center gap-3 mt-auto pt-2 border-t border-border-light">
           <button
+            onClick={() => setShowShare(true)}
+            className="flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+          <button
             onClick={() => handleReaction('like')}
             className={`flex items-center gap-1 text-xs transition-colors ${
               userReaction === 'like' ? 'text-like' : 'text-text-muted hover:text-like'
@@ -170,6 +181,16 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
           </button>
         </div>
       </div>
+
+      {showShare && (
+        <ShareModal
+          entry={entry}
+          username={profileUsername}
+          displayName={profileDisplayName}
+          avatarUrl={profileAvatarUrl}
+          onClose={() => setShowShare(false)}
+        />
+      )}
     </div>
   )
 }

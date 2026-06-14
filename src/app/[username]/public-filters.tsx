@@ -8,12 +8,15 @@ import PublicEntryCard from './public-entry-card'
 interface Props {
   entries: Entry[]
   reactionCounts: Record<string, { likes: number; dislikes: number }>
+  profileUsername: string
+  profileDisplayName: string
+  profileAvatarUrl: string | null
 }
 
 type FilterType = 'all' | 'movie' | 'series' | 'plan_to_watch'
 type SortKey = 'created_at' | 'rating' | 'title' | 'year'
 
-export default function PublicFilters({ entries, reactionCounts }: Props) {
+export default function PublicFilters({ entries, reactionCounts, profileUsername, profileDisplayName, profileAvatarUrl }: Props) {
   const [filter, setFilter] = useState<FilterType>('all')
   const [sort, setSort] = useState<SortKey>('created_at')
   const [asc, setAsc] = useState(false)
@@ -117,6 +120,9 @@ export default function PublicFilters({ entries, reactionCounts }: Props) {
               entry={entry}
               likes={counts.likes}
               dislikes={counts.dislikes}
+              profileUsername={profileUsername}
+              profileDisplayName={profileDisplayName}
+              profileAvatarUrl={profileAvatarUrl}
             />
           )
         })}

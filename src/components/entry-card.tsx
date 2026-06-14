@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { getEntryPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
-import { Film, Tv, Star, Award, Zap } from 'lucide-react'
+import { Film, Tv, Star, Award, Zap, Share2 } from 'lucide-react'
 import Link from 'next/link'
+import ShareModal from './share-modal'
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   watching: { label: 'Watching', color: 'text-status-watching bg-status-watching/10' },
@@ -17,12 +18,16 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 interface Props {
   entry: Entry
   isPublic?: boolean
+  username?: string
+  displayName?: string
+  avatarUrl?: string | null
 }
 
-export default function EntryCard({ entry, isPublic }: Props) {
+export default function EntryCard({ entry, isPublic, username, displayName, avatarUrl }: Props) {
   const poster = getEntryPosterUrl(entry, 'w185')
   const status = statusConfig[entry.status]
   const [showDetails, setShowDetails] = useState(false)
+  const [showShare, setShowShare] = useState(false)
 
   return (
     <div
@@ -61,6 +66,15 @@ export default function EntryCard({ entry, isPublic }: Props) {
               <p className="text-white/60 text-xs line-clamp-2">{entry.cast_crew}</p>
             )}
           </div>
+        )}
+
+        {showDetails && username && (
+          <button
+            onClick={(e) => { e.preventDefault(); setShowShare(true) }}
+            className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white p-1.5 rounded-sm transition-colors z-10"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+          </button>
         )}
 
         {entry.badge === 'golden' && (
@@ -124,6 +138,16 @@ export default function EntryCard({ entry, isPublic }: Props) {
           <p className="text-xs text-text-muted line-clamp-1">{entry.cast_crew}</p>
         )}
       </div>
+
+      {showShare && username && displayName && (
+        <ShareModal
+          entry={entry}
+          username={username}
+          displayName={displayName}
+          avatarUrl={avatarUrl || null}
+          onClose={() => setShowShare(false)}
+        />
+      )}
     </div>
   )
 }

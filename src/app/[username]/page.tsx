@@ -151,6 +151,9 @@ export default async function PublicProfilePage({ params }: Props) {
           <PublicFilters
             entries={entries}
             reactionCounts={reactionCounts}
+            profileUsername={profile.username}
+            profileDisplayName={profile.display_name}
+            profileAvatarUrl={profile.avatar_url}
           />
         ) : (
           <div className="text-center py-20">
