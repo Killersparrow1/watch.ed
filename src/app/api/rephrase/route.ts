@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const prompt = `Rephrase the following movie/show review to sound more polished and clear, but keep the same casual, personal tone, humor, and voice — don't make it sound generic or overly formal. Preserve emojis, quotes, and any signature phrases the user uses. Return ONLY the rephrased text, nothing else. Review: ${text}`
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -29,9 +29,14 @@ export async function POST(request: NextRequest) {
     )
 
     if (!res.ok) {
-      const err = await res.text()
-      console.error('Gemini API error:', res.status, err)
-      return NextResponse.json({ error: 'AI service temporarily unavailable' }, { status: 502 })
+      const errText = await res.text()
+      console.error('Gemini API error:', res.status, errText)
+      const isQuota = res.status === 429
+      return NextResponse.json({
+        error: isQuota
+          ? 'AI quota exceeded — try again later or upgrade your Gemini API plan at https://ai.google.dev'
+          : 'AI service temporarily unavailable',
+      }, { status: 502 })
     }
 
     const data = await res.json()
