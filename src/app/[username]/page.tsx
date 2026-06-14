@@ -89,9 +89,14 @@ export default async function PublicProfilePage({ params }: Props) {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-10">
-        <div className="mb-10">
-          <h1 className="heading-xl mb-1 flex items-center gap-2">
-            {profile.display_name}
+         <div className="mb-10">
+           <img
+             src="https://i.postimg.cc/L6YxyFxr/image.png"
+             alt={`${profile.display_name}'s avatar`}
+             className="w-20 h-20 rounded-full object-cover mb-4 border-2 border-border"
+           />
+           <h1 className="heading-xl mb-1 flex items-center gap-2">
+             {profile.display_name}
             <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-[#1DA1F2]/10 text-[#1DA1F2] font-semibold tracking-tight">
               <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current">
                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
