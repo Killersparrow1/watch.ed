@@ -1,10 +1,7 @@
-import Link from 'next/link'
-import { Settings } from 'lucide-react'
-
 export default function Footer() {
   return (
     <footer className="border-t border-border bg-surface mt-auto">
-      <div className="max-w-6xl mx-auto px-6 h-12 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-6 h-12 flex items-center justify-center">
         <p className="text-xs text-text-muted">
           made with ❤️{' '}
           <a
@@ -16,12 +13,6 @@ export default function Footer() {
             milas
           </a>
         </p>
-        <Link
-          href="/dashboard/settings"
-          className="text-text-muted hover:text-text-primary transition-colors"
-        >
-          <Settings className="w-4 h-4" />
-        </Link>
       </div>
     </footer>
   )
