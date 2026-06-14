@@ -82,7 +82,7 @@ export default function PublicFilters({ entries, reactionCounts }: Props) {
               }}
               className={`px-2 py-1 text-xs rounded-sm transition-colors ${
                 sort === opt.key
-                  ? 'text-text-primary bg-surface border border-border'
+                  ? 'bg-crimson text-white shadow-sm'
                   : 'text-text-muted hover:text-text-primary'
               }`}
             >
