@@ -122,7 +122,7 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
         />
 
         {poster && (
-          <div style={{ position: 'relative', zIndex: 1, flexShrink: 0, width: 140 }}>
+          <div style={{ position: 'relative', zIndex: 1, flexShrink: 0, width: 140, backgroundColor: '#000' }}>
             <img
               src={proxyUrl(poster!)}
               alt=""
@@ -130,7 +130,7 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
               style={{
                 width: '100%',
                 height: '100%',
-                objectFit: 'cover',
+                objectFit: 'contain',
               }}
             />
           </div>
@@ -231,7 +231,8 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
                         width: imageSegments.length === 1 ? '100%' : 'calc(50% - 2px)',
                         maxHeight: imageSegments.length === 1 ? 80 : 70,
                         borderRadius: 4,
-                        objectFit: 'cover',
+                        objectFit: 'contain',
+                        backgroundColor: '#000',
                       }}
                     />
                   ))}
