@@ -53,10 +53,10 @@ export default function Navbar() {
 
   return (
     <header className="border-b border-border bg-surface">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-8">
+      <div className="max-w-6xl mx-auto px-6 h-12 sm:h-16 flex items-center justify-between">
+        <div className="flex items-center gap-4 sm:gap-8">
           <Link href="/dashboard">
-            <img src="/logo.svg" alt="watch.ed" className="h-16" />
+            <img src="/logo.svg" alt="watch.ed" className="h-12 sm:h-16" />
           </Link>
 
           <nav className="flex items-center gap-1">
@@ -67,28 +67,28 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm transition-colors ${
+                  className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-sm text-sm transition-colors ${
                     isActive
                       ? 'bg-accent-light text-accent font-medium'
                       : 'text-text-secondary hover:text-text-primary hover:bg-tag-bg'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
-                  {link.label}
+                  <span className="hidden sm:inline">{link.label}</span>
                 </Link>
               )
             })}
             {isAdmin && (
               <Link
                 href="/dashboard/admin"
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm transition-colors ${
+                className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-sm text-sm transition-colors ${
                   pathname === '/dashboard/admin'
                     ? 'bg-accent-light text-accent font-medium'
                     : 'text-text-secondary hover:text-text-primary hover:bg-tag-bg'
                 }`}
               >
                 <Shield className="w-4 h-4" />
-                Admin
+                <span className="hidden sm:inline">Admin</span>
               </Link>
             )}
           </nav>
