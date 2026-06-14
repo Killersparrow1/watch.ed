@@ -88,7 +88,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid badge' }, { status: 400 })
     }
 
-    if (updates.custom_poster_url && typeof updates.custom_poster_url === 'string' && !/^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i.test(updates.custom_poster_url)) {
+    if (updates.custom_poster_url && typeof updates.custom_poster_url === 'string' && !/^https?:\/\/.+/.test(updates.custom_poster_url)) {
       return NextResponse.json({ error: 'Invalid poster URL' }, { status: 400 })
     }
 

@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid badge' }, { status: 400 })
     }
 
-    if (custom_poster_url && !/^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i.test(custom_poster_url)) {
+    if (custom_poster_url && !/^https?:\/\/.+/.test(custom_poster_url)) {
       return NextResponse.json({ error: 'Invalid poster URL' }, { status: 400 })
     }
 
