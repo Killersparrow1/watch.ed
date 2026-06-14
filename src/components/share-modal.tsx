@@ -23,7 +23,7 @@ export default function ShareModal({ entry, username, displayName, avatarUrl, on
     if (!cardRef.current) return
     setGenerating(true)
     try {
-      const dataUrl = await toPng(cardRef.current, { quality: 0.95, pixelRatio: 2 })
+      const dataUrl = await toPng(cardRef.current, { quality: 0.95, pixelRatio: 2, cacheBust: true })
       const link = document.createElement('a')
       link.download = `${entry.title.replace(/[^a-zA-Z0-9]/g, '_')}.png`
       link.href = dataUrl
@@ -60,7 +60,7 @@ export default function ShareModal({ entry, username, displayName, avatarUrl, on
     if (!cardRef.current) return
     setGenerating(true)
     try {
-      const dataUrl = await toPng(cardRef.current, { quality: 0.95, pixelRatio: 2 })
+      const dataUrl = await toPng(cardRef.current, { quality: 0.95, pixelRatio: 2, cacheBust: true })
       const blob = await (await fetch(dataUrl)).blob()
       const file = new File([blob], `${entry.title}.png`, { type: 'image/png' })
 

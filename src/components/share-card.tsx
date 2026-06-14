@@ -3,6 +3,11 @@ import { Entry } from '@/types/database'
 import { getEntryPosterUrl } from '@/lib/tmdb'
 import { Award, Zap } from 'lucide-react'
 
+function proxyUrl(url: string) {
+  if (url.startsWith('https://image.tmdb.org/')) return url
+  return `/api/image-proxy?url=${encodeURIComponent(url)}`
+}
+
 interface Props {
   entry: Entry
   username: string
@@ -74,8 +79,9 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
       >
         {poster && (
           <img
-            src={poster}
+            src={proxyUrl(poster!)}
             alt=""
+            crossOrigin="anonymous"
             style={{
               position: 'absolute',
               inset: 0,
@@ -110,8 +116,9 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
             {poster && (
               <div style={{ flexShrink: 0, width: 160 }}>
                 <img
-                  src={poster}
+                  src={proxyUrl(poster!)}
                   alt=""
+                  crossOrigin="anonymous"
                   style={{
                     width: '100%',
                     borderRadius: 8,
@@ -175,8 +182,9 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
                   return (
                     <img
                       key={i}
-                      src={seg.value}
+                      src={proxyUrl(seg.value)}
                       alt=""
+                      crossOrigin="anonymous"
                       style={{ maxWidth: '100%', maxHeight: 80, borderRadius: 4, margin: '4px 0', display: 'block' }}
                     />
                   )
@@ -206,8 +214,9 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               {avatarUrl ? (
                 <img
-                  src={avatarUrl}
+                  src={proxyUrl(avatarUrl!)}
                   alt=""
+                  crossOrigin="anonymous"
                   style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
                 />
               ) : (
