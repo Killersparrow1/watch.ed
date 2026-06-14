@@ -68,9 +68,9 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
 
   return (
     <div className="bg-surface border border-border rounded-sm overflow-hidden flex">
-      <div className="w-28 flex-shrink-0 bg-tag-bg">
+      <div className="w-28 flex-shrink-0 self-start bg-tag-bg">
         {poster ? (
-          <img src={poster} alt={entry.title} className="w-full h-full object-cover" loading="lazy" />
+          <img src={poster} alt={entry.title} className="w-full aspect-[2/3] object-cover" loading="lazy" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             {entry.type === 'movie' ? (
