@@ -59,6 +59,7 @@ export async function PATCH(
     const updates: Record<string, unknown> = {}
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
+        if (field === 'custom_poster_url' && !body[field]) continue
         updates[field] = body[field]
       }
     }

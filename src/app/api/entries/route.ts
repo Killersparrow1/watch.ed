@@ -111,30 +111,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid poster URL' }, { status: 400 })
     }
 
+    const record: Record<string, unknown> = {
+      user_id: user.id,
+      title: title.trim(),
+      type,
+      status: status || 'plan_to_watch',
+      rating: rating || null,
+      progress_season: progress_season || null,
+      progress_episode: progress_episode || null,
+      watch_date: watch_date || null,
+      notes: notes || null,
+      tmdb_id: tmdb_id || null,
+      poster_path: poster_path || null,
+      year: year || null,
+      genres: genres || null,
+      overview: overview || null,
+      badge: badge || null,
+      runtime: runtime || null,
+      tagline: tagline || null,
+      cast_crew: cast_crew || null,
+    }
+    if (custom_poster_url) record.custom_poster_url = custom_poster_url
+
     const serviceClient = await createServiceClient()
     const { data, error } = await serviceClient
       .from('entries')
-      .insert({
-        user_id: user.id,
-        title: title.trim(),
-        type,
-        status: status || 'plan_to_watch',
-        rating: rating || null,
-        progress_season: progress_season || null,
-        progress_episode: progress_episode || null,
-        watch_date: watch_date || null,
-        notes: notes || null,
-        tmdb_id: tmdb_id || null,
-        poster_path: poster_path || null,
-        year: year || null,
-        genres: genres || null,
-        overview: overview || null,
-        badge: badge || null,
-        runtime: runtime || null,
-        tagline: tagline || null,
-        cast_crew: cast_crew || null,
-        custom_poster_url: custom_poster_url || null,
-      })
+      .insert(record)
       .select()
       .single()
 
