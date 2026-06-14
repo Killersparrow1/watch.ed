@@ -8,6 +8,9 @@ export interface Profile {
   username: string
   display_name: string
   bio: string | null
+  avatar_url: string | null
+  status: 'pending' | 'approved' | 'rejected'
+  is_admin: boolean
   created_at: string
 }
 

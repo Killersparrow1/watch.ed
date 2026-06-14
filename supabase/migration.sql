@@ -31,11 +31,12 @@ CREATE POLICY "Users can update own profile"
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, username, display_name)
+  INSERT INTO public.profiles (id, username, display_name, status)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
-    COALESCE(NEW.raw_user_meta_data->>'display_name', split_part(NEW.email, '@', 1))
+    COALESCE(NEW.raw_user_meta_data->>'display_name', split_part(NEW.email, '@', 1)),
+    'pending'
   );
   RETURN NEW;
 END;
@@ -125,6 +126,17 @@ DROP POLICY IF EXISTS "Visitors can delete their own reactions" ON reactions;
 CREATE POLICY "Visitors can delete their own reactions"
   ON reactions FOR DELETE
   USING (true);
+
+-- Profile avatar, approval status, and admin flag
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected'));
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false;
+
+-- Admin can update any profile (for approving/rejecting users)
+DROP POLICY IF EXISTS "Admin can update any profile" ON profiles;
+CREATE POLICY "Admin can update any profile"
+  ON profiles FOR UPDATE
+  USING (auth.uid() IN (SELECT id FROM profiles WHERE is_admin = true));
 
 -- Badge column for golden ticket / literal shit / lamo awards
 ALTER TABLE entries ADD COLUMN IF NOT EXISTS badge TEXT;

@@ -90,11 +90,19 @@ export default async function PublicProfilePage({ params }: Props) {
 
       <main className="max-w-6xl mx-auto px-6 py-10">
          <div className="mb-10">
-           <img
-             src="https://i.postimg.cc/L6YxyFxr/image.png"
-             alt={`${profile.display_name}'s avatar`}
-             className="w-20 h-20 rounded-full object-cover mb-4 border-2 border-border"
-           />
+           {profile.avatar_url ? (
+             <img
+               src={profile.avatar_url}
+               alt={`${profile.display_name}'s avatar`}
+               className="w-20 h-20 rounded-full object-cover mb-4 border-2 border-border"
+             />
+           ) : (
+             <div className="w-20 h-20 rounded-full mb-4 border-2 border-border bg-tag-bg flex items-center justify-center">
+               <span className="text-xl font-heading font-bold text-text-muted">
+                 {profile.display_name.charAt(0).toUpperCase()}
+               </span>
+             </div>
+           )}
            <h1 className="heading-xl mb-1 flex items-center gap-2">
              {profile.display_name}
             <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-[#1DA1F2]/10 text-[#1DA1F2] font-semibold tracking-tight">

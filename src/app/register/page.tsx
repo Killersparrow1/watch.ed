@@ -3,12 +3,14 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LogIn } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
 import Link from 'next/link'
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
+  const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [checking, setChecking] = useState(true)
@@ -39,9 +41,27 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    const { data, error } = await getSupabase().auth.signInWithPassword({
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters')
+      setLoading(false)
+      return
+    }
+
+    if (!username.trim()) {
+      setError('Username is required')
+      setLoading(false)
+      return
+    }
+
+    const { data, error } = await getSupabase().auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          username: username.trim(),
+          display_name: displayName.trim() || username.trim(),
+        },
+      },
     })
 
     if (error) {
@@ -50,30 +70,13 @@ export default function LoginPage() {
       return
     }
 
-    if (data.user) {
-      const supabase = getSupabase()
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('status')
-        .eq('id', data.user.id)
-        .single()
-
-      if (profile && profile.status === 'pending') {
-        await supabase.auth.signOut()
-        setError('Your account is pending approval from the admin.')
-        setLoading(false)
-        return
-      }
-
-      if (profile && profile.status === 'rejected') {
-        await supabase.auth.signOut()
-        setError('Your account has been rejected. Contact the admin.')
-        setLoading(false)
-        return
-      }
+    if (data.user?.identities?.length === 0) {
+      setError('An account with this email already exists.')
+      setLoading(false)
+      return
     }
 
-    router.push('/dashboard')
+    router.push('/pending')
     router.refresh()
   }
 
@@ -85,14 +88,43 @@ export default function LoginPage() {
             <img src="/logo.svg" alt="watch.ed" className="h-20" />
           </div>
           <p className="text-text-secondary body-small">
-            Sign in to manage your watch list
+            Create an account to start tracking
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
+            <label htmlFor="username" className="block text-sm font-medium text-text-primary mb-1.5">
+              Username *
+            </label>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+              placeholder="your-username"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="display_name" className="block text-sm font-medium text-text-primary mb-1.5">
+              Display name
+            </label>
+            <input
+              id="display_name"
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+              placeholder="Your Name"
+            />
+          </div>
+
+          <div>
             <label htmlFor="email" className="block text-sm font-medium text-text-primary mb-1.5">
-              Email
+              Email *
             </label>
             <input
               id="email"
@@ -107,7 +139,7 @@ export default function LoginPage() {
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-text-primary mb-1.5">
-              Password
+              Password *
             </label>
             <input
               id="password"
@@ -115,8 +147,9 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-              placeholder="••••••••"
+              placeholder="At least 6 characters"
               required
+              minLength={6}
             />
           </div>
 
@@ -129,14 +162,14 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-accent text-white rounded-sm hover:bg-accent-hover transition-colors disabled:opacity-50 body-small font-medium"
           >
-            <LogIn className="w-4 h-4" />
-            {loading ? 'Signing in...' : 'Sign in'}
+            <UserPlus className="w-4 h-4" />
+            {loading ? 'Creating account...' : 'Create account'}
           </button>
 
           <p className="text-center text-sm text-text-muted">
-            Don&apos;t have an account?{' '}
-            <Link href="/register" className="text-accent hover:text-accent-hover transition-colors">
-              Create one
+            Already have an account?{' '}
+            <Link href="/login" className="text-accent hover:text-accent-hover transition-colors">
+              Sign in
             </Link>
           </p>
         </form>

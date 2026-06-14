@@ -29,20 +29,22 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  const isRootRoute = request.nextUrl.pathname === '/'
   const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard')
   const isLoginRoute = request.nextUrl.pathname.startsWith('/login')
+  const isRegisterRoute = request.nextUrl.pathname.startsWith('/register')
   const isApiDashboardRoute = request.nextUrl.pathname.startsWith('/api/entries') ||
     request.nextUrl.pathname.startsWith('/api/import')
+
+  if ((isRootRoute || isLoginRoute || isRegisterRoute) && user) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    return NextResponse.redirect(url)
+  }
 
   if ((isDashboardRoute || isApiDashboardRoute) && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  if (isLoginRoute && user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 

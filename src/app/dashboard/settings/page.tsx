@@ -9,6 +9,7 @@ import Link from 'next/link'
 export default function SettingsPage() {
   const router = useRouter()
   const [bio, setBio] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -24,10 +25,13 @@ export default function SettingsPage() {
       }
       const { data } = await supabase
         .from('profiles')
-        .select('bio')
+        .select('bio, avatar_url')
         .eq('id', user.id)
         .single()
-      if (data) setBio(data.bio || '')
+      if (data) {
+        setBio(data.bio || '')
+        setAvatarUrl(data.avatar_url || '')
+      }
       setLoading(false)
     }
     load()
@@ -42,7 +46,10 @@ export default function SettingsPage() {
     const res = await fetch('/api/account/profile', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bio: bio.trim() || null }),
+      body: JSON.stringify({
+        bio: bio.trim() || null,
+        avatar_url: avatarUrl.trim() || null,
+      }),
     })
 
     if (!res.ok) {
@@ -71,6 +78,35 @@ export default function SettingsPage() {
       <h1 className="heading-lg mb-8">Settings</h1>
 
       <form onSubmit={handleSave} className="max-w-lg space-y-5">
+        <div>
+          <label htmlFor="avatar_url" className="block text-sm font-medium text-text-primary mb-1.5">
+            Profile picture URL
+          </label>
+          <p className="text-xs text-text-muted mb-2">
+            Upload an image to{' '}
+            <a href="https://postimages.org" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">
+              postimages.org
+            </a>
+            {' '}and paste the direct link here.
+          </p>
+          <input
+            id="avatar_url"
+            type="url"
+            value={avatarUrl}
+            onChange={(e) => setAvatarUrl(e.target.value)}
+            className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+            placeholder="https://i.postimg.cc/..."
+          />
+          {avatarUrl && (
+            <img
+              src={avatarUrl}
+              alt="Profile preview"
+              className="mt-2 w-16 h-16 rounded-full object-cover border-2 border-border"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+            />
+          )}
+        </div>
+
         <div>
           <label htmlFor="bio" className="block text-sm font-medium text-text-primary mb-1.5">
             Bio

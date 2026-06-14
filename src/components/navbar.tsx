@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   List,
   BarChart3,
   Upload,
   Settings,
+  Shield,
   LogOut,
 } from 'lucide-react'
 
@@ -23,6 +24,7 @@ export default function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   function getSupabase() {
     if (!supabaseRef.current) {
@@ -30,6 +32,18 @@ export default function Navbar() {
     }
     return supabaseRef.current
   }
+
+  useEffect(() => {
+    getSupabase().auth.getUser().then(async ({ data }) => {
+      if (!data.user) return
+      const { data: profile } = await getSupabase()
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', data.user.id)
+        .single()
+      setIsAdmin(profile?.is_admin || false)
+    })
+  }, [])
 
   async function handleSignOut() {
     await getSupabase().auth.signOut()
@@ -39,10 +53,10 @@ export default function Navbar() {
 
   return (
     <header className="border-b border-border bg-surface">
-      <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link href="/dashboard">
-            <img src="/logo.svg" alt="watch.ed" className="h-14" />
+            <img src="/logo.svg" alt="watch.ed" className="h-16" />
           </Link>
 
           <nav className="flex items-center gap-1">
@@ -64,6 +78,19 @@ export default function Navbar() {
                 </Link>
               )
             })}
+            {isAdmin && (
+              <Link
+                href="/dashboard/admin"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm transition-colors ${
+                  pathname === '/dashboard/admin'
+                    ? 'bg-accent-light text-accent font-medium'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-tag-bg'
+                }`}
+              >
+                <Shield className="w-4 h-4" />
+                Admin
+              </Link>
+            )}
           </nav>
         </div>
 
