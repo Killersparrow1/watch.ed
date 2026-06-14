@@ -124,8 +124,11 @@ export default function StatsPage() {
 
   const totalEpisodes = series.reduce((sum, e) => sum + countEpisodes(e.progress_episode), 0)
 
-  const totalMovieMinutes = movies.reduce((sum, e) => sum + (e.runtime || 0), 0)
-  const seriesWithRuntime = series.filter(e => e.runtime && e.progress_episode && e.progress_episode.trim() !== '')
+  const watchedMovies = movies.filter(e => e.status !== 'plan_to_watch')
+  const watchedSeries = series.filter(e => e.status !== 'plan_to_watch')
+
+  const totalMovieMinutes = watchedMovies.reduce((sum, e) => sum + (e.runtime || 0), 0)
+  const seriesWithRuntime = watchedSeries.filter(e => e.runtime && e.progress_episode && e.progress_episode.trim() !== '')
   const totalSeriesMinutes = seriesWithRuntime.reduce((sum, e) => {
     const eps = countEpisodes(e.progress_episode)
     return sum + (e.runtime || 0) * eps
