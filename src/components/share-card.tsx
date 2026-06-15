@@ -29,18 +29,28 @@ function Stars({ rating }: { rating: number }) {
   )
 }
 
-const DIRECT_IMAGE_RE = /(https?:\/\/[^\s]+?\.(?:gif|png|jpe?g|webp)(?:\?[^\s]*)?)/gi
-const GIPHY_PAGE_RE = /https?:\/\/(?:www\.)?giphy\.com\/gifs\/([^\s]+)/gi
+const DIRECT_IMAGE_RE = /(https?:\/\/[^\s]+?\.(?:gif|png|jpe?g|webp|avif)(?:\?[^\s]*)?)/gi
 
-function giphyUrlToDirect(url: string): string {
-  return url.replace(GIPHY_PAGE_RE, (_, slug) => {
-    const parts = slug.split('-')
-    return `https://media.giphy.com/media/${parts[parts.length - 1]}/giphy.gif`
-  })
+function normalizeUrl(text: string): string {
+  return text
+    .replace(/https?:\/\/(?:www\.)?giphy\.com\/gifs\/([^\s]+)/gi, (_, slug) => {
+      const parts = slug.split('-')
+      return `https://media.giphy.com/media/${parts[parts.length - 1]}/giphy.gif`
+    })
+    .replace(/https?:\/\/(?:www\.)?tenor\.com(?:\/[a-zA-Z-]+)?\/view\/([^\s]+)/gi, (_, slug) => {
+      const parts = slug.split('-')
+      return `https://media.tenor.com/${parts[parts.length - 1]}/tenor.gif`
+    })
+    .replace(/https?:\/\/(?:www\.)?imgur\.com\/(?!a\/)(?:gallery\/)?([a-zA-Z0-9]{5,})(?:\?[^\s]*)?/gi, (_, hash) => {
+      return `https://i.imgur.com/${hash}.gif`
+    })
+    .replace(/https?:\/\/(?:www\.)?imgflip\.com\/(?:gif|i)\/([a-zA-Z0-9_]+)(?:\?[^\s]*)?/gi, (_, id) => {
+      return `https://i.imgflip.com/${id}.gif`
+    })
 }
 
 function parseNoteSegments(text: string): { type: 'text' | 'image'; value: string }[] {
-  const normalized = giphyUrlToDirect(text)
+  const normalized = normalizeUrl(text)
   const parts: { type: 'text' | 'image'; value: string }[] = []
   let lastIndex = 0
   let match: RegExpExecArray | null

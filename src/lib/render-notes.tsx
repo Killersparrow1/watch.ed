@@ -1,19 +1,29 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
-const DIRECT_IMAGE_RE = /(https?:\/\/[^\s]+?\.(?:gif|png|jpe?g|webp)(?:\?[^\s]*)?)/gi
-const GIPHY_PAGE_RE = /https?:\/\/(?:www\.)?giphy\.com\/gifs\/([^\s]+)/gi
+const DIRECT_IMAGE_RE = /(https?:\/\/[^\s]+?\.(?:gif|png|jpe?g|webp|avif)(?:\?[^\s]*)?)/gi
 const MARKDOWN_IMAGE_RE = /!\[([^\]]*)\]\(([^)]+)\)/g
 
-function giphyUrlToDirect(text: string): string {
-  return text.replace(GIPHY_PAGE_RE, (_, slug) => {
-    const parts = slug.split('-')
-    return `https://media.giphy.com/media/${parts[parts.length - 1]}/giphy.gif`
-  })
+function normalizeUrl(text: string): string {
+  return text
+    .replace(/https?:\/\/(?:www\.)?giphy\.com\/gifs\/([^\s]+)/gi, (_, slug) => {
+      const parts = slug.split('-')
+      return `https://media.giphy.com/media/${parts[parts.length - 1]}/giphy.gif`
+    })
+    .replace(/https?:\/\/(?:www\.)?tenor\.com(?:\/[a-zA-Z-]+)?\/view\/([^\s]+)/gi, (_, slug) => {
+      const parts = slug.split('-')
+      return `https://media.tenor.com/${parts[parts.length - 1]}/tenor.gif`
+    })
+    .replace(/https?:\/\/(?:www\.)?imgur\.com\/(?!a\/)(?:gallery\/)?([a-zA-Z0-9]{5,})(?:\?[^\s]*)?/gi, (_, hash) => {
+      return `https://i.imgur.com/${hash}.gif`
+    })
+    .replace(/https?:\/\/(?:www\.)?imgflip\.com\/(?:gif|i)\/([a-zA-Z0-9_]+)(?:\?[^\s]*)?/gi, (_, id) => {
+      return `https://i.imgflip.com/${id}.gif`
+    })
 }
 
 export function renderNotes(text: string) {
-  const normalized = giphyUrlToDirect(text)
+  const normalized = normalizeUrl(text)
 
   const saved: string[] = []
   let processed = normalized.replace(MARKDOWN_IMAGE_RE, (m) => {
