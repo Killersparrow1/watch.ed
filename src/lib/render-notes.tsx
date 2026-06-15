@@ -2,6 +2,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 const DIRECT_IMAGE_RE = /(https?:\/\/[^\s]+?\.(?:gif|png|jpe?g|webp|avif)(?:\?[^\s]*)?)/gi
+const PROXY_GIF_RE = /(\/api\/gif-proxy\?url=[^\s]+)/gi
 const MARKDOWN_IMAGE_RE = /!\[([^\]]*)\]\(([^)]+)\)/g
 
 function normalizeUrl(text: string): string {
@@ -31,6 +32,7 @@ export function renderNotes(text: string) {
   })
 
   processed = processed.replace(DIRECT_IMAGE_RE, '![]( $& )')
+  processed = processed.replace(PROXY_GIF_RE, '![]( $& )')
 
   processed = processed.replace(/\x01(\d+)\x01/g, (_, n) => saved[parseInt(n)])
 

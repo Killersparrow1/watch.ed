@@ -30,7 +30,7 @@ function Stars({ rating }: { rating: number }) {
   )
 }
 
-const DIRECT_IMAGE_RE = /(https?:\/\/[^\s]+?\.(?:gif|png|jpe?g|webp|avif)(?:\?[^\s]*)?)/gi
+const IMAGE_URL_RE = /(https?:\/\/[^\s]+?\.(?:gif|png|jpe?g|webp|avif)(?:\?[^\s]*)?|\/api\/gif-proxy\?url=[^\s]+)/gi
 
 function normalizeUrl(text: string): string {
   return text
@@ -54,7 +54,7 @@ function parseNoteSegments(text: string): { type: 'text' | 'image'; value: strin
   const parts: { type: 'text' | 'image'; value: string }[] = []
   let lastIndex = 0
   let match: RegExpExecArray | null
-  const re = new RegExp(DIRECT_IMAGE_RE.source, 'gi')
+  const re = new RegExp(IMAGE_URL_RE.source, 'gi')
   while ((match = re.exec(normalized)) !== null) {
     if (match.index > lastIndex) {
       parts.push({ type: 'text', value: normalized.slice(lastIndex, match.index) })

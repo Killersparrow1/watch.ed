@@ -39,7 +39,7 @@ async function resolveTenorUrl(pageUrl: string): Promise<string | null> {
       signal: AbortSignal.timeout(10000),
     }).then((r) => r.text())
 
-    let gifUrl = await extractOgImage(html)
+    const gifUrl = await extractOgImage(html)
     if (gifUrl) {
       setCache(pageUrl, gifUrl)
       return gifUrl
