@@ -166,19 +166,19 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
                 )}
 {entry.badge === 'wammale cinema' && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 7px', backgroundColor: 'rgba(14,116,144,0.15)', borderRadius: 4, fontSize: 9, color: '#0E7490', fontWeight: 800 }}>
-                    <img src="/badges/wammale-cinema.svg" style={{ width: 16, height: 16 }} alt="" />
+                    <img src="/badges/wammale-cinema.svg" style={{ width: 20, height: 20 }} alt="" />
                     wammale cinema
                   </div>
                 )}
 {entry.badge === 'MalamCult' && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 7px', backgroundColor: 'rgba(190,18,60,0.15)', borderRadius: 4, fontSize: 9, color: '#BE123C', fontWeight: 800 }}>
-                    <img src="/badges/malamcult.svg" style={{ width: 16, height: 16 }} alt="" />
+                    <img src="/badges/malamcult.svg" style={{ width: 20, height: 20 }} alt="" />
                     MalamCult
                   </div>
                 )}
 {entry.badge === 'absolute appi' && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 7px', backgroundColor: 'rgba(146,64,14,0.15)', borderRadius: 4, fontSize: 9, color: '#B45309', fontWeight: 800 }}>
-                    <img src="/badges/absoluteappi.svg" style={{ width: 16, height: 16 }} alt="" />
+                    <img src="/badges/absoluteappi.svg" style={{ width: 20, height: 20 }} alt="" />
                     absolute appi
                   </div>
                 )}

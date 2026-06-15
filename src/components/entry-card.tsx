@@ -85,20 +85,19 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
         )}
         {entry.badge === 'wammale cinema' && (
           <div className="absolute top-2 left-2 bg-cyan-700/80 px-1.5 py-0.5 rounded-sm flex items-center gap-1 text-[10px] font-bold text-white">
-            <img src="/badges/wammale-cinema.svg" className="w-4 h-4" alt="" />
-
+            <img src="/badges/wammale-cinema.svg" className="w-5 h-5" alt="" />
             wammale cinema
           </div>
         )}
         {entry.badge === 'MalamCult' && (
           <div className="absolute top-2 left-2 bg-rose-700/80 px-1.5 py-0.5 rounded-sm flex items-center gap-1 text-[10px] font-bold text-white">
-            <img src="/badges/malamcult.svg" className="w-4 h-4" alt="" />
+            <img src="/badges/malamcult.svg" className="w-5 h-5" alt="" />
             MalamCult
           </div>
         )}
         {entry.badge === 'absolute appi' && (
           <div className="absolute top-2 left-2 bg-amber-800/80 px-1.5 py-0.5 rounded-sm flex items-center gap-1 text-[10px] font-bold text-white">
-            <img src="/badges/absoluteappi.svg" className="w-4 h-4" alt="" />
+            <img src="/badges/absoluteappi.svg" className="w-5 h-5" alt="" />
             absolute appi
           </div>
         )}

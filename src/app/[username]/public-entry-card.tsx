@@ -123,19 +123,19 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
           )}
           {entry.badge === 'wammale cinema' && (
             <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium bg-cyan-900/20 text-cyan-700">
-              <img src="/badges/wammale-cinema.svg" className="w-4 h-4" alt="" />
+              <img src="/badges/wammale-cinema.svg" className="w-5 h-5" alt="" />
               wammale cinema
             </span>
           )}
           {entry.badge === 'MalamCult' && (
             <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium bg-rose-900/20 text-rose-700">
-              <img src="/badges/malamcult.svg" className="w-4 h-4" alt="" />
+              <img src="/badges/malamcult.svg" className="w-5 h-5" alt="" />
               MalamCult
             </span>
           )}
           {entry.badge === 'absolute appi' && (
             <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium bg-amber-900/20 text-amber-800">
-              <img src="/badges/absoluteappi.svg" className="w-4 h-4" alt="" />
+              <img src="/badges/absoluteappi.svg" className="w-5 h-5" alt="" />
               absolute appi
             </span>
           )}
