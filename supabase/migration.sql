@@ -176,3 +176,6 @@ CREATE TRIGGER set_updated_at
 
 -- Instagram URL for profiles
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS instagram_url TEXT;
+
+-- Favorite flag for personal favorite marking
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS favorite BOOLEAN DEFAULT false;

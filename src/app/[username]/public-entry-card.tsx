@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { getEntryPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
-import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award, Zap, Share2 } from 'lucide-react'
+import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award, Zap, Share2, Heart } from 'lucide-react'
 import { renderNotes } from '@/lib/render-notes'
 import ShareModal from '@/components/share-modal'
 
@@ -73,7 +73,7 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
 
   return (
     <div className="bg-surface border border-border rounded-sm overflow-hidden flex" onContextMenu={(e) => e.preventDefault()}>
-      <div className="w-28 flex-shrink-0 self-start bg-tag-bg">
+      <div className="w-28 flex-shrink-0 self-start bg-tag-bg relative">
         {poster ? (
           <img src={poster} alt={entry.title} className="w-full aspect-[2/3] object-cover" loading="lazy" />
         ) : (
@@ -83,6 +83,11 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
             ) : (
               <Tv className="w-6 h-6 text-text-muted/40" />
             )}
+          </div>
+        )}
+        {entry.favorite && (
+          <div className="absolute top-1.5 left-1.5 bg-black/50 rounded-sm p-1">
+            <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
           </div>
         )}
       </div>

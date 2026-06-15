@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { getEntryPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
-import { Film, Tv, Star, Award, Zap, Share2 } from 'lucide-react'
+import { Film, Tv, Star, Award, Zap, Share2, Heart } from 'lucide-react'
 import Link from 'next/link'
 import ShareModal from './share-modal'
 
@@ -28,6 +28,16 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
   const status = statusConfig[entry.status]
   const [showDetails, setShowDetails] = useState(false)
   const [showShare, setShowShare] = useState(false)
+  const [favorite, setFavorite] = useState(entry.favorite)
+
+  async function toggleFavorite(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    const prev = favorite
+    setFavorite(!favorite)
+    const res = await fetch(`/api/entries/${entry.id}/favorite`, { method: 'POST' })
+    if (!res.ok) setFavorite(prev)
+  }
 
   return (
     <div
@@ -68,13 +78,23 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
           </div>
         )}
 
-        {showDetails && username && (
-          <button
-            onClick={(e) => { e.preventDefault(); setShowShare(true) }}
-            className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white p-1.5 rounded-sm transition-colors z-10"
-          >
-            <Share2 className="w-3.5 h-3.5" />
-          </button>
+        {showDetails && (
+          <div className="absolute top-2 right-2 flex gap-1 z-10">
+            <button
+              onClick={toggleFavorite}
+              className="bg-black/60 hover:bg-black/80 text-white p-1.5 rounded-sm transition-colors"
+            >
+              <Heart className={`w-3.5 h-3.5 ${favorite ? 'fill-red-500 text-red-500' : ''}`} />
+            </button>
+            {username && (
+              <button
+                onClick={(e) => { e.preventDefault(); setShowShare(true) }}
+                className="bg-black/60 hover:bg-black/80 text-white p-1.5 rounded-sm transition-colors"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         )}
 
         {entry.badge === 'golden' && (

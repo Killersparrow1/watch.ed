@@ -18,6 +18,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [filterType, setFilterType] = useState<string>('')
   const [filterStatus, setFilterStatus] = useState<string>('')
+  const [filterFavorites, setFilterFavorites] = useState(false)
   const [sort, setSort] = useState<SortKey>('watch_date')
   const [order, setOrder] = useState<'asc' | 'desc'>('desc')
   const [search, setSearch] = useState('')
@@ -51,6 +52,7 @@ export default function DashboardPage() {
       const params = new URLSearchParams()
       if (filterType) params.set('type', filterType)
       if (filterStatus) params.set('status', filterStatus)
+      if (filterFavorites) params.set('favorite', 'true')
       params.set('sort', sort)
       params.set('order', order)
       if (search) params.set('search', search)
@@ -69,7 +71,7 @@ export default function DashboardPage() {
 
     load()
     return () => controller.abort()
-  }, [filterType, filterStatus, sort, order, search])
+  }, [filterType, filterStatus, filterFavorites, sort, order, search])
 
   return (
     <div>
@@ -115,6 +117,17 @@ export default function DashboardPage() {
             {order === 'desc' ? '↓' : '↑'}
           </button>
 
+          <button
+            onClick={() => setFilterFavorites(!filterFavorites)}
+            className={`px-3 py-2 border rounded-sm text-sm transition-colors ${
+              filterFavorites
+                ? 'border-red-500 text-red-500 bg-red-500/10'
+                : 'border-border text-text-secondary bg-surface hover:text-red-400'
+            }`}
+            title="Show favorites only"
+          >
+            ♥
+          </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`px-3 py-2 border rounded-sm text-sm transition-colors ${

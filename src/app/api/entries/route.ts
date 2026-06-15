@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')
     const status = searchParams.get('status')
+    const favorite = searchParams.get('favorite')
     const sort = searchParams.get('sort') || 'created_at'
     const order = searchParams.get('order') || 'desc'
     const search = searchParams.get('search')
@@ -25,6 +26,7 @@ export async function GET(request: NextRequest) {
 
     if (type) query = query.eq('type', type)
     if (status) query = query.eq('status', status)
+    if (favorite) query = query.eq('favorite', true)
     if (search) query = query.ilike('title', `%${search}%`)
 
     const allowedSorts = ['watch_date', 'title', 'rating', 'year']

@@ -36,6 +36,7 @@ export interface Entry {
   runtime: number | null
   badge: BadgeType
   custom_poster_url: string | null
+  favorite: boolean
   created_at: string
   updated_at: string
 }
