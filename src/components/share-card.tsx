@@ -274,8 +274,9 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
               )}
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                <span style={{ fontSize: 12, fontWeight: 800, color: '#E50914' }}>watch</span>
-                <span style={{ fontSize: 12, fontWeight: 800, color: '#555' }}>.ed</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#555' }}>watch</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#E50914' }}>.</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#555' }}>ed</span>
               </div>
             </div>
           </div>
