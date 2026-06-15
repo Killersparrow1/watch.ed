@@ -72,7 +72,7 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
   }
 
   return (
-    <div className="bg-surface border border-border rounded-sm overflow-hidden flex">
+    <div className="bg-surface border border-border rounded-sm overflow-hidden flex" onContextMenu={(e) => e.preventDefault()}>
       <div className="w-28 flex-shrink-0 self-start bg-tag-bg">
         {poster ? (
           <img src={poster} alt={entry.title} className="w-full aspect-[2/3] object-cover" loading="lazy" />
