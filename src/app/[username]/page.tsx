@@ -2,7 +2,13 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { Film, Tv, Star, Calendar, Timer } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import type { Viewport } from 'next'
 import PublicFilters from './public-filters'
+
+export const viewport: Viewport = {
+  userScalable: false,
+  maximumScale: 1,
+}
 
 interface Props {
   params: Promise<{ username: string }>
@@ -76,7 +82,7 @@ export default async function PublicProfilePage({ params }: Props) {
   const totalHours = totalMinutes ? Math.round(totalMinutes / 60) : null
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="min-h-screen bg-bg select-none" style={{ touchAction: 'none', WebkitTouchCallout: 'none' }} onContextMenu={(e) => e.preventDefault()}>
       <header className="border-b border-border bg-surface">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center">
           <Link href={`/${username}`} className="flex items-center gap-3">
