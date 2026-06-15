@@ -121,9 +121,22 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
               Golden ticket
             </span>
           )}
-          {entry.badge === 'literal shit' && (
-            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium bg-text-primary/10 text-text-primary tracking-widest text-[10px] uppercase">
-              Literal shit
+          {entry.badge === 'absolute appi' && (
+            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium bg-amber-900/20 text-amber-800">
+              <svg viewBox="0 0 20 20" className="w-3 h-3"><path fill="currentColor" d="M10 2C7.5 2 6 3.2 6 5c0 .6.2 1.2.5 1.7C5 7.5 4 9.5 4 12c0 3 2 5 4.5 5.5-.8.5-1.5 1.5-1.5 2.5 0 1.5 1.2 2 3 2s3-.5 3-2c0-1-.7-2-1.5-2.5C14 17 16 15 16 12c0-2.5-1-4.5-2.5-5.3.3-.5.5-1.1.5-1.7 0-1.8-1.5-3-4-3z"/><circle cx="7" cy="9" r="1.3" fill="#fff"/><circle cx="13" cy="9" r="1.3" fill="#fff"/><circle cx="7" cy="9" r=".5" fill="currentColor"/><circle cx="13" cy="9" r=".5" fill="currentColor"/><path d="M6.5 12.5c1 1.5 6 1.5 7 0" fill="none" stroke="#fff" strokeWidth="1.2" strokeLinecap="round"/></svg>
+              absolute appi
+            </span>
+          )}
+          {entry.badge === 'MalamCult' && (
+            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium bg-rose-900/20 text-rose-700">
+              <svg viewBox="0 0 20 20" className="w-3 h-3 fill-current"><path d="M10 2C5 2 2 6 2 10s3 8 8 8 8-4 8-8-3-8-8-8zM7 9c.6 0 1 .4 1 1s-.4 1-1 1-1-.4-1-1 .4-1 1-1zm6 0c.6 0 1 .4 1 1s-.4 1-1 1-1-.4-1-1 .4-1 1-1zm-5 5c-.6 0-1-.4-1-1s.4-1 1-1h4c.6 0 1 .4 1 1s-.4 1-1 1H8z"/></svg>
+              MalamCult
+            </span>
+          )}
+          {entry.badge === 'wammale cinema' && (
+            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium bg-cyan-900/20 text-cyan-700">
+              <svg viewBox="0 0 20 20" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 16V5h3"/><path d="M17 16V5h-3"/><path d="M3 5h2"/><path d="M17 5h-2"/></svg>
+              wammale cinema
             </span>
           )}
           {entry.badge === 'lamo' && (
