@@ -1,6 +1,6 @@
 export type MediaType = 'movie' | 'series'
 export type WatchStatus = 'watching' | 'completed' | 'on_hold' | 'dropped' | 'plan_to_watch'
-export type BadgeType = 'golden' | 'absolute appi' | 'lamo' | 'MalamCult' | 'wammale cinema' | null
+export type BadgeType = 'golden' | 'absolute appi' | 'MalamCult' | 'wammale cinema' | null
 export type ReactionType = 'like' | 'dislike'
 
 export interface Profile {

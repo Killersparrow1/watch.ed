@@ -368,18 +368,6 @@ export default function AddEntryPage() {
             </button>
             <button
               type="button"
-              onClick={() => setForm(prev => ({ ...prev, badge: prev.badge === 'lamo' ? '' : 'lamo' }))}
-              className={`flex items-center gap-2 px-4 py-2.5 border rounded-sm text-sm transition-colors ${
-                form.badge === 'lamo'
-                  ? 'border-[#8B5CF6] bg-[#8B5CF6]/10 text-[#8B5CF6]'
-                  : 'border-border text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              <Zap className="w-4 h-4" />
-              LAMO
-            </button>
-            <button
-              type="button"
               onClick={() => setForm(prev => ({ ...prev, badge: prev.badge === 'MalamCult' ? '' : 'MalamCult' }))}
               className={`flex items-center gap-2 px-4 py-2.5 border rounded-sm text-sm transition-colors ${
                 form.badge === 'MalamCult'

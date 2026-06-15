@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (badge && !['golden', 'absolute appi', 'lamo', 'MalamCult', 'wammale cinema'].includes(badge)) {
+    if (badge && !['golden', 'absolute appi', 'MalamCult', 'wammale cinema'].includes(badge)) {
       return NextResponse.json({ error: 'Invalid badge' }, { status: 400 })
     }
 
