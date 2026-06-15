@@ -11,8 +11,7 @@ function normalizeUrl(text: string): string {
       return `https://media.giphy.com/media/${parts[parts.length - 1]}/giphy.gif`
     })
     .replace(/https?:\/\/(?:www\.)?tenor\.com(?:\/[a-zA-Z-]+)?\/view\/([^\s]+)/gi, (_, slug) => {
-      const parts = slug.split('-')
-      return `https://media.tenor.com/${parts[parts.length - 1]}/tenor.gif`
+      return `/api/gif-proxy?url=${encodeURIComponent(`https://tenor.com/view/${slug}`)}`
     })
     .replace(/https?:\/\/(?:www\.)?imgur\.com\/(?!a\/)(?:gallery\/)?([a-zA-Z0-9]{5,})(?:\?[^\s]*)?/gi, (_, hash) => {
       return `https://i.imgur.com/${hash}.gif`
