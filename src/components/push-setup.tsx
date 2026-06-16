@@ -11,9 +11,13 @@ export default function PushSetup() {
     if (typeof window === 'undefined') return
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
     if (Notification.permission === 'denied') return
+    if (!window.matchMedia('(display-mode: standalone)').matches) return
 
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-    if (!vapidKey) return
+    if (!vapidKey) {
+      console.warn('Push: NEXT_PUBLIC_VAPID_PUBLIC_KEY not set')
+      return
+    }
 
     doneRef.current = true
 
@@ -57,7 +61,7 @@ export default function PushSetup() {
       })
     }
 
-    setup().catch(() => {})
+    setup().catch((err) => console.error('Push setup failed:', err))
   }, [])
 
   return null
