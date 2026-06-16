@@ -179,3 +179,30 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS instagram_url TEXT;
 
 -- Favorite flag for personal favorite marking
 ALTER TABLE entries ADD COLUMN IF NOT EXISTS favorite BOOLEAN DEFAULT false;
+
+-- Notifications table
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  message TEXT NOT NULL,
+  link TEXT,
+  read BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
+
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own notifications" ON notifications;
+CREATE POLICY IF NOT EXISTS "Users can view own notifications"
+  ON notifications FOR SELECT
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own notifications" ON notifications;
+CREATE POLICY IF NOT EXISTS "Users can update own notifications"
+  ON notifications FOR UPDATE
+  USING (auth.uid() = user_id);

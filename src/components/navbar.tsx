@@ -11,10 +11,14 @@ import {
   Settings,
   Shield,
   LogOut,
+  Clock,
 } from 'lucide-react'
+import { useNotifications } from '@/hooks/use-notifications'
+import NotificationDropdown from '@/components/notification-dropdown'
 
 const navLinks = [
   { href: '/dashboard', label: 'Entries', icon: List },
+  { href: '/dashboard/timeline', label: 'Timeline', icon: Clock },
   { href: '/dashboard/stats', label: 'Stats', icon: BarChart3 },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
   { href: '/dashboard/import', label: 'Import', icon: Upload },
@@ -25,6 +29,9 @@ export default function Navbar() {
   const router = useRouter()
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [userId, setUserId] = useState<string | undefined>(undefined)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications(userId)
 
   function getSupabase() {
     if (!supabaseRef.current) {
@@ -36,6 +43,7 @@ export default function Navbar() {
   useEffect(() => {
     getSupabase().auth.getUser().then(async ({ data }) => {
       if (!data.user) return
+      setUserId(data.user.id)
       const { data: profile } = await getSupabase()
         .from('profiles')
         .select('is_admin')
@@ -94,13 +102,24 @@ export default function Navbar() {
           </nav>
         </div>
 
-        <button
-          onClick={handleSignOut}
-          className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors"
-        >
-          <LogOut className="w-4 h-4" />
-          <span className="hidden sm:inline">Sign out</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <NotificationDropdown
+            notifications={notifications}
+            unreadCount={unreadCount}
+            onMarkAsRead={markAsRead}
+            onMarkAllAsRead={markAllAsRead}
+            open={notifOpen}
+            onToggle={() => setNotifOpen(prev => !prev)}
+            onClose={() => setNotifOpen(false)}
+          />
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Sign out</span>
+          </button>
+        </div>
       </div>
     </header>
   )

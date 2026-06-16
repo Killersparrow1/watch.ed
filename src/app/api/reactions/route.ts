@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient, createServerSupabaseClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,6 +20,9 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createServiceClient()
+    const authSupabase = await createServerSupabaseClient()
+    const { data: { user } } = await authSupabase.auth.getUser()
+    const authenticatedUserId = user?.id
 
     const { data: existing } = await supabase
       .from('reactions')
@@ -27,6 +30,14 @@ export async function POST(request: NextRequest) {
       .eq('entry_id', entry_id)
       .eq('visitor_id', visitorId)
       .maybeSingle()
+
+    const { data: entry } = await supabase
+      .from('entries')
+      .select('user_id, title')
+      .eq('id', entry_id)
+      .single()
+
+    const isOwnEntry = authenticatedUserId && entry && entry.user_id === authenticatedUserId
 
     if (existing) {
       if (existing.reaction === reaction) {
@@ -47,6 +58,16 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (error) throw error
+
+      if (!isOwnEntry && entry) {
+        const label = reaction === 'like' ? 'liked' : 'disliked'
+        await supabase.from('notifications').insert({
+          user_id: entry.user_id,
+          type: 'reaction',
+          message: `Someone ${label} your entry: ${entry.title}`,
+        }).maybeSingle()
+      }
+
       return NextResponse.json({ action: 'updated', reaction: data })
     }
 
@@ -57,6 +78,16 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) throw error
+
+    if (!isOwnEntry && entry) {
+      const label = reaction === 'like' ? 'liked' : 'disliked'
+      await supabase.from('notifications').insert({
+        user_id: entry.user_id,
+        type: 'reaction',
+        message: `Someone ${label} your entry: ${entry.title}`,
+      }).maybeSingle()
+    }
+
     return NextResponse.json({ action: 'created', reaction: data }, { status: 201 })
   } catch (error) {
     console.error('POST /api/reactions error:', error)
