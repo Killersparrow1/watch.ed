@@ -407,10 +407,10 @@ export default function EditEntryPage() {
           </label>
           <input
             id="date"
-            type="text"
+            type="date"
             value={form.watch_date}
             onChange={(e) => setForm(prev => ({ ...prev, watch_date: e.target.value }))}
-            className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
 

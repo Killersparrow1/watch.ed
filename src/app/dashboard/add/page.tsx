@@ -98,7 +98,7 @@ export default function AddEntryPage() {
       ...prev,
       title: item.title,
       type: item.media_type,
-      watch_date: item.year ? String(item.year) : '',
+      watch_date: '',
     }))
     setQuery('')
     setResults([])
@@ -447,11 +447,10 @@ export default function AddEntryPage() {
           </label>
           <input
             id="date"
-            type="text"
+            type="date"
             value={form.watch_date}
             onChange={(e) => setForm(prev => ({ ...prev, watch_date: e.target.value }))}
-            className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-            placeholder="e.g., 2024-03-15 or March 2024"
+            className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
           />
         </div>
 

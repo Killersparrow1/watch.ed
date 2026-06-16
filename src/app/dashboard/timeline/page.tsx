@@ -26,6 +26,7 @@ export default function TimelinePage() {
     getSupabase()
       .from('entries')
       .select('*')
+      .neq('status', 'plan_to_watch')
       .order('watch_date', { ascending: false, nullsFirst: false })
       .then(({ data }) => {
         if (data) setEntries(data as Entry[])
@@ -34,7 +35,7 @@ export default function TimelinePage() {
   }, [])
 
   const filtered = useMemo(() => {
-    let result = [...entries]
+    let result = entries.filter(e => e.status !== 'plan_to_watch')
     if (filter === 'movie') result = result.filter(e => e.type === 'movie')
     if (filter === 'series') result = result.filter(e => e.type === 'series')
 
@@ -53,10 +54,11 @@ export default function TimelinePage() {
 
     for (const entry of filtered) {
       const dateStr = entry.watch_date || entry.created_at
+      if (!dateStr) continue
       const date = new Date(dateStr)
+      if (isNaN(date.getTime())) continue
       const year = date.getFullYear().toString()
       const month = `${year}-${String(date.getMonth() + 1).padStart(2, '0')}`
-      const monthLabel = `${months[date.getMonth()]} ${year}`
 
       if (!groups[year]) groups[year] = {}
       if (!groups[year][month]) groups[year][month] = []
