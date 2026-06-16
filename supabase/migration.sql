@@ -198,12 +198,12 @@ CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can view own notifications" ON notifications;
-CREATE POLICY IF NOT EXISTS "Users can view own notifications"
+CREATE POLICY "Users can view own notifications"
   ON notifications FOR SELECT
   USING (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users can update own notifications" ON notifications;
-CREATE POLICY IF NOT EXISTS "Users can update own notifications"
+CREATE POLICY "Users can update own notifications"
   ON notifications FOR UPDATE
   USING (auth.uid() = user_id);
 
@@ -222,16 +222,16 @@ CREATE INDEX IF NOT EXISTS idx_follows_following ON follows(following_id);
 ALTER TABLE follows ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Anyone can view follows" ON follows;
-CREATE POLICY IF NOT EXISTS "Anyone can view follows"
+CREATE POLICY "Anyone can view follows"
   ON follows FOR SELECT
   USING (true);
 
 DROP POLICY IF EXISTS "Users can follow" ON follows;
-CREATE POLICY IF NOT EXISTS "Users can follow"
+CREATE POLICY "Users can follow"
   ON follows FOR INSERT
   WITH CHECK (auth.uid() = follower_id);
 
 DROP POLICY IF EXISTS "Users can unfollow" ON follows;
-CREATE POLICY IF NOT EXISTS "Users can unfollow"
+CREATE POLICY "Users can unfollow"
   ON follows FOR DELETE
   USING (auth.uid() = follower_id);

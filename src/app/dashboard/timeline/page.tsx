@@ -23,15 +23,19 @@ export default function TimelinePage() {
   }
 
   useEffect(() => {
-    getSupabase()
-      .from('entries')
-      .select('*')
-      .neq('status', 'plan_to_watch')
-      .order('watch_date', { ascending: false, nullsFirst: false })
-      .then(({ data }) => {
-        if (data) setEntries(data as Entry[])
-        setLoading(false)
-      })
+    getSupabase().auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      getSupabase()
+        .from('entries')
+        .select('*')
+        .eq('user_id', user.id)
+        .neq('status', 'plan_to_watch')
+        .order('watch_date', { ascending: false, nullsFirst: false })
+        .then(({ data }) => {
+          if (data) setEntries(data as Entry[])
+          setLoading(false)
+        })
+    })
   }, [])
 
   const filtered = useMemo(() => {
