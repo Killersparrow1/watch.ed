@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient, createServerSupabaseClient } from '@/lib/supabase/server'
+import { sendPushNotification } from '@/lib/push'
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,11 +62,13 @@ export async function POST(request: NextRequest) {
 
       if (!isOwnEntry && entry) {
         const label = reaction === 'like' ? 'liked' : 'disliked'
+        const msg = `Someone ${label} your entry: ${entry.title}`
         await supabase.from('notifications').insert({
           user_id: entry.user_id,
           type: 'reaction',
-          message: `Someone ${label} your entry: ${entry.title}`,
+          message: msg,
         }).maybeSingle()
+        sendPushNotification(entry.user_id, 'New reaction', msg)
       }
 
       return NextResponse.json({ action: 'updated', reaction: data })
@@ -81,11 +84,13 @@ export async function POST(request: NextRequest) {
 
     if (!isOwnEntry && entry) {
       const label = reaction === 'like' ? 'liked' : 'disliked'
+      const msg = `Someone ${label} your entry: ${entry.title}`
       await supabase.from('notifications').insert({
         user_id: entry.user_id,
         type: 'reaction',
-        message: `Someone ${label} your entry: ${entry.title}`,
+        message: msg,
       }).maybeSingle()
+      sendPushNotification(entry.user_id, 'New reaction', msg)
     }
 
     return NextResponse.json({ action: 'created', reaction: data }, { status: 201 })
