@@ -2,8 +2,9 @@
 
 import { useState, useMemo } from 'react'
 import { Entry } from '@/types/database'
-import { ArrowUpDown } from 'lucide-react'
+import { ArrowUpDown, Grid3X3, Clock } from 'lucide-react'
 import PublicEntryCard from './public-entry-card'
+import PublicTimeline from '@/components/public-timeline'
 
 interface Props {
   entries: Entry[]
@@ -20,6 +21,7 @@ export default function PublicFilters({ entries, reactionCounts, profileUsername
   const [filter, setFilter] = useState<FilterType>('all')
   const [sort, setSort] = useState<SortKey>('created_at')
   const [asc, setAsc] = useState(false)
+  const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid')
 
   const watched = entries.filter(e => e.status !== 'plan_to_watch')
 
@@ -87,6 +89,30 @@ export default function PublicFilters({ entries, reactionCounts, profileUsername
         </div>
 
         <div className="flex items-center gap-1 ml-auto">
+          <div className="flex items-center gap-0.5 mr-2 pr-2 border-r border-border">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-sm transition-colors ${
+                viewMode === 'grid'
+                  ? 'text-text-primary bg-tag-bg'
+                  : 'text-text-muted hover:text-text-primary'
+              }`}
+              title="Grid view"
+            >
+              <Grid3X3 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setViewMode('timeline')}
+              className={`p-1.5 rounded-sm transition-colors ${
+                viewMode === 'timeline'
+                  ? 'text-text-primary bg-tag-bg'
+                  : 'text-text-muted hover:text-text-primary'
+              }`}
+              title="Timeline view"
+            >
+              <Clock className="w-3.5 h-3.5" />
+            </button>
+          </div>
           {sortOptions.map(opt => (
             <button
               key={opt.key}
@@ -111,24 +137,28 @@ export default function PublicFilters({ entries, reactionCounts, profileUsername
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-        {filtered.map((entry) => {
-          const counts = reactionCounts[entry.id] || { likes: 0, dislikes: 0 }
-          return (
-            <PublicEntryCard
-              key={entry.id}
-              entry={entry}
-              likes={counts.likes}
-              dislikes={counts.dislikes}
-              profileUsername={profileUsername}
-              profileDisplayName={profileDisplayName}
-              profileAvatarUrl={profileAvatarUrl}
-            />
-          )
-        })}
-      </div>
+      {viewMode === 'timeline' ? (
+        <PublicTimeline entries={filtered} />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+          {filtered.map((entry) => {
+            const counts = reactionCounts[entry.id] || { likes: 0, dislikes: 0 }
+            return (
+              <PublicEntryCard
+                key={entry.id}
+                entry={entry}
+                likes={counts.likes}
+                dislikes={counts.dislikes}
+                profileUsername={profileUsername}
+                profileDisplayName={profileDisplayName}
+                profileAvatarUrl={profileAvatarUrl}
+              />
+            )
+          })}
+        </div>
+      )}
 
-      {filtered.length === 0 && (
+      {filtered.length === 0 && viewMode === 'grid' && (
         <div className="text-center py-16">
           <p className="text-text-secondary">No {filter !== 'all' ? filter + ' ' : ''}entries match</p>
         </div>

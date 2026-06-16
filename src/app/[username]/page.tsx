@@ -1,9 +1,10 @@
-import { createServiceClient } from '@/lib/supabase/server'
-import { Film, Tv, Star, Calendar, Timer } from 'lucide-react'
+import { createServiceClient, createServerSupabaseClient } from '@/lib/supabase/server'
+import { Film, Tv, Star, Calendar, Timer, Users } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Viewport } from 'next'
 import PublicFilters from './public-filters'
+import FollowButton from '@/components/follow-button'
 
 export const viewport: Viewport = {
   userScalable: false,
@@ -18,6 +19,8 @@ export default async function PublicProfilePage({ params }: Props) {
   const { username } = await params
 
   const supabase = await createServiceClient()
+  const authSupabase = await createServerSupabaseClient()
+  const { data: { user } } = await authSupabase.auth.getUser()
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -27,6 +30,22 @@ export default async function PublicProfilePage({ params }: Props) {
 
   if (!profile) {
     notFound()
+  }
+
+  const { count: followerCount } = await supabase
+    .from('follows')
+    .select('*', { count: 'exact', head: true })
+    .eq('following_id', profile.id)
+
+  let isFollowing = false
+  if (user) {
+    const { data: follow } = await supabase
+      .from('follows')
+      .select('id')
+      .eq('follower_id', user.id)
+      .eq('following_id', profile.id)
+      .maybeSingle()
+    isFollowing = !!follow
   }
 
   const { data: entries } = await supabase
@@ -131,7 +150,7 @@ export default async function PublicProfilePage({ params }: Props) {
           {profile.bio && (
             <p className="text-text-secondary mb-4 max-w-lg">{profile.bio}</p>
           )}
-          <div className="flex flex-wrap gap-4 text-sm text-text-muted">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-text-muted">
             <span className="flex items-center gap-1.5">
               <Film className="w-3.5 h-3.5" />
               {movies} movies
@@ -152,6 +171,16 @@ export default async function PublicProfilePage({ params }: Props) {
               <Calendar className="w-3.5 h-3.5" />
               {totalEntries} total
             </span>
+            <span className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5" />
+              {followerCount || 0} {followerCount === 1 ? 'follower' : 'followers'}
+            </span>
+            {user && user.id !== profile.id && (
+              <FollowButton
+                followingId={profile.id}
+                initialFollowing={isFollowing}
+              />
+            )}
           </div>
         </div>
 

@@ -206,3 +206,32 @@ DROP POLICY IF EXISTS "Users can update own notifications" ON notifications;
 CREATE POLICY IF NOT EXISTS "Users can update own notifications"
   ON notifications FOR UPDATE
   USING (auth.uid() = user_id);
+
+-- Follows table
+CREATE TABLE IF NOT EXISTS follows (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  follower_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  following_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(follower_id, following_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_follows_follower ON follows(follower_id);
+CREATE INDEX IF NOT EXISTS idx_follows_following ON follows(following_id);
+
+ALTER TABLE follows ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can view follows" ON follows;
+CREATE POLICY IF NOT EXISTS "Anyone can view follows"
+  ON follows FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Users can follow" ON follows;
+CREATE POLICY IF NOT EXISTS "Users can follow"
+  ON follows FOR INSERT
+  WITH CHECK (auth.uid() = follower_id);
+
+DROP POLICY IF EXISTS "Users can unfollow" ON follows;
+CREATE POLICY IF NOT EXISTS "Users can unfollow"
+  ON follows FOR DELETE
+  USING (auth.uid() = follower_id);

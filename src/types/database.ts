@@ -41,6 +41,13 @@ export interface Entry {
   updated_at: string
 }
 
+export interface Follow {
+  id: string
+  follower_id: string
+  following_id: string
+  created_at: string
+}
+
 export interface Reaction {
   id: string
   entry_id: string
