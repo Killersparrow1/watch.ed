@@ -206,7 +206,7 @@ export default async function PublicProfilePage({ params }: Props) {
           <div className="mb-8">
             <h2 className="heading-sm mb-3 flex items-center gap-2">
               <List className="w-4 h-4 text-text-muted" />
-              Lists
+              Library
             </h2>
             <div className="flex flex-wrap gap-3">
               {listsWithCounts.map((list) => (

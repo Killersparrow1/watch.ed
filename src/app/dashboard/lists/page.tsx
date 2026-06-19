@@ -66,7 +66,7 @@ export default function ListsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="heading-lg">Lists</h1>
+        <h1 className="heading-lg">Library</h1>
         <button
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-sm hover:bg-accent-hover transition-colors text-sm font-medium"

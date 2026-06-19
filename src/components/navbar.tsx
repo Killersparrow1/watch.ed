@@ -15,19 +15,20 @@ import {
   Sparkles,
   Star,
   Search,
+  User,
+  ChevronDown,
 } from 'lucide-react'
 import { useNotifications } from '@/hooks/use-notifications'
 import NotificationDropdown from '@/components/notification-dropdown'
 
 const navLinks = [
   { href: '/dashboard', label: 'Entries', icon: ListIcon },
-  { href: '/dashboard/lists', label: 'Lists', icon: List },
+  { href: '/dashboard/lists', label: 'Library', icon: List },
   { href: '/dashboard/timeline', label: 'Timeline', icon: Clock },
   { href: '/dashboard/stats', label: 'Stats', icon: BarChart3 },
   { href: '/dashboard/wrapped', label: 'Wrapped', icon: Sparkles },
   { href: '/dashboard/recommendations', label: 'Recs', icon: Star },
   { href: '/dashboard/search', label: 'Search', icon: Search },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ]
 
 export default function Navbar() {
@@ -37,7 +38,20 @@ export default function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [userId, setUserId] = useState<string | undefined>(undefined)
   const [notifOpen, setNotifOpen] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
+  const accountRef = useRef<HTMLDivElement>(null)
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications(userId)
+
+  useEffect(() => {
+    if (!accountOpen) return
+    function handleClick(e: MouseEvent) {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) {
+        setAccountOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [accountOpen])
 
   function getSupabase() {
     if (!supabaseRef.current) {
@@ -92,19 +106,6 @@ export default function Navbar() {
                 </Link>
               )
             })}
-            {isAdmin && (
-              <Link
-                href="/dashboard/admin"
-                className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-sm text-sm transition-colors ${
-                  pathname === '/dashboard/admin'
-                    ? 'bg-accent-light text-accent font-medium'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-tag-bg'
-                }`}
-              >
-                <Shield className="w-4 h-4" />
-                <span className="hidden sm:inline">Admin</span>
-              </Link>
-            )}
           </nav>
         </div>
 
@@ -118,13 +119,46 @@ export default function Navbar() {
             onToggle={() => setNotifOpen(prev => !prev)}
             onClose={() => setNotifOpen(false)}
           />
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Sign out</span>
-          </button>
+          <div ref={accountRef} className="relative">
+            <button
+              onClick={() => setAccountOpen(prev => !prev)}
+              className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors"
+            >
+              <User className="w-4 h-4" />
+              <span className="hidden sm:inline">Account</span>
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+            {accountOpen && (
+              <div className="absolute right-0 top-full mt-1 w-48 bg-surface border border-border rounded-sm shadow-lg z-50 py-1">
+                <Link
+                  href="/dashboard/settings"
+                  onClick={() => setAccountOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-tag-bg transition-colors"
+                >
+                  <Settings className="w-4 h-4" />
+                  Settings
+                </Link>
+                {isAdmin && (
+                  <Link
+                    href="/dashboard/admin"
+                    onClick={() => setAccountOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-tag-bg transition-colors"
+                  >
+                    <Shield className="w-4 h-4" />
+                    Admin
+                  </Link>
+                )}
+                <hr className="border-border my-1" />
+                <button
+                  onClick={() => { setAccountOpen(false); handleSignOut() }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-tag-bg transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
