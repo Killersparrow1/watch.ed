@@ -93,7 +93,7 @@ export default async function PublicProfilePage({ params }: Props) {
   const watched = (entries || []).filter(e => e.status !== 'plan_to_watch')
   const movies = watched?.filter(e => e.type === 'movie').length || 0
   const totalSeries = watched?.filter(e => e.type === 'series').length || 0
-  const totalEntries = entries?.length || 0
+  const totalEntries = watched?.length || 0
   const ratedEntries = watched?.filter(e => e.rating !== null).length || 0
   const avgRating = ratedEntries
     ? (watched!.filter(e => e.rating).reduce((sum, e) => sum + (e.rating || 0), 0) / ratedEntries).toFixed(1)

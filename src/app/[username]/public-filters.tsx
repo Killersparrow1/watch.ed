@@ -15,11 +15,11 @@ interface Props {
 }
 
 type FilterType = 'all' | 'movie' | 'series' | 'plan_to_watch'
-type SortKey = 'created_at' | 'rating' | 'title' | 'year'
+type SortKey = 'watch_date' | 'rating' | 'title' | 'year'
 
 export default function PublicFilters({ entries, reactionCounts, profileUsername, profileDisplayName, profileAvatarUrl }: Props) {
   const [filter, setFilter] = useState<FilterType>('all')
-  const [sort, setSort] = useState<SortKey>('created_at')
+  const [sort, setSort] = useState<SortKey>('watch_date')
   const [asc, setAsc] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid')
 
@@ -40,7 +40,11 @@ export default function PublicFilters({ entries, reactionCounts, profileUsername
       if (sort === 'title') cmp = a.title.localeCompare(b.title)
       else if (sort === 'rating') cmp = (a.rating || 0) - (b.rating || 0)
       else if (sort === 'year') cmp = (a.year || '') > (b.year || '') ? 1 : -1
-      else cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      else {
+        const aDate = a.watch_date || a.created_at
+        const bDate = b.watch_date || b.created_at
+        cmp = new Date(aDate).getTime() - new Date(bDate).getTime()
+      }
       return asc ? cmp : -cmp
     })
 
@@ -62,7 +66,7 @@ export default function PublicFilters({ entries, reactionCounts, profileUsername
   ]
 
   const sortOptions = [
-    { key: 'created_at' as const, label: 'Date' },
+    { key: 'watch_date' as const, label: 'Last logged' },
     { key: 'rating' as const, label: 'Rating' },
     { key: 'title' as const, label: 'Title' },
     { key: 'year' as const, label: 'Year' },
