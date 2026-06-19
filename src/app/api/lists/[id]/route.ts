@@ -15,8 +15,8 @@ export async function GET(
     }
 
     const serviceClient = await createServiceClient()
-    const { data, error } = await serviceClient
-      .from('entries')
+    const { data: list, error } = await serviceClient
+      .from('lists')
       .select('*')
       .eq('id', id)
       .eq('user_id', user.id)
@@ -29,9 +29,17 @@ export async function GET(
       throw error
     }
 
-    return NextResponse.json({ entry: data })
+    const { data: entries } = await serviceClient
+      .from('list_entries')
+      .select('entries(*)')
+      .eq('list_id', id)
+      .order('position', { ascending: true })
+
+    const mappedEntries = (entries || []).map((le: { entries: unknown }) => le.entries).filter(Boolean)
+
+    return NextResponse.json({ list, entries: mappedEntries })
   } catch (error) {
-    console.error('GET /api/entries/[id] error:', error)
+    console.error('GET /api/lists/[id] error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -50,51 +58,22 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const allowedFields = [
-      'title', 'type', 'status', 'rating', 'progress_season', 'progress_episode',
-      'watch_date', 'notes', 'tmdb_id', 'imdb_id', 'poster_path', 'year', 'genres', 'overview', 'badge', 'runtime',
-      'tagline', 'cast_crew', 'custom_poster_url',
-    ]
-
+    const allowedFields = ['name', 'description', 'is_public', 'sort_order']
     const updates: Record<string, unknown> = {}
+
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
-        if (field === 'custom_poster_url' && !body[field]) continue
         updates[field] = body[field]
       }
     }
 
-    if (updates.title !== undefined && typeof updates.title === 'string' && !updates.title.trim()) {
-      return NextResponse.json({ error: 'Title cannot be empty' }, { status: 400 })
-    }
-
-    if (updates.type && typeof updates.type === 'string' && !['movie', 'series'].includes(updates.type)) {
-      return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
-    }
-
-    const validStatuses = ['watching', 'completed', 'on_hold', 'dropped', 'plan_to_watch']
-    if (updates.status && typeof updates.status === 'string' && !validStatuses.includes(updates.status)) {
-      return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
-    }
-
-    if (updates.rating !== null && updates.rating !== undefined) {
-      const r = Number(updates.rating)
-      if (!Number.isInteger(r) || r < 1 || r > 10) {
-        return NextResponse.json({ error: 'Rating must be an integer between 1 and 10' }, { status: 400 })
-      }
-    }
-
-    if (updates.badge && typeof updates.badge === 'string' && !['golden', 'absolute appi', 'MalamCult', 'wammale cinema'].includes(updates.badge)) {
-      return NextResponse.json({ error: 'Invalid badge' }, { status: 400 })
-    }
-
-    if (updates.custom_poster_url && typeof updates.custom_poster_url === 'string' && !/^https?:\/\/.+/.test(updates.custom_poster_url)) {
-      return NextResponse.json({ error: 'Invalid poster URL' }, { status: 400 })
+    if (updates.name !== undefined && typeof updates.name === 'string' && !updates.name.trim()) {
+      return NextResponse.json({ error: 'List name cannot be empty' }, { status: 400 })
     }
 
     const serviceClient = await createServiceClient()
     const { data, error } = await serviceClient
-      .from('entries')
+      .from('lists')
       .update(updates)
       .eq('id', id)
       .eq('user_id', user.id)
@@ -108,9 +87,9 @@ export async function PATCH(
       throw error
     }
 
-    return NextResponse.json({ entry: data })
+    return NextResponse.json({ list: data })
   } catch (error) {
-    console.error('PATCH /api/entries/[id] error:', error)
+    console.error('PATCH /api/lists/[id] error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -130,16 +109,21 @@ export async function DELETE(
 
     const serviceClient = await createServiceClient()
     const { error } = await serviceClient
-      .from('entries')
+      .from('lists')
       .delete()
       .eq('id', id)
       .eq('user_id', user.id)
 
-    if (error) throw error
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      }
+      throw error
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('DELETE /api/entries/[id] error:', error)
+    console.error('DELETE /api/lists/[id] error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

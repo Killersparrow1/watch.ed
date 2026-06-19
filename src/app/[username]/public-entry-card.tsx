@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { getEntryPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
-import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award, Zap, Share2, Heart } from 'lucide-react'
+import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award, Zap, Share2, Heart, Send, X } from 'lucide-react'
 import { renderNotes } from '@/lib/render-notes'
 import ShareModal from '@/components/share-modal'
 
@@ -37,8 +38,49 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
   const [dislikes, setDislikes] = useState(initialDislikes)
   const [userReaction, setUserReaction] = useState<string | null>(null)
   const [showShare, setShowShare] = useState(false)
+  const [showRecommend, setShowRecommend] = useState(false)
+  const [friends, setFriends] = useState<{ id: string; username: string; display_name: string | null }[]>([])
+  const [sendingRec, setSendingRec] = useState(false)
 
   const poster = getEntryPosterUrl(entry, 'w342')
+
+  useEffect(() => {
+    if (!showRecommend) return
+    const supabase = createClient()
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      const { data } = await supabase
+        .from('follows')
+        .select('following_id, profiles!inner(id, username, display_name)')
+        .eq('follower_id', user.id)
+      if (data) {
+        setFriends(data.map(f => ({
+          id: f.following_id,
+          username: (f as unknown as { following_id: string; profiles: { id: string; username: string; display_name: string | null } }).profiles.username,
+          display_name: (f as unknown as { following_id: string; profiles: { id: string; username: string; display_name: string | null } }).profiles.display_name,
+        })))
+      }
+    })
+  }, [showRecommend])
+
+  async function handleSendRecommend(toUserId: string) {
+    setSendingRec(true)
+    const res = await fetch('/api/recommendations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to_user_id: toUserId,
+        entry_id: entry.id,
+        tmdb_id: entry.tmdb_id,
+        title: entry.title,
+        type: entry.type,
+        poster_path: entry.poster_path,
+        year: entry.year,
+      }),
+    })
+    setSendingRec(false)
+    if (res.ok) setShowRecommend(false)
+  }
 
   async function handleReaction(reaction: 'like' | 'dislike') {
     const res = await fetch('/api/reactions', {
@@ -174,6 +216,13 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
             <Share2 className="w-4 h-4" />
           </button>
           <button
+            onClick={() => setShowRecommend(true)}
+            className="flex items-center gap-1 text-xs text-text-muted hover:text-accent transition-colors"
+          >
+            <Send className="w-4 h-4" />
+            <span className="hidden sm:inline">Recommend</span>
+          </button>
+          <button
             onClick={() => handleReaction('like')}
             className={`flex items-center gap-1 text-xs transition-colors ${
               userReaction === 'like' ? 'text-like' : 'text-text-muted hover:text-like'
@@ -202,6 +251,36 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
           avatarUrl={profileAvatarUrl}
           onClose={() => setShowShare(false)}
         />
+      )}
+
+      {showRecommend && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowRecommend(false)}>
+          <div className="w-full max-w-sm bg-surface border border-border rounded-sm p-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold">Recommend &ldquo;{entry.title}&rdquo;</h3>
+              <button onClick={() => setShowRecommend(false)} className="text-text-secondary hover:text-text-primary">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {friends.length === 0 ? (
+              <p className="text-sm text-text-secondary">Follow some users first to recommend entries.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {friends.map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => handleSendRecommend(f.id)}
+                    disabled={sendingRec}
+                    className="w-full text-left px-3 py-2 rounded-sm text-sm bg-tag-bg hover:bg-accent-light/20 transition-colors disabled:opacity-50"
+                  >
+                    {f.display_name || f.username}
+                  </button>
+                ))}
+              </div>
+            )}
+            {sendingRec && <p className="text-xs text-text-secondary mt-2">Sending...</p>}
+          </div>
+        </div>
       )}
     </div>
   )

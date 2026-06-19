@@ -5,21 +5,29 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useRef, useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
-  List,
+  List as ListIcon,
   BarChart3,
   Upload,
   Settings,
   Shield,
   LogOut,
   Clock,
+  List,
+  Sparkles,
+  Star,
+  Search,
 } from 'lucide-react'
 import { useNotifications } from '@/hooks/use-notifications'
 import NotificationDropdown from '@/components/notification-dropdown'
 
 const navLinks = [
-  { href: '/dashboard', label: 'Entries', icon: List },
+  { href: '/dashboard', label: 'Entries', icon: ListIcon },
+  { href: '/dashboard/lists', label: 'Lists', icon: List },
   { href: '/dashboard/timeline', label: 'Timeline', icon: Clock },
   { href: '/dashboard/stats', label: 'Stats', icon: BarChart3 },
+  { href: '/dashboard/wrapped', label: 'Wrapped', icon: Sparkles },
+  { href: '/dashboard/recommendations', label: 'Recs', icon: Star },
+  { href: '/dashboard/search', label: 'Search', icon: Search },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
   { href: '/dashboard/import', label: 'Import', icon: Upload },
 ]

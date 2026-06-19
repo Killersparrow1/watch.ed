@@ -138,6 +138,54 @@ export function getEntryPosterUrl(entry: Entry, size: 'w185' | 'w342' | 'w500' |
   return getPosterUrl(entry.poster_path, size)
 }
 
+export async function getExternalIds(tmdbId: number, type: 'movie' | 'series'): Promise<{ imdb_id: string | null }> {
+  const endpoint = type === 'movie' ? `/movie/${tmdbId}/external_ids` : `/tv/${tmdbId}/external_ids`
+  try {
+    const data = await tmdbFetch(endpoint) as { imdb_id: string | null }
+    return { imdb_id: data.imdb_id || null }
+  } catch {
+    return { imdb_id: null }
+  }
+}
+
+export async function findByIMDbId(imdbId: string): Promise<TMDBResult | null> {
+  const data = await tmdbFetch(`/find/${imdbId}`, { external_source: 'imdb_id' }) as {
+    movie_results: TMDBMultiResult[]
+    tv_results: TMDBMultiResult[]
+  }
+
+  const allResults = [
+    ...(data.movie_results || []).map(r => ({ ...r, media_type: 'movie' })),
+    ...(data.tv_results || []).map(r => ({ ...r, media_type: 'tv' })),
+  ]
+
+  if (allResults.length === 0) return null
+
+  const r = allResults[0]
+  const mediaType = r.media_type === 'movie' ? 'movie' : 'series' as 'movie' | 'series'
+
+  try {
+    return await getTMDBDetails(r.id, mediaType)
+  } catch {
+    return {
+      tmdb_id: r.id,
+      title: r.title || r.name || '',
+      year: r.release_date
+        ? parseInt(r.release_date.slice(0, 4))
+        : r.first_air_date
+          ? parseInt(r.first_air_date.slice(0, 4))
+          : null,
+      poster_path: r.poster_path,
+      overview: r.overview || null,
+      tagline: null,
+      cast_crew: null,
+      genres: (r.genre_ids || []).map(id => GENRE_NAMES[id] || String(id)),
+      media_type: mediaType,
+      runtime: null,
+    }
+  }
+}
+
 export async function searchBestMatch(
   title: string,
   year: number | null,

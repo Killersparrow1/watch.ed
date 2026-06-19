@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient, createServiceClient } from '@/lib/supabase/server'
-import { searchBestMatch, searchBestMatchMulti, getTMDBDetails } from '@/lib/tmdb'
+import { searchBestMatch, searchBestMatchMulti, getTMDBDetails, findByIMDbId, getExternalIds } from '@/lib/tmdb'
 
 export async function POST() {
   try {
@@ -40,17 +40,22 @@ export async function POST() {
         }
 
         if (result && result.poster_path) {
+          const updates: Record<string, unknown> = {
+            poster_path: result.poster_path,
+            tmdb_id: result.tmdb_id,
+            year: result.year || entry.year,
+            overview: result.overview || null,
+            runtime: result.runtime || null,
+            tagline: result.tagline || null,
+            cast_crew: result.cast_crew || null,
+          }
+          if (result.tmdb_id) {
+            const extIds = await getExternalIds(result.tmdb_id, result.media_type)
+            if (extIds.imdb_id) updates.imdb_id = extIds.imdb_id
+          }
           await serviceClient
             .from('entries')
-            .update({
-              poster_path: result.poster_path,
-              tmdb_id: result.tmdb_id,
-              year: result.year || entry.year,
-              overview: result.overview || null,
-              runtime: result.runtime || null,
-              tagline: result.tagline || null,
-              cast_crew: result.cast_crew || null,
-            })
+            .update(updates)
             .eq('id', entry.id)
 
           updated++

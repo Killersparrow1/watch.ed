@@ -160,6 +160,9 @@ ALTER TABLE entries ADD COLUMN IF NOT EXISTS cast_crew TEXT;
 -- Custom poster URL (overrides TMDB poster)
 ALTER TABLE entries ADD COLUMN IF NOT EXISTS custom_poster_url TEXT;
 
+-- IMDb ID for cross-referencing and enriched import
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS imdb_id TEXT;
+
 -- Function to auto-update updated_at on entries
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
@@ -236,6 +239,61 @@ CREATE POLICY "Users can unfollow"
   ON follows FOR DELETE
   USING (auth.uid() = follower_id);
 
+-- Lists / Collections
+CREATE TABLE IF NOT EXISTS lists (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  is_public BOOLEAN DEFAULT true,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_lists_user_id ON lists(user_id);
+
+ALTER TABLE lists ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can CRUD own lists" ON lists;
+CREATE POLICY "Users can CRUD own lists"
+  ON lists FOR ALL
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Anyone can view public lists" ON lists;
+CREATE POLICY "Anyone can view public lists"
+  ON lists FOR SELECT
+  USING (is_public = true);
+
+CREATE TABLE IF NOT EXISTS list_entries (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  list_id UUID NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+  entry_id UUID NOT NULL REFERENCES entries(id) ON DELETE CASCADE,
+  position INTEGER DEFAULT 0,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(list_id, entry_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_list_entries_list_id ON list_entries(list_id);
+CREATE INDEX IF NOT EXISTS idx_list_entries_entry_id ON list_entries(entry_id);
+
+ALTER TABLE list_entries ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "List owner can manage entries" ON list_entries;
+CREATE POLICY "List owner can manage entries"
+  ON list_entries FOR ALL
+  USING (
+    EXISTS (SELECT 1 FROM lists WHERE lists.id = list_entries.list_id AND lists.user_id = auth.uid())
+  );
+
+DROP POLICY IF EXISTS "Anyone can view public list entries" ON list_entries;
+CREATE POLICY "Anyone can view public list entries"
+  ON list_entries FOR SELECT
+  USING (
+    EXISTS (SELECT 1 FROM lists WHERE lists.id = list_entries.list_id AND lists.is_public = true)
+  );
+
 -- Push subscriptions table
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -254,3 +312,112 @@ DROP POLICY IF EXISTS "Users can manage own subscriptions" ON push_subscriptions
 CREATE POLICY "Users can manage own subscriptions"
   ON push_subscriptions FOR ALL
   USING (auth.uid() = user_id);
+
+-- Watch events (rewatch tracking + per-episode check-in)
+CREATE TABLE IF NOT EXISTS watch_events (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  entry_id UUID NOT NULL REFERENCES entries(id) ON DELETE CASCADE,
+  watch_date TEXT NOT NULL,
+  notes TEXT,
+  rating INTEGER CHECK (rating >= 1 AND rating <= 10),
+  season_number INTEGER,
+  episode_number INTEGER,
+  episode_title TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_watch_events_entry_id ON watch_events(entry_id);
+CREATE INDEX IF NOT EXISTS idx_watch_events_watch_date ON watch_events(watch_date);
+
+ALTER TABLE watch_events ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage watch events via entries" ON watch_events;
+CREATE POLICY "Users can manage watch events via entries"
+  ON watch_events FOR ALL
+  USING (
+    EXISTS (SELECT 1 FROM entries WHERE entries.id = watch_events.entry_id AND entries.user_id = auth.uid())
+  );
+
+DROP POLICY IF EXISTS "Anyone can view watch events for public entries" ON watch_events;
+CREATE POLICY "Anyone can view watch events for public entries"
+  ON watch_events FOR SELECT
+  USING (
+    EXISTS (SELECT 1 FROM entries WHERE entries.id = watch_events.entry_id)
+  );
+
+-- Function + trigger to update entry's updated_at when a watch event changes
+CREATE OR REPLACE FUNCTION touch_entry_on_watch_event_change()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    UPDATE entries SET updated_at = NOW() WHERE id = OLD.entry_id;
+  ELSE
+    UPDATE entries SET updated_at = NOW() WHERE id = NEW.entry_id;
+  END IF;
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_watch_event_change ON watch_events;
+CREATE TRIGGER on_watch_event_change
+  AFTER INSERT OR UPDATE OR DELETE ON watch_events
+  FOR EACH ROW EXECUTE FUNCTION touch_entry_on_watch_event_change();
+
+-- Watch goals (yearly targets)
+CREATE TABLE IF NOT EXISTS watch_goals (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  year INTEGER NOT NULL,
+  movie_target INTEGER DEFAULT 0,
+  series_target INTEGER DEFAULT 0,
+  episode_target INTEGER DEFAULT 0,
+  hour_target INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, year)
+);
+
+CREATE INDEX IF NOT EXISTS idx_watch_goals_user_id ON watch_goals(user_id);
+
+ALTER TABLE watch_goals ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage own goals" ON watch_goals;
+CREATE POLICY "Users can manage own goals"
+  ON watch_goals FOR ALL
+  USING (auth.uid() = user_id);
+
+-- Recommendations (friend-to-friend)
+CREATE TABLE IF NOT EXISTS recommendations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  from_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  to_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  entry_id UUID REFERENCES entries(id) ON DELETE SET NULL,
+  tmdb_id INTEGER,
+  title TEXT NOT NULL,
+  type TEXT CHECK (type IN ('movie', 'series')),
+  poster_path TEXT,
+  year INTEGER,
+  message TEXT,
+  read BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_recommendations_to ON recommendations(to_user_id);
+CREATE INDEX IF NOT EXISTS idx_recommendations_from ON recommendations(from_user_id);
+
+ALTER TABLE recommendations ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own recommendations" ON recommendations;
+CREATE POLICY "Users can view own recommendations"
+  ON recommendations FOR SELECT
+  USING (auth.uid() = to_user_id OR auth.uid() = from_user_id);
+
+DROP POLICY IF EXISTS "Users can send recommendations" ON recommendations;
+CREATE POLICY "Users can send recommendations"
+  ON recommendations FOR INSERT
+  WITH CHECK (auth.uid() = from_user_id);
+
+DROP POLICY IF EXISTS "Recipient can mark as read" ON recommendations;
+CREATE POLICY "Recipient can mark as read"
+  ON recommendations FOR UPDATE
+  USING (auth.uid() = to_user_id);

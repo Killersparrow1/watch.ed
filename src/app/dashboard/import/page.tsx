@@ -2,11 +2,40 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Upload, AlertCircle, CheckCircle } from 'lucide-react'
+import { Upload, AlertCircle, CheckCircle, FileText } from 'lucide-react'
 
 interface ColumnMapping {
   source: string
   target: string
+}
+
+interface TraktRatingEntry {
+  rated_at: string
+  rating: number
+  movie?: { title: string; year: number; ids: { imdb?: string; tmdb?: number; trakt?: number } }
+  show?: { title: string; year: number; ids: { imdb?: string; tmdb?: number; trakt?: number } }
+  type?: string
+}
+
+interface TraktHistoryEntry {
+  watched_at: string
+  movie?: { title: string; year: number; ids: { imdb?: string; tmdb?: number; trakt?: number } }
+  show?: { title: string; year: number; ids: { imdb?: string; tmdb?: number; trakt?: number } }
+  episode?: { season: number; number: number; title: string }
+  type?: string
+}
+
+interface TraktWatchlistEntry {
+  listed_at: string
+  movie?: { title: string; year: number; ids: { imdb?: string; tmdb?: number; trakt?: number } }
+  show?: { title: string; year: number; ids: { imdb?: string; tmdb?: number; trakt?: number } }
+  type?: string
+}
+
+interface SourceProfile {
+  name: string
+  fields: Record<string, string>
+  matchScore: (headers: string[]) => number
 }
 
 const TARGET_FIELDS = [
@@ -19,17 +48,90 @@ const TARGET_FIELDS = [
   { value: 'notes', label: 'Notes/Review', required: false },
   { value: 'genres', label: 'Genres (comma-sep)', required: false },
   { value: 'tmdb_id', label: 'TMDB ID', required: false },
+  { value: 'imdb_id', label: 'IMDb ID', required: false },
   { value: 'overview', label: 'Overview', required: false },
   { value: '_skip', label: 'Skip column', required: false },
 ]
 
-const LETTERBOXD_FIELDS: Record<string, string> = {
-  'Name': 'title',
-  'Year': 'year',
-  'Rating': 'rating',
-  'Review': 'notes',
-  'Watched Date': 'watch_date',
-  'Genre': 'genres',
+const SOURCE_PROFILES: SourceProfile[] = [
+  {
+    name: 'Letterboxd',
+    fields: { Name: 'title', Year: 'year', Rating: 'rating', Review: 'notes', 'Watched Date': 'watch_date', Genre: 'genres', 'LetterboxdURI': '_skip', 'Directors': '_skip', 'Tags': '_skip' },
+    matchScore: (headers) => {
+      const h = headers.map(x => x.toLowerCase().trim())
+      if (h.includes('name') && h.includes('rating') && h.includes('year')) return 90
+      return 0
+    },
+  },
+  {
+    name: 'IMDb',
+    fields: { Const: 'imdb_id', 'Your Rating': 'rating', 'Date Rated': 'watch_date', Title: 'title', 'Title Type': 'type', Year: 'year', Genres: 'genres', Directors: '_skip', 'Runtime (mins)': '_skip', URL: '_skip', 'IMDb Rating': '_skip', 'Num Votes': '_skip', 'Release Date': '_skip' },
+    matchScore: (headers) => {
+      const h = headers.map(x => x.toLowerCase().trim())
+      if (h.includes('const') && h.includes('your rating')) return 100
+      return 0
+    },
+  },
+  {
+    name: 'Trakt',
+    fields: { title: 'title', year: 'year', rating: 'rating', type: 'type', imdb_id: 'imdb_id', tmdb_id: 'tmdb_id', watched_date: 'watch_date', genres: 'genres', overview: 'overview', runtime: '_skip', released: '_skip', season_number: '_skip', episode_number: '_skip', episode_title: '_skip' },
+    matchScore: (headers) => {
+      const h = headers.map(x => x.toLowerCase().trim())
+      if (h.includes('imdb_id') && h.includes('tmdb_id') && (h.includes('title') || h.includes('type'))) return 90
+      return 0
+    },
+  },
+  {
+    name: 'Simkl',
+    fields: { Title: 'title', Year: 'year', Rating: 'rating', Type: 'type', TMDB_ID: 'tmdb_id', IMDB_ID: 'imdb_id', WatchedDate: 'watch_date', Memo: 'notes', Watchlist: 'status', SIMKL_ID: '_skip', TVDB_ID: '_skip' },
+    matchScore: (headers) => {
+      const h = headers.map(x => x.toLowerCase().trim())
+      if ((h.includes('simkl_id') || h.includes('tmdb_id')) && h.includes('title') && h.includes('type')) return 80
+      return 0
+    },
+  },
+]
+
+function detectSource(headers: string[]): SourceProfile | null {
+  let best: SourceProfile | null = null
+  let bestScore = 0
+  for (const profile of SOURCE_PROFILES) {
+    const score = profile.matchScore(headers)
+    if (score > bestScore) {
+      bestScore = score
+      best = profile
+    }
+  }
+  return best
+}
+
+let cachedJsonEntries: Record<string, unknown>[] = []
+
+function buildAutoMappings(headers: string[], source: SourceProfile | null): ColumnMapping[] {
+  const lowerHeaders = headers.map(h => h.toLowerCase().trim())
+
+  return headers.map((header, i) => {
+    if (source && source.fields[header] !== undefined) {
+      return { source: header, target: source.fields[header] }
+    }
+
+    if (source) {
+      const match = Object.entries(source.fields).find(([k]) =>
+        k.toLowerCase().trim() === lowerHeaders[i]
+      )
+      if (match) return { source: header, target: match[1] }
+    }
+
+    const lower = lowerHeaders[i]
+    const known: Record<string, string> = {
+      'name': 'title', 'title': 'title', 'const': 'imdb_id',
+      'your rating': 'rating', 'date rated': 'watch_date',
+      'title type': 'type', 'watched date': 'watch_date',
+      'review': 'notes', 'memo': 'notes', 'genre': 'genres',
+      'imdb_id': 'imdb_id', 'tmdb_id': 'tmdb_id',
+    }
+    return { source: header, target: known[lower] || '' }
+  })
 }
 
 export default function ImportPage() {
@@ -40,9 +142,73 @@ export default function ImportPage() {
   const [headers, setHeaders] = useState<string[]>([])
   const [mappings, setMappings] = useState<ColumnMapping[]>([])
   const [previewRows, setPreviewRows] = useState<Record<string, string>[]>([])
+  const [detectedSource, setDetectedSource] = useState<string | null>(null)
   const [importing, setImporting] = useState(false)
   const [result, setResult] = useState<{ imported: number; total: number; duplicates?: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  function parseTraktJSON(text: string) {
+    try {
+      const data = JSON.parse(text)
+      const entries: Record<string, unknown>[] = []
+      let items: unknown[] = []
+      if (Array.isArray(data)) {
+        items = data
+      } else if (data && typeof data === 'object') {
+        if (Array.isArray((data as Record<string, unknown>).ratings)) items = (data as Record<string, unknown>).ratings as unknown[]
+        else if (Array.isArray((data as Record<string, unknown>).history)) items = (data as Record<string, unknown>).history as unknown[]
+        else if (Array.isArray((data as Record<string, unknown>).watchlist)) items = (data as Record<string, unknown>).watchlist as unknown[]
+      }
+
+      for (const item of items) {
+        const entry: Record<string, unknown> = {}
+        const trakt = item as TraktRatingEntry & TraktHistoryEntry & TraktWatchlistEntry
+
+        const content = trakt.movie || trakt.show
+        if (!content || !content.title) continue
+
+        entry.title = content.title
+        entry.year = content.year || null
+        entry.type = trakt.movie ? 'movie' : 'series'
+
+        if (trakt.rating) entry.rating = Math.round(trakt.rating)
+
+        const watchDate = trakt.rated_at || trakt.watched_at || trakt.listed_at
+        if (watchDate) {
+          try { entry.watch_date = new Date(watchDate).toISOString().split('T')[0] } catch {}
+        }
+
+        if (content.ids) {
+          if (content.ids.imdb) entry.imdb_id = content.ids.imdb
+          if (content.ids.tmdb) entry.tmdb_id = content.ids.tmdb
+        }
+
+        if (trakt.episode) {
+          entry.progress_season = trakt.episode.season
+          entry.progress_episode = String(trakt.episode.number)
+          if (!entry.type) entry.type = 'series'
+        }
+
+        entries.push(entry)
+      }
+
+      if (entries.length === 0) {
+        setError('No valid entries found in JSON — expected Trakt ratings/history/watchlist format')
+        return
+      }
+
+      setDetectedSource('Trakt')
+      setCsvData([])
+      setHeaders([])
+      setMappings([])
+      setPreviewRows(entries.slice(0, 5) as Record<string, string>[])
+      setStep('preview')
+      setError(null)
+      cachedJsonEntries = entries
+    } catch {
+      setError('Failed to parse JSON file — expected Trakt export format')
+    }
+  }
 
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -51,7 +217,12 @@ export default function ImportPage() {
     const reader = new FileReader()
     reader.onload = (event) => {
       const text = event.target?.result as string
-      parseCSV(text)
+      const isJSON = file.name.endsWith('.json') || text.trim().startsWith('[') || text.trim().startsWith('{')
+      if (isJSON) {
+        parseTraktJSON(text)
+      } else {
+        parseCSV(text)
+      }
     }
     reader.readAsText(file)
   }
@@ -95,11 +266,10 @@ export default function ImportPage() {
       setCsvData(dataRows)
       setError(null)
 
-      const autoMappings: ColumnMapping[] = headerRow.map(h => ({
-        source: h,
-        target: LETTERBOXD_FIELDS[h] || '',
-      }))
+      const source = detectSource(headerRow)
+      setDetectedSource(source?.name || null)
 
+      const autoMappings = buildAutoMappings(headerRow, source)
       setMappings(autoMappings)
       generatePreview(headerRow, dataRows, autoMappings)
 
@@ -138,6 +308,27 @@ export default function ImportPage() {
     setImporting(true)
     setError(null)
 
+    if (cachedJsonEntries.length > 0) {
+      const res = await fetch('/api/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entries: cachedJsonEntries }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Import failed')
+        setImporting(false)
+        return
+      }
+
+      setResult({ imported: data.imported, total: data.total, duplicates: data.duplicates })
+      setStep('result')
+      setImporting(false)
+      return
+    }
+
     const titleMapping = mappings.find(m => m.target === 'title')
     if (!titleMapping) {
       setError('Title field must be mapped')
@@ -174,7 +365,13 @@ export default function ImportPage() {
             break
           case 'type': {
             const lower = value.toLowerCase()
-            entry.type = lower.includes('tv') || lower.includes('series') || lower === 'show' ? 'series' : 'movie'
+            if (lower === 'movie') {
+              entry.type = 'movie'
+            } else if (['tvseries', 'tv series', 'tv mini series', 'tvminiseries', 'series', 'tv', 'show'].includes(lower)) {
+              entry.type = 'series'
+            } else {
+              entry.type = lower.includes('tv') || lower.includes('series') || lower === 'show' ? 'series' : 'movie'
+            }
             break
           }
           case 'status': {
@@ -210,7 +407,7 @@ export default function ImportPage() {
       return
     }
 
-    setResult({ imported: data.imported, total: data.total })
+    setResult({ imported: data.imported, total: data.total, duplicates: data.duplicates })
     setStep('result')
     setImporting(false)
   }
@@ -225,11 +422,11 @@ export default function ImportPage() {
           <ul className="text-sm text-text-secondary space-y-2">
             <li className="flex items-start gap-2">
               <span className="text-accent mt-0.5">1.</span>
-              <span>Export your data from Letterboxd, Trakt, or any service that provides a CSV</span>
+              <span>Export your data from IMDb, Letterboxd, Trakt, Simkl, or any service providing a CSV/JSON</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-accent mt-0.5">2.</span>
-              <span>Upload the CSV file below — we&apos;ll try to auto-map the columns</span>
+              <span>Upload the CSV file below — we&apos;ll auto-detect the source and map columns</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-accent mt-0.5">3.</span>
@@ -248,12 +445,12 @@ export default function ImportPage() {
               Click to upload a CSV file
             </p>
             <p className="body-xs text-text-muted mt-1">
-              Supports Letterboxd, Trakt exports, and generic CSV
+              Supports IMDb, Letterboxd, Trakt, Simkl, and generic CSV/JSON
             </p>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv,.tsv,.txt"
+              accept=".csv,.tsv,.txt,.json"
               onChange={handleFileUpload}
               className="hidden"
             />
@@ -262,6 +459,12 @@ export default function ImportPage() {
 
         {step === 'map' && (
           <div className="space-y-4">
+            {detectedSource && (
+              <div className="flex items-center gap-2 text-sm text-text-secondary bg-tag-bg px-3 py-2 rounded-sm">
+                <FileText className="w-4 h-4" />
+                Detected: <span className="font-medium text-text-primary">{detectedSource}</span>
+              </div>
+            )}
             <p className="text-sm text-text-secondary">
               Map your CSV columns to watch.ed fields:
             </p>
@@ -306,6 +509,12 @@ export default function ImportPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-text-secondary">
+                {detectedSource && (
+                  <span className="inline-flex items-center gap-1.5 mr-3 bg-tag-bg px-2 py-0.5 rounded-sm text-xs font-medium">
+                    <FileText className="w-3 h-3" />
+                    {detectedSource}
+                  </span>
+                )}
                 Previewing first {previewRows.length} of {csvData.length} rows:
               </p>
               <button
@@ -387,7 +596,7 @@ export default function ImportPage() {
                 View entries
               </button>
               <button
-                onClick={() => { setStep('upload'); setResult(null); setCsvData([]); setHeaders([]); setMappings([]); setPreviewRows([]); }}
+                onClick={() => { setStep('upload'); setResult(null); setCsvData([]); setHeaders([]); setMappings([]); setPreviewRows([]); setDetectedSource(null); cachedJsonEntries = []; }}
                 className="px-6 py-2.5 border border-border rounded-sm text-sm text-text-secondary hover:text-text-primary transition-colors"
               >
                 Import another

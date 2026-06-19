@@ -27,6 +27,7 @@ export interface Entry {
   watch_date: string | null
   notes: string | null
   tmdb_id: number | null
+  imdb_id: string | null
   poster_path: string | null
   year: number | null
   genres: string[] | null
@@ -66,4 +67,63 @@ export interface ImportMapping {
   sourceField: string
   targetField: keyof Entry
   required: boolean
+}
+
+export interface List {
+  id: string
+  user_id: string
+  name: string
+  description: string | null
+  is_public: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface WatchEvent {
+  id: string
+  entry_id: string
+  watch_date: string
+  notes: string | null
+  rating: number | null
+  season_number: number | null
+  episode_number: number | null
+  episode_title: string | null
+  created_at: string
+}
+
+export interface WatchGoal {
+  id: string
+  user_id: string
+  year: number
+  movie_target: number
+  series_target: number
+  episode_target: number
+  hour_target: number
+  created_at: string
+  updated_at: string
+}
+
+export interface Recommendation {
+  id: string
+  from_user_id: string
+  to_user_id: string
+  entry_id: string | null
+  tmdb_id: number | null
+  title: string
+  type: 'movie' | 'series' | null
+  poster_path: string | null
+  year: number | null
+  message: string | null
+  read: boolean
+  created_at: string
+}
+
+export interface ListEntry {
+  id: string
+  list_id: string
+  entry_id: string
+  position: number
+  notes: string | null
+  created_at: string
 }

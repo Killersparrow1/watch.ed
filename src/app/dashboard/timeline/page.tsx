@@ -2,16 +2,26 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { Entry } from '@/types/database'
+import type { Entry, WatchEvent } from '@/types/database'
 import TimelineCard from '@/components/timeline-card'
-import { Film, Tv, Clock, Filter } from 'lucide-react'
+import { Film, Tv, Clock, Filter, Eye } from 'lucide-react'
 
 type ActiveFilter = 'all' | 'movie' | 'series'
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
+interface TimelineItem {
+  id: string
+  type: 'entry' | 'watch_event'
+  entry: Entry
+  watchEvent?: WatchEvent
+  date: string
+  label: string
+}
+
 export default function TimelinePage() {
   const [entries, setEntries] = useState<Entry[]>([])
+  const [watchEvents, setWatchEvents] = useState<WatchEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<ActiveFilter>('all')
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
@@ -25,39 +35,73 @@ export default function TimelinePage() {
   useEffect(() => {
     getSupabase().auth.getUser().then(({ data: { user } }) => {
       if (!user) return
-      getSupabase()
-        .from('entries')
-        .select('*')
-        .eq('user_id', user.id)
-        .neq('status', 'plan_to_watch')
-        .order('watch_date', { ascending: false, nullsFirst: false })
-        .then(({ data }) => {
-          if (data) setEntries(data as Entry[])
-          setLoading(false)
-        })
+      Promise.all([
+        getSupabase()
+          .from('entries')
+          .select('*')
+          .eq('user_id', user.id)
+          .neq('status', 'plan_to_watch')
+          .order('watch_date', { ascending: false, nullsFirst: false }),
+        getSupabase()
+          .from('watch_events')
+          .select('*, entries!inner(user_id)')
+          .eq('entries.user_id', user.id)
+          .order('watch_date', { ascending: false }),
+      ]).then(([entriesRes, eventsRes]) => {
+        if (entriesRes.data) setEntries(entriesRes.data as Entry[])
+        if (eventsRes.data) setWatchEvents(eventsRes.data as WatchEvent[])
+        setLoading(false)
+      })
     })
   }, [])
 
-  const filtered = useMemo(() => {
-    let result = entries.filter(e => e.status !== 'plan_to_watch')
-    if (filter === 'movie') result = result.filter(e => e.type === 'movie')
-    if (filter === 'series') result = result.filter(e => e.type === 'series')
+  const timelineItems = useMemo((): TimelineItem[] => {
+    const items: TimelineItem[] = []
 
-    result.sort((a, b) => {
-      const dateA = a.watch_date || a.created_at
-      const dateB = b.watch_date || b.created_at
-      const cmp = dateA.localeCompare(dateB)
+    const entryMap = new Map(entries.map(e => [e.id, e]))
+
+    for (const entry of entries) {
+      if (!entry.watch_date) continue
+      items.push({
+        id: `entry-${entry.id}`,
+        type: 'entry',
+        entry,
+        date: entry.watch_date,
+        label: entry.title,
+      })
+    }
+
+    for (const event of watchEvents) {
+      const entry = entryMap.get(event.entry_id)
+      if (!entry) continue
+      if (filter === 'movie' && entry.type !== 'movie') continue
+      if (filter === 'series' && entry.type !== 'series') continue
+
+      if (event.watch_date === entry.watch_date) continue
+
+      items.push({
+        id: `we-${event.id}`,
+        type: 'watch_event',
+        entry,
+        watchEvent: event,
+        date: event.watch_date,
+        label: event.episode_title || entry.title,
+      })
+    }
+
+    items.sort((a, b) => {
+      const cmp = a.date.localeCompare(b.date)
       return sortOrder === 'desc' ? -cmp : cmp
     })
 
-    return result
-  }, [entries, filter, sortOrder])
+    return items
+  }, [entries, watchEvents, filter, sortOrder])
 
   const grouped = useMemo(() => {
-    const groups: Record<string, Record<string, Entry[]>> = {}
+    const groups: Record<string, Record<string, TimelineItem[]>> = {}
 
-    for (const entry of filtered) {
-      const dateStr = entry.watch_date || entry.created_at
+    for (const item of timelineItems) {
+      const dateStr = item.date
       if (!dateStr) continue
       const date = new Date(dateStr)
       if (isNaN(date.getTime())) continue
@@ -66,7 +110,7 @@ export default function TimelinePage() {
 
       if (!groups[year]) groups[year] = {}
       if (!groups[year][month]) groups[year][month] = []
-      groups[year][month].push(entry)
+      groups[year][month].push(item)
     }
 
     const sortedYears = Object.keys(groups).sort((a, b) =>
@@ -82,7 +126,7 @@ export default function TimelinePage() {
           entries: groups[year][month],
         })),
     }))
-  }, [filtered, sortOrder])
+  }, [timelineItems, sortOrder])
 
   if (loading) {
     return (
@@ -151,8 +195,18 @@ export default function TimelinePage() {
                   <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-accent border-2 border-surface" />
                   <h3 className="text-sm font-medium text-text-muted mb-3">{label}</h3>
                   <div className="space-y-2">
-                    {monthEntries.map((entry) => (
-                      <TimelineCard key={entry.id} entry={entry} />
+                    {monthEntries.map((item) => (
+                      <div key={item.id} className="relative">
+                        {item.type === 'watch_event' && (
+                          <div className="absolute -left-[25px] top-3 w-4 h-4 rounded-full border-2 border-accent/40 bg-surface flex items-center justify-center">
+                            <Eye className="w-2 h-2 text-accent/60" />
+                          </div>
+                        )}
+                        <TimelineCard
+                          entry={item.entry}
+                          watchEvent={item.watchEvent}
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>

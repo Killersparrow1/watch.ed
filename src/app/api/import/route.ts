@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient, createServiceClient } from '@/lib/supabase/server'
-import { searchBestMatch, searchBestMatchMulti, getTMDBDetails } from '@/lib/tmdb'
+import { searchBestMatch, searchBestMatchMulti, getTMDBDetails, findByIMDbId, getExternalIds } from '@/lib/tmdb'
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
       year: e.year && !isNaN(Number(e.year)) ? Number(e.year) : null,
       poster_path: (e.poster_path as string) || null,
       tmdb_id: e.tmdb_id ? Number(e.tmdb_id) : null,
+      imdb_id: (e.imdb_id as string) || null,
       genres: Array.isArray(e.genres) ? e.genres : null,
       overview: (e.overview as string) || null,
       badge: (e.badge as string) || null,
@@ -78,26 +79,39 @@ export async function POST(request: NextRequest) {
       if (entry.poster_path) continue
       try {
         let result = null
-        if (entry.tmdb_id) {
+
+        if (entry.imdb_id) {
+          result = await findByIMDbId(entry.imdb_id)
+        }
+
+        if (!result && entry.tmdb_id) {
           result = await getTMDBDetails(entry.tmdb_id, entry.type as 'movie' | 'series')
-        } else {
+        }
+
+        if (!result) {
           result = await searchBestMatch(entry.title, entry.year, entry.type as 'movie' | 'series')
           if (!result || !result.poster_path) {
             result = await searchBestMatchMulti(entry.title, entry.year)
           }
         }
+
         if (result) {
+          const updates: Record<string, unknown> = {
+            poster_path: result.poster_path || undefined,
+            tmdb_id: result.tmdb_id || undefined,
+            year: result.year || entry.year,
+            overview: result.overview || null,
+            runtime: result.runtime || null,
+            tagline: result.tagline || null,
+            cast_crew: result.cast_crew || null,
+          }
+          if (!entry.imdb_id && result.tmdb_id) {
+            const extIds = await getExternalIds(result.tmdb_id, result.media_type)
+            if (extIds.imdb_id) updates.imdb_id = extIds.imdb_id
+          }
           await serviceClient
             .from('entries')
-            .update({
-              poster_path: result.poster_path || undefined,
-              tmdb_id: result.tmdb_id || undefined,
-              year: result.year || entry.year,
-              overview: result.overview || null,
-              runtime: result.runtime || null,
-              tagline: result.tagline || null,
-              cast_crew: result.cast_crew || null,
-            })
+            .update(updates)
             .eq('id', entry.id)
           postersFetched++
         }

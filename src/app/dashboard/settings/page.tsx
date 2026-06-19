@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Save, Copy, Check, ExternalLink } from 'lucide-react'
+import { Save, Copy, Check, ExternalLink, Target } from 'lucide-react'
 import Link from 'next/link'
 
 export default function SettingsPage() {
@@ -17,6 +17,12 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [goalYear, setGoalYear] = useState(new Date().getFullYear())
+  const [movieTarget, setMovieTarget] = useState('')
+  const [seriesTarget, setSeriesTarget] = useState('')
+  const [episodeTarget, setEpisodeTarget] = useState('')
+  const [hourTarget, setHourTarget] = useState('')
+  const [goalsLoading, setGoalsLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
@@ -37,6 +43,15 @@ export default function SettingsPage() {
         setInstagramUrl(data.instagram_url || '')
         setUsername(data.username)
       }
+      const goalsRes = await fetch(`/api/goals?year=${new Date().getFullYear()}`)
+      if (goalsRes.ok) {
+        const gData = await goalsRes.json()
+        setMovieTarget(String(gData.goal.movie_target || ''))
+        setSeriesTarget(String(gData.goal.series_target || ''))
+        setEpisodeTarget(String(gData.goal.episode_target || ''))
+        setHourTarget(String(gData.goal.hour_target || ''))
+      }
+      setGoalsLoading(false)
       setLoading(false)
     }
     load()
@@ -48,18 +63,31 @@ export default function SettingsPage() {
     setError(null)
     setSuccess(false)
 
-    const res = await fetch('/api/account/profile', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        bio: bio.trim() || null,
-        avatar_url: avatarUrl.trim() || null,
-        instagram_url: instagramUrl.trim() || null,
+    const [profileRes] = await Promise.all([
+      fetch('/api/account/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bio: bio.trim() || null,
+          avatar_url: avatarUrl.trim() || null,
+          instagram_url: instagramUrl.trim() || null,
+        }),
       }),
-    })
+      fetch('/api/goals', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          year: goalYear,
+          movie_target: parseInt(movieTarget) || 0,
+          series_target: parseInt(seriesTarget) || 0,
+          episode_target: parseInt(episodeTarget) || 0,
+          hour_target: parseInt(hourTarget) || 0,
+        }),
+      }),
+    ])
 
-    if (!res.ok) {
-      const data = await res.json()
+    if (!profileRes.ok) {
+      const data = await profileRes.json()
       setError(data.error || 'Failed to save')
       setSaving(false)
       return
@@ -142,12 +170,69 @@ export default function SettingsPage() {
           <p className="mt-1 text-xs text-text-muted">{bio.length}/200</p>
         </div>
 
+        <div className="pt-6 border-t border-border">
+          <h2 className="text-sm font-medium text-text-primary mb-4 flex items-center gap-2">
+            <Target className="w-4 h-4 text-accent" />
+            Yearly Goals
+          </h2>
+          {goalsLoading ? (
+            <div className="h-16 bg-tag-bg rounded-sm animate-pulse" />
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block body-xs text-text-muted mb-1">Movies target</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={movieTarget}
+                  onChange={(e) => setMovieTarget(e.target.value)}
+                  className="w-full px-3 py-2 border border-border bg-surface rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                  placeholder="e.g. 50"
+                />
+              </div>
+              <div>
+                <label className="block body-xs text-text-muted mb-1">Series target</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={seriesTarget}
+                  onChange={(e) => setSeriesTarget(e.target.value)}
+                  className="w-full px-3 py-2 border border-border bg-surface rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                  placeholder="e.g. 12"
+                />
+              </div>
+              <div>
+                <label className="block body-xs text-text-muted mb-1">Episode target</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={episodeTarget}
+                  onChange={(e) => setEpisodeTarget(e.target.value)}
+                  className="w-full px-3 py-2 border border-border bg-surface rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                  placeholder="e.g. 100"
+                />
+              </div>
+              <div>
+                <label className="block body-xs text-text-muted mb-1">Hours target</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={hourTarget}
+                  onChange={(e) => setHourTarget(e.target.value)}
+                  className="w-full px-3 py-2 border border-border bg-surface rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                  placeholder="e.g. 200"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
         {error && (
           <p className="text-sm text-accent bg-accent-light px-3 py-2 rounded-sm">{error}</p>
         )}
 
         {success && (
-          <p className="text-sm text-success bg-success/10 px-3 py-2 rounded-sm">Bio saved</p>
+          <p className="text-sm text-success bg-success/10 px-3 py-2 rounded-sm">Settings saved</p>
         )}
 
         {username && (

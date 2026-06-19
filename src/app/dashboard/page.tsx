@@ -9,6 +9,10 @@ import {
   Plus,
   Search,
   SlidersHorizontal,
+  Target,
+  Film,
+  Tv,
+  Timer,
 } from 'lucide-react'
 
 type SortKey = 'watch_date' | 'title' | 'rating' | 'year'
@@ -20,12 +24,14 @@ export default function DashboardPage() {
   const [filterStatus, setFilterStatus] = useState<string>('')
   const [filterFavorites, setFilterFavorites] = useState(false)
   const [sort, setSort] = useState<SortKey>('watch_date')
-  const [order, setOrder] = useState<'asc' | 'desc'>('desc')
+  const [order, setOrder] = useState<'desc' | 'asc'>('desc')
   const [search, setSearch] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [profileUsername, setProfileUsername] = useState('')
   const [profileDisplayName, setProfileDisplayName] = useState('')
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null)
+  const [goal, setGoal] = useState<{ movie_target: number; series_target: number; episode_target: number; hour_target: number } | null>(null)
+  const [progress, setProgress] = useState<{ movies: number; series: number; episodes: number; hours: number } | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -57,11 +63,21 @@ export default function DashboardPage() {
       params.set('order', order)
       if (search) params.set('search', search)
 
-      const res = await fetch(`/api/entries?${params}`, { signal: controller.signal })
+      const [res, goalsRes] = await Promise.all([
+        fetch(`/api/entries?${params}`, { signal: controller.signal }),
+        fetch(`/api/goals?year=${new Date().getFullYear()}`, { signal: controller.signal }),
+      ])
       if (res.ok) {
         const data = await res.json()
         if (!controller.signal.aborted) {
           setEntries(data.entries || [])
+        }
+      }
+      if (goalsRes.ok) {
+        const data = await goalsRes.json()
+        if (!controller.signal.aborted) {
+          setGoal(data.goal)
+          setProgress(data.progress)
         }
       }
       if (!controller.signal.aborted) {
@@ -173,6 +189,49 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {goal && progress && (goal.movie_target > 0 || goal.series_target > 0 || goal.episode_target > 0 || goal.hour_target > 0) && (
+        <div className="mb-8 p-5 bg-surface border border-border rounded-sm">
+          <h2 className="heading-sm mb-4 flex items-center gap-2">
+            <Target className="w-4 h-4 text-accent" />
+            {new Date().getFullYear()} Goals
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {goal.movie_target > 0 && (
+              <GoalBar
+                icon={<Film className="w-3.5 h-3.5" />}
+                label="Movies"
+                current={progress.movies}
+                target={goal.movie_target}
+              />
+            )}
+            {goal.series_target > 0 && (
+              <GoalBar
+                icon={<Tv className="w-3.5 h-3.5" />}
+                label="Series"
+                current={progress.series}
+                target={goal.series_target}
+              />
+            )}
+            {goal.episode_target > 0 && (
+              <GoalBar
+                icon={<Tv className="w-3.5 h-3.5" />}
+                label="Episodes"
+                current={progress.episodes}
+                target={goal.episode_target}
+              />
+            )}
+            {goal.hour_target > 0 && (
+              <GoalBar
+                icon={<Timer className="w-3.5 h-3.5" />}
+                label="Hours"
+                current={progress.hours}
+                target={goal.hour_target}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {Array.from({ length: 12 }).map((_, i) => (
@@ -202,6 +261,29 @@ export default function DashboardPage() {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+function GoalBar({ icon, label, current, target }: { icon: React.ReactNode; label: string; current: number; target: number }) {
+  const pct = Math.min(Math.round((current / target) * 100), 100)
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs text-text-secondary flex items-center gap-1">
+          {icon}
+          {label}
+        </span>
+        <span className="text-xs font-medium text-text-primary">{current}/{target}</span>
+      </div>
+      <div className="h-2 bg-tag-bg rounded-sm overflow-hidden">
+        <div
+          className={`h-full rounded-sm transition-all ${
+            pct >= 100 ? 'bg-green-500' : pct >= 50 ? 'bg-accent' : 'bg-accent/60'
+          }`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
     </div>
   )
 }

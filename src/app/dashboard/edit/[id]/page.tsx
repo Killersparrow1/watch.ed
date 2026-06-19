@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { Entry } from '@/types/database'
+import { Entry, WatchEvent } from '@/types/database'
 import { getEntryPosterUrl } from '@/lib/tmdb'
-import { Save, ArrowLeft, Trash2, Star, Award, Zap, ThumbsDown, Sparkles, Undo2 } from 'lucide-react'
+import { Save, ArrowLeft, Trash2, Star, Award, Zap, ThumbsDown, Sparkles, Undo2, Eye, Plus, X } from 'lucide-react'
 import Link from 'next/link'
 
 export default function EditEntryPage() {
@@ -21,6 +21,10 @@ export default function EditEntryPage() {
   const [rephrasing, setRephrasing] = useState(false)
   const [originalNotes, setOriginalNotes] = useState<string | null>(null)
   const [rephraseError, setRephraseError] = useState<string | null>(null)
+  const [watchEvents, setWatchEvents] = useState<WatchEvent[]>([])
+  const [showAddEvent, setShowAddEvent] = useState(false)
+  const [newEvent, setNewEvent] = useState({ watch_date: '', notes: '', rating: '', season_number: '', episode_number: '' })
+  const [addingEvent, setAddingEvent] = useState(false)
 
   const [form, setForm] = useState({
     title: '',
@@ -62,6 +66,11 @@ export default function EditEntryPage() {
         runtime: data.entry.runtime ? String(data.entry.runtime) : '',
         custom_poster_url: data.entry.custom_poster_url || '',
       })
+      const eventsRes = await fetch(`/api/entries/${id}/watch-events`)
+      if (eventsRes.ok) {
+        const eventsData = await eventsRes.json()
+        setWatchEvents(eventsData.events || [])
+      }
       setLoading(false)
     }
     load()
@@ -150,6 +159,36 @@ export default function EditEntryPage() {
       setForm(prev => ({ ...prev, notes: originalNotes }))
       setOriginalNotes(null)
       setRephraseError(null)
+    }
+  }
+
+  async function handleAddEvent() {
+    if (!newEvent.watch_date) return
+    setAddingEvent(true)
+    const res = await fetch(`/api/entries/${id}/watch-events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        watch_date: newEvent.watch_date,
+        notes: newEvent.notes || null,
+        rating: newEvent.rating ? parseInt(newEvent.rating) : null,
+        season_number: newEvent.season_number ? parseInt(newEvent.season_number) : null,
+        episode_number: newEvent.episode_number ? parseInt(newEvent.episode_number) : null,
+      }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setWatchEvents(prev => [data.event, ...prev])
+      setNewEvent({ watch_date: '', notes: '', rating: '', season_number: '', episode_number: '' })
+      setShowAddEvent(false)
+    }
+    setAddingEvent(false)
+  }
+
+  async function handleDeleteEvent(eventId: string) {
+    const res = await fetch(`/api/watch-events/${eventId}`, { method: 'DELETE' })
+    if (res.ok) {
+      setWatchEvents(prev => prev.filter(e => e.id !== eventId))
     }
   }
 
@@ -453,6 +492,135 @@ export default function EditEntryPage() {
           />
           {rephraseError && (
             <p className="mt-1 text-xs text-accent">{rephraseError}</p>
+          )}
+        </div>
+
+        <div className="border-t border-border pt-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-medium text-text-primary flex items-center gap-1.5">
+              <Eye className="w-4 h-4" />
+              Viewings <span className="text-text-muted font-normal">({watchEvents.length})</span>
+            </h2>
+            <button
+              type="button"
+              onClick={() => setShowAddEvent(!showAddEvent)}
+              className="flex items-center gap-1 text-xs text-accent hover:text-accent-hover transition-colors"
+            >
+              <Plus className="w-3 h-3" />
+              Add viewing
+            </button>
+          </div>
+
+          {showAddEvent && (
+            <div className="mb-4 p-4 bg-tag-bg border border-border rounded-sm space-y-3">
+              <div>
+                <label className="block body-xs text-text-muted mb-1">Date *</label>
+                <input
+                  type="date"
+                  value={newEvent.watch_date}
+                  onChange={(e) => setNewEvent(prev => ({ ...prev, watch_date: e.target.value }))}
+                  className="w-full px-3 py-2 border border-border bg-bg rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {form.type === 'series' && (
+                  <>
+                    <div>
+                      <label className="block body-xs text-text-muted mb-1">Season</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={newEvent.season_number}
+                        onChange={(e) => setNewEvent(prev => ({ ...prev, season_number: e.target.value }))}
+                        className="w-full px-3 py-2 border border-border bg-bg rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block body-xs text-text-muted mb-1">Episode</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={newEvent.episode_number}
+                        onChange={(e) => setNewEvent(prev => ({ ...prev, episode_number: e.target.value }))}
+                        className="w-full px-3 py-2 border border-border bg-bg rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+              <div>
+                <label className="block body-xs text-text-muted mb-1">Rating (1-10)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={newEvent.rating}
+                  onChange={(e) => setNewEvent(prev => ({ ...prev, rating: e.target.value }))}
+                  className="w-full px-3 py-2 border border-border bg-bg rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </div>
+              <div>
+                <label className="block body-xs text-text-muted mb-1">Notes</label>
+                <textarea
+                  value={newEvent.notes}
+                  onChange={(e) => setNewEvent(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-border bg-bg rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddEvent}
+                  disabled={addingEvent || !newEvent.watch_date}
+                  className="px-3 py-1.5 bg-accent text-white rounded-sm text-xs hover:bg-accent-hover transition-colors disabled:opacity-50"
+                >
+                  {addingEvent ? 'Adding...' : 'Add'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowAddEvent(false); setNewEvent({ watch_date: '', notes: '', rating: '', season_number: '', episode_number: '' }) }}
+                  className="px-3 py-1.5 border border-border rounded-sm text-xs text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {watchEvents.length > 0 ? (
+            <div className="space-y-2">
+              {watchEvents.map((event) => (
+                <div key={event.id} className="flex items-start gap-3 p-3 bg-tag-bg border border-border rounded-sm">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-text-primary">{event.watch_date}</span>
+                      {event.season_number != null && (
+                        <span className="text-xs text-text-muted">
+                          S{event.season_number}{event.episode_number != null ? `E${event.episode_number}` : ''}
+                        </span>
+                      )}
+                      {event.rating && (
+                        <span className="text-xs text-rating">{event.rating}/10</span>
+                      )}
+                    </div>
+                    {event.notes && (
+                      <p className="text-xs text-text-secondary mt-1 line-clamp-2">{event.notes}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteEvent(event.id)}
+                    className="p-1 text-text-muted hover:text-accent transition-colors flex-shrink-0"
+                    title="Remove viewing"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-text-muted">No viewings logged yet</p>
           )}
         </div>
 

@@ -1,5 +1,5 @@
 import { createServiceClient, createServerSupabaseClient } from '@/lib/supabase/server'
-import { Film, Tv, Star, Calendar, Timer, Users } from 'lucide-react'
+import { Film, Tv, Star, Calendar, Timer, Users, List } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Viewport } from 'next'
@@ -60,6 +60,24 @@ export default async function PublicProfilePage({ params }: Props) {
     .from('reactions')
     .select('entry_id, reaction')
     .in('entry_id', entryIds.length > 0 ? entryIds : ['none'])
+
+  const { data: publicLists } = await supabase
+    .from('lists')
+    .select('*')
+    .eq('user_id', profile.id)
+    .eq('is_public', true)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: false })
+
+  const listsWithCounts = await Promise.all(
+    (publicLists || []).map(async (list) => {
+      const { count } = await supabase
+        .from('list_entries')
+        .select('*', { count: 'exact', head: true })
+        .eq('list_id', list.id)
+      return { ...list, entry_count: count || 0 }
+    })
+  )
 
   const reactionCounts: Record<string, { likes: number; dislikes: number }> = {}
   for (const entry of entries || []) {
@@ -183,6 +201,27 @@ export default async function PublicProfilePage({ params }: Props) {
             )}
           </div>
         </div>
+
+        {listsWithCounts.length > 0 && (
+          <div className="mb-8">
+            <h2 className="heading-sm mb-3 flex items-center gap-2">
+              <List className="w-4 h-4 text-text-muted" />
+              Lists
+            </h2>
+            <div className="flex flex-wrap gap-3">
+              {listsWithCounts.map((list) => (
+                <Link
+                  key={list.id}
+                  href={`/${username}/lists/${list.id}`}
+                  className="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-sm hover:border-accent/30 transition-colors group"
+                >
+                  <span className="text-sm text-text-primary group-hover:text-accent transition-colors">{list.name}</span>
+                  <span className="body-xs text-text-muted">{list.entry_count}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {entries && entries.length > 0 ? (
           <PublicFilters
