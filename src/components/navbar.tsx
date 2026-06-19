@@ -12,7 +12,6 @@ import {
   LogOut,
   Clock,
   Library,
-  Sparkles,
   Star,
   Search,
   User,
@@ -26,7 +25,6 @@ const navLinks = [
   { href: '/dashboard/lists', label: 'Library', icon: Library },
   { href: '/dashboard/timeline', label: 'Timeline', icon: Clock },
   { href: '/dashboard/stats', label: 'Stats', icon: BarChart3 },
-  { href: '/dashboard/wrapped', label: 'Wrapped', icon: Sparkles },
   { href: '/dashboard/recommendations', label: 'Recs', icon: Star },
   { href: '/dashboard/search', label: 'Search', icon: Search },
 ]
