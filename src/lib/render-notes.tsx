@@ -42,6 +42,13 @@ export function renderNotes(text: string) {
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
+        a({ href, children }) {
+          return (
+            <a href={href} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover underline underline-offset-2">
+              {children}
+            </a>
+          )
+        },
         img({ src, alt }) {
           return (
             <img
