@@ -371,13 +371,13 @@ export default function StatsPage() {
             <div>
               <h3 className="heading-sm mb-4">Monthly Activity</h3>
               <div className="flex items-end gap-2 h-32 bg-surface border border-border rounded-sm p-4">
-                {wrapStats.monthlyActivity.map((count, i) => count > 0 ? (
+                {wrapStats.monthlyActivity.map((count, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-                    <span className="text-[10px] text-text-muted leading-none">{count}</span>
-                    <div className="w-full bg-accent rounded-sm transition-all" style={{ height: `${(count / maxMonthly) * 100}%`, minHeight: '4px' }} />
+                    <span className="text-[10px] text-text-muted leading-none">{count || ''}</span>
+                    <div className="w-full bg-accent rounded-sm transition-all" style={{ height: `${(count / maxMonthly) * 100}%`, minHeight: count > 0 ? '4px' : '0' }} />
                     <span className="text-[10px] text-text-muted">{months[i].slice(0, 3)}</span>
                   </div>
-                ) : null)}
+                ))}
               </div>
             </div>
           )}
