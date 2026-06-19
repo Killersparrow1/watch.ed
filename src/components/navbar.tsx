@@ -11,7 +11,7 @@ import {
   Shield,
   LogOut,
   Clock,
-  List,
+  Library,
   Sparkles,
   Star,
   Search,
@@ -23,7 +23,7 @@ import NotificationDropdown from '@/components/notification-dropdown'
 
 const navLinks = [
   { href: '/dashboard', label: 'Entries', icon: ListIcon },
-  { href: '/dashboard/lists', label: 'Library', icon: List },
+  { href: '/dashboard/lists', label: 'Library', icon: Library },
   { href: '/dashboard/timeline', label: 'Timeline', icon: Clock },
   { href: '/dashboard/stats', label: 'Stats', icon: BarChart3 },
   { href: '/dashboard/wrapped', label: 'Wrapped', icon: Sparkles },
