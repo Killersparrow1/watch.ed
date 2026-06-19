@@ -7,7 +7,6 @@ import { createClient } from '@/lib/supabase/client'
 import {
   List as ListIcon,
   BarChart3,
-  Upload,
   Settings,
   Shield,
   LogOut,
@@ -29,7 +28,6 @@ const navLinks = [
   { href: '/dashboard/recommendations', label: 'Recs', icon: Star },
   { href: '/dashboard/search', label: 'Search', icon: Search },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
-  { href: '/dashboard/import', label: 'Import', icon: Upload },
 ]
 
 export default function Navbar() {

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Save, Copy, Check, ExternalLink, Target } from 'lucide-react'
+import { Save, Copy, Check, ExternalLink, Target, Upload } from 'lucide-react'
 import Link from 'next/link'
 
 export default function SettingsPage() {
@@ -278,6 +278,23 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
+
+        <div className="pt-6 border-t border-border">
+          <h2 className="text-sm font-medium text-text-primary mb-3 flex items-center gap-2">
+            <Upload className="w-4 h-4 text-accent" />
+            Import
+          </h2>
+          <p className="text-xs text-text-secondary mb-3">
+            Import your data from Letterboxd, IMDb, Trakt, Simkl, or CSV/JSON files.
+          </p>
+          <Link
+            href="/dashboard/import"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface border border-border rounded-sm text-sm text-text-secondary hover:text-text-primary transition-colors"
+          >
+            <Upload className="w-4 h-4" />
+            Open Import
+          </Link>
+        </div>
 
         <div className="flex gap-3">
           <button
