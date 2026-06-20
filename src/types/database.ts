@@ -3,6 +3,13 @@ export type WatchStatus = 'watching' | 'completed' | 'on_hold' | 'dropped' | 'pl
 export type BadgeType = 'golden' | 'absolute appi' | 'MalamCult' | 'wammale cinema' | null
 export type ReactionType = 'like' | 'dislike'
 
+export interface WatchProvider {
+  provider_id: number
+  provider_name: string
+  logo_path: string
+  type: 'flatrate' | 'rent' | 'buy' | 'ads'
+}
+
 export interface Profile {
   id: string
   username: string
@@ -38,6 +45,8 @@ export interface Entry {
   badge: BadgeType
   custom_poster_url: string | null
   favorite: boolean
+  watch_providers: WatchProvider[] | null
+  download_url: string | null
   created_at: string
   updated_at: string
 }

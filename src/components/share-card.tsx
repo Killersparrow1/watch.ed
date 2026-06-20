@@ -1,6 +1,6 @@
 import { forwardRef } from 'react'
 import { Entry } from '@/types/database'
-import { getEntryPosterUrl } from '@/lib/tmdb'
+import { getEntryPosterUrl, getPosterUrl } from '@/lib/tmdb'
 import { Award, Zap } from 'lucide-react'
 
 function proxyUrl(url: string) {
@@ -258,7 +258,7 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
           </div>
 
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 14, marginTop: hasReview ? 0 : 'auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {avatarUrl ? (
                   <img
@@ -289,6 +289,26 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
                 <span style={{ fontSize: 12, fontWeight: 800, color: '#555' }}>ed</span>
               </div>
             </div>
+            {entry.watch_providers && entry.watch_providers.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+                <span style={{ fontSize: 9, color: '#777', fontWeight: 500 }}>Watch on:</span>
+                {entry.watch_providers.filter(p => p.type === 'flatrate' || p.type === 'ads').map((p) => (
+                  <img
+                    key={p.provider_id}
+                    src={proxyUrl(getPosterUrl(p.logo_path, 'w185') || '')}
+                    alt={p.provider_name}
+                    title={p.provider_name}
+                    style={{ width: 18, height: 18, borderRadius: 3, objectFit: 'cover' }}
+                    crossOrigin="anonymous"
+                  />
+                ))}
+              </div>
+            )}
+            {entry.download_url && (
+              <div style={{ fontSize: 10, color: '#aaa', marginTop: 4 }}>
+                Download: {entry.download_url}
+              </div>
+            )}
           </div>
         </div>
       </div>

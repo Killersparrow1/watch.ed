@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { Entry, WatchEvent } from '@/types/database'
-import { getEntryPosterUrl } from '@/lib/tmdb'
-import { Save, ArrowLeft, Trash2, Star, Award, Zap, ThumbsDown, Sparkles, Undo2, Eye, Plus, X } from 'lucide-react'
+import { Entry, WatchEvent, WatchProvider } from '@/types/database'
+import { getEntryPosterUrl, getPosterUrl, getWatchProviders } from '@/lib/tmdb'
+import { Save, ArrowLeft, Trash2, Star, Award, Zap, ThumbsDown, Sparkles, Undo2, Eye, Plus, X, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 
 export default function EditEntryPage() {
@@ -25,6 +25,8 @@ export default function EditEntryPage() {
   const [showAddEvent, setShowAddEvent] = useState(false)
   const [newEvent, setNewEvent] = useState({ watch_date: '', notes: '', rating: '', season_number: '', episode_number: '' })
   const [addingEvent, setAddingEvent] = useState(false)
+  const [watchProviders, setWatchProviders] = useState<WatchProvider[]>([])
+  const [fetchingProviders, setFetchingProviders] = useState(false)
 
   const [form, setForm] = useState({
     title: '',
@@ -40,6 +42,7 @@ export default function EditEntryPage() {
     cast_crew: '',
     runtime: '' as string,
     custom_poster_url: '' as string,
+    download_url: '' as string,
   })
 
   useEffect(() => {
@@ -65,7 +68,9 @@ export default function EditEntryPage() {
         cast_crew: data.entry.cast_crew || '',
         runtime: data.entry.runtime ? String(data.entry.runtime) : '',
         custom_poster_url: data.entry.custom_poster_url || '',
+        download_url: data.entry.download_url || '',
       })
+      setWatchProviders(data.entry.watch_providers || [])
       const eventsRes = await fetch(`/api/entries/${id}/watch-events`)
       if (eventsRes.ok) {
         const eventsData = await eventsRes.json()
@@ -95,6 +100,8 @@ export default function EditEntryPage() {
       cast_crew: form.cast_crew || null,
       runtime: form.runtime ? parseInt(form.runtime) : null,
       custom_poster_url: form.custom_poster_url || null,
+      watch_providers: watchProviders,
+      download_url: form.download_url || null,
     }
 
     const res = await fetch(`/api/entries/${id}`, {
@@ -275,6 +282,68 @@ export default function EditEntryPage() {
         </div>
       </div>
 
+      {watchProviders.length > 0 && (
+        <div className="mb-6 px-4 py-3 bg-surface border border-border rounded-sm">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-text-muted">Where to watch</p>
+            {entry.tmdb_id && (
+              <button
+                type="button"
+                onClick={async () => {
+                  setFetchingProviders(true)
+                  const providers = await getWatchProviders(entry.tmdb_id!, entry.type)
+                  setWatchProviders(providers)
+                  setFetchingProviders(false)
+                }}
+                disabled={fetchingProviders}
+                className="flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors"
+              >
+                <RefreshCw className={`w-3 h-3 ${fetchingProviders ? 'animate-spin' : ''}`} />
+                Re-fetch
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {watchProviders.map((p) => (
+              <a
+                key={p.provider_id}
+                href={`https://www.themoviedb.org/${entry.type === 'movie' ? 'movie' : 'tv'}/${entry.tmdb_id}/watch`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative"
+                title={`${p.provider_name} (${p.type})`}
+              >
+                <img
+                  src={getPosterUrl(p.logo_path, 'w185') || ''}
+                  alt={p.provider_name}
+                  className="w-8 h-8 rounded-sm object-cover group-hover:ring-1 group-hover:ring-accent transition-all"
+                />
+                <span className="text-[10px] text-text-muted mt-0.5 block leading-none">{p.provider_name}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {entry.tmdb_id && watchProviders.length === 0 && (
+        <div className="mb-6 px-4 py-3 bg-surface border border-border rounded-sm">
+          <button
+            type="button"
+            onClick={async () => {
+              setFetchingProviders(true)
+              const providers = await getWatchProviders(entry.tmdb_id!, entry.type)
+              setWatchProviders(providers)
+              setFetchingProviders(false)
+            }}
+            disabled={fetchingProviders}
+            className="flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors"
+          >
+            <RefreshCw className={`w-3 h-3 ${fetchingProviders ? 'animate-spin' : ''}`} />
+            {fetchingProviders ? 'Loading...' : 'Load watch providers'}
+          </button>
+        </div>
+      )}
+
       <form onSubmit={handleSave} className="max-w-lg space-y-5">
         <div>
           <label htmlFor="title" className="block text-sm font-medium text-text-primary mb-1.5">
@@ -450,6 +519,20 @@ export default function EditEntryPage() {
             value={form.watch_date}
             onChange={(e) => setForm(prev => ({ ...prev, watch_date: e.target.value }))}
             className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="edit_download_url" className="block text-sm font-medium text-text-primary mb-1.5">
+            Download link
+          </label>
+          <input
+            id="edit_download_url"
+            type="url"
+            value={form.download_url}
+            onChange={(e) => setForm(prev => ({ ...prev, download_url: e.target.value }))}
+            className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+            placeholder="https://example.com/download"
           />
         </div>
 

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { getEntryPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
-import { Film, Tv, Star, Award, Zap, Share2, Heart } from 'lucide-react'
+import { Film, Tv, Star, Award, Zap, Share2, Heart, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import ShareModal from './share-modal'
 
@@ -164,6 +164,13 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
 
         {entry.cast_crew && (
           <p className="text-xs text-text-muted line-clamp-1">{entry.cast_crew}</p>
+        )}
+
+        {entry.download_url && (
+          <span className="inline-flex items-center gap-1 text-xs text-accent/70">
+            <ExternalLink className="w-3 h-3" />
+            Download
+          </span>
         )}
       </div>
 

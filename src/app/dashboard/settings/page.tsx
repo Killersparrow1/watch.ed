@@ -16,6 +16,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [usernameError, setUsernameError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [goalYear, setGoalYear] = useState(new Date().getFullYear())
   const [movieTarget, setMovieTarget] = useState('')
@@ -61,6 +62,7 @@ export default function SettingsPage() {
     e.preventDefault()
     setSaving(true)
     setError(null)
+    setUsernameError(null)
     setSuccess(false)
 
     const [profileRes] = await Promise.all([
@@ -71,6 +73,7 @@ export default function SettingsPage() {
           bio: bio.trim() || null,
           avatar_url: avatarUrl.trim() || null,
           instagram_url: instagramUrl.trim() || null,
+          username: username.trim(),
         }),
       }),
       fetch('/api/goals', {
@@ -88,7 +91,11 @@ export default function SettingsPage() {
 
     if (!profileRes.ok) {
       const data = await profileRes.json()
-      setError(data.error || 'Failed to save')
+      if (profileRes.status === 409) {
+        setUsernameError(data.error || 'Username taken')
+      } else {
+        setError(data.error || 'Failed to save')
+      }
       setSaving(false)
       return
     }
@@ -112,6 +119,35 @@ export default function SettingsPage() {
       <h1 className="heading-lg mb-8">Settings</h1>
 
       <form onSubmit={handleSave} className="max-w-lg space-y-5">
+        <div>
+          <label htmlFor="username" className="block text-sm font-medium text-text-primary mb-1.5">
+            Username
+          </label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-text-muted select-none pointer-events-none">
+              watch-ed.vercel.app/
+            </span>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => {
+                setUsername(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))
+                setUsernameError(null)
+              }}
+              className={`w-full pl-[10.5rem] pr-4 py-2.5 border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors ${
+                usernameError ? 'border-accent' : 'border-border'
+              }`}
+              placeholder="your-name"
+            />
+          </div>
+          {usernameError ? (
+            <p className="mt-1 text-xs text-accent">{usernameError}</p>
+          ) : (
+            <p className="mt-1 text-xs text-text-muted">3-30 characters: letters, numbers, underscores, hyphens</p>
+          )}
+        </div>
+
         <div>
           <label htmlFor="avatar_url" className="block text-sm font-medium text-text-primary mb-1.5">
             Profile picture URL
@@ -232,7 +268,14 @@ export default function SettingsPage() {
         )}
 
         {success && (
-          <p className="text-sm text-success bg-success/10 px-3 py-2 rounded-sm">Settings saved</p>
+          <div className="text-sm text-success bg-success/10 px-3 py-2 rounded-sm">
+            Settings saved
+            {username && (
+              <span className="block mt-1 text-xs text-text-secondary">
+                Profile URL: <span className="text-accent">watch-ed.vercel.app/{username}</span>
+              </span>
+            )}
+          </div>
         )}
 
         {username && (

@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { getEntryPosterUrl } from '@/lib/tmdb'
+import { getEntryPosterUrl, getPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
-import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award, Zap, Share2, Heart, Send, X } from 'lucide-react'
+import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award, Zap, Share2, Heart, Send, X, ExternalLink } from 'lucide-react'
 import { renderNotes } from '@/lib/render-notes'
 import ShareModal from '@/components/share-modal'
 
@@ -200,6 +200,39 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
 
         {entry.cast_crew && (
           <p className="text-xs text-text-muted">{entry.cast_crew}</p>
+        )}
+
+        {entry.watch_providers && entry.watch_providers.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-text-muted">Watch:</span>
+            {entry.watch_providers.filter(p => p.type === 'flatrate' || p.type === 'ads').map((p) => (
+              <a
+                key={p.provider_id}
+                href={`https://www.themoviedb.org/${entry.type === 'movie' ? 'movie' : 'tv'}/${entry.tmdb_id}/watch`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={`${p.provider_name}`}
+              >
+                <img
+                  src={getPosterUrl(p.logo_path, 'w185') || ''}
+                  alt={p.provider_name}
+                  className="w-6 h-6 rounded-sm object-cover hover:ring-1 hover:ring-accent transition-all"
+                />
+              </a>
+            ))}
+          </div>
+        )}
+
+        {entry.download_url && (
+          <a
+            href={entry.download_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent-hover transition-colors"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Download
+          </a>
         )}
 
         {entry.notes && (

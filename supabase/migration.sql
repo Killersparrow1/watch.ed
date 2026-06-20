@@ -421,3 +421,7 @@ DROP POLICY IF EXISTS "Recipient can mark as read" ON recommendations;
 CREATE POLICY "Recipient can mark as read"
   ON recommendations FOR UPDATE
   USING (auth.uid() = to_user_id);
+
+-- Watch providers (TMDB streaming data) and download URL
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS watch_providers JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS download_url TEXT;

@@ -53,7 +53,7 @@ export async function PATCH(
     const allowedFields = [
       'title', 'type', 'status', 'rating', 'progress_season', 'progress_episode',
       'watch_date', 'notes', 'tmdb_id', 'imdb_id', 'poster_path', 'year', 'genres', 'overview', 'badge', 'runtime',
-      'tagline', 'cast_crew', 'custom_poster_url',
+      'tagline', 'cast_crew', 'custom_poster_url', 'watch_providers', 'download_url',
     ]
 
     const updates: Record<string, unknown> = {}

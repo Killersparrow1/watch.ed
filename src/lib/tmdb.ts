@@ -1,4 +1,4 @@
-import { Entry } from '@/types/database'
+import { Entry, WatchProvider } from '@/types/database'
 
 const TMDB_BASE = 'https://api.themoviedb.org/3'
 
@@ -222,6 +222,64 @@ export async function searchBestMatch(
     genres: [],
     media_type: mediaType,
     runtime: null,
+  }
+}
+
+interface TMDBWatchProviderData {
+  provider_id: number
+  provider_name: string
+  logo_path: string
+  display_priority: number
+}
+
+interface TMDBWatchProvidersResponse {
+  id: number
+  results: Record<string, {
+    link?: string
+    flatrate?: TMDBWatchProviderData[]
+    rent?: TMDBWatchProviderData[]
+    buy?: TMDBWatchProviderData[]
+    ads?: TMDBWatchProviderData[]
+  }>
+}
+
+export async function getWatchProviders(
+  tmdbId: number,
+  type: 'movie' | 'series',
+  region: string = 'US'
+): Promise<WatchProvider[]> {
+  const endpoint = type === 'movie' ? `/movie/${tmdbId}/watch/providers` : `/tv/${tmdbId}/watch/providers`
+  try {
+    const data = await tmdbFetch(endpoint) as TMDBWatchProvidersResponse
+    const regionData = data.results?.[region]
+    if (!regionData) return []
+
+    const providers: WatchProvider[] = []
+    const seen = new Set<number>()
+
+    const addIfNew = (items: TMDBWatchProviderData[] | undefined, type: WatchProvider['type']) => {
+      if (!items) return
+      for (const item of items) {
+        if (!seen.has(item.provider_id)) {
+          seen.add(item.provider_id)
+          providers.push({
+            provider_id: item.provider_id,
+            provider_name: item.provider_name,
+            logo_path: item.logo_path,
+            type,
+          })
+        }
+      }
+    }
+
+    addIfNew(regionData.flatrate, 'flatrate')
+    addIfNew(regionData.ads, 'ads')
+    addIfNew(regionData.rent, 'rent')
+    addIfNew(regionData.buy, 'buy')
+
+    return providers
+  } catch {
+    return []
   }
 }
 

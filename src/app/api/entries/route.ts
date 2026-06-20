@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, type, status, rating, progress_season, progress_episode, watch_date, notes, tmdb_id, imdb_id, poster_path, year, genres, overview, badge, runtime, tagline, cast_crew, custom_poster_url } = body
+    const { title, type, status, rating, progress_season, progress_episode, watch_date, notes, tmdb_id, imdb_id, poster_path, year, genres, overview, badge, runtime, tagline, cast_crew, custom_poster_url, watch_providers, download_url } = body
 
     if (!title || !type) {
       return NextResponse.json({ error: 'Title and type are required' }, { status: 400 })
@@ -133,6 +133,8 @@ export async function POST(request: NextRequest) {
       runtime: runtime || null,
       tagline: tagline || null,
       cast_crew: cast_crew || null,
+      watch_providers: watch_providers || [],
+      download_url: download_url || null,
     }
     if (custom_poster_url) record.custom_poster_url = custom_poster_url
 

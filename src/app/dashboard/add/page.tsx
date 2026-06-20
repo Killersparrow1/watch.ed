@@ -2,7 +2,8 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { TMDBResult, getPosterUrl } from '@/lib/tmdb'
+import { WatchProvider } from '@/types/database'
+import { TMDBResult, getPosterUrl, getWatchProviders } from '@/lib/tmdb'
 import { Search, Plus, Star, Film, Tv, ArrowLeft, Award, Zap, ThumbsDown, Sparkles, Undo2 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -12,6 +13,8 @@ export default function AddEntryPage() {
   const [results, setResults] = useState<TMDBResult[]>([])
   const [searching, setSearching] = useState(false)
   const [selected, setSelected] = useState<TMDBResult | null>(null)
+  const [watchProviders, setWatchProviders] = useState<WatchProvider[]>([])
+  const [fetchingProviders, setFetchingProviders] = useState(false)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
   const [form, setForm] = useState({
@@ -28,6 +31,7 @@ export default function AddEntryPage() {
     cast_crew: '' as string,
     runtime: '' as string,
     custom_poster_url: '' as string,
+    download_url: '' as string,
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -112,11 +116,18 @@ export default function AddEntryPage() {
           }
         })
         .catch(() => {})
+
+      setFetchingProviders(true)
+      getWatchProviders(item.tmdb_id, item.media_type)
+        .then(providers => setWatchProviders(providers))
+        .catch(() => {})
+        .finally(() => setFetchingProviders(false))
     }
   }
 
   function clearSelected() {
     setSelected(null)
+    setWatchProviders([])
     setForm(prev => ({
       ...prev,
       title: '',
@@ -142,6 +153,8 @@ export default function AddEntryPage() {
       notes: form.notes || null,
       runtime: form.runtime ? parseInt(form.runtime) : null,
       custom_poster_url: form.custom_poster_url || null,
+      watch_providers: watchProviders,
+      download_url: form.download_url || null,
     }
 
     if (selected) {
@@ -242,29 +255,60 @@ export default function AddEntryPage() {
       )}
 
       {selected && (
-        <div className="flex gap-4 items-start mb-6 p-4 bg-surface border border-border rounded-sm">
-          <div className="w-20 flex-shrink-0">
-            {getPosterUrl(selected.poster_path, 'w185') ? (
-              <img src={getPosterUrl(selected.poster_path, 'w185')!} alt={selected.title} className="w-full rounded-sm" />
-            ) : (
-              <div className="aspect-[2/3] bg-tag-bg rounded-sm flex items-center justify-center">
-                <Film className="w-5 h-5 text-text-muted/40" />
+        <div className="mb-6">
+          <div className="flex gap-4 items-start p-4 bg-surface border border-border rounded-sm">
+            <div className="w-20 flex-shrink-0">
+              {getPosterUrl(selected.poster_path, 'w185') ? (
+                <img src={getPosterUrl(selected.poster_path, 'w185')!} alt={selected.title} className="w-full rounded-sm" />
+              ) : (
+                <div className="aspect-[2/3] bg-tag-bg rounded-sm flex items-center justify-center">
+                  <Film className="w-5 h-5 text-text-muted/40" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="heading-sm">{selected.title}</p>
+              <p className="body-small text-text-secondary mt-1">
+                {selected.year || 'N/A'} · {selected.media_type === 'movie' ? 'Film' : 'Series'}
+                {selected.overview && ` · ${selected.overview.slice(0, 120)}...`}
+              </p>
+            </div>
+            <button
+              onClick={clearSelected}
+              className="text-xs text-accent hover:text-accent-hover whitespace-nowrap"
+            >
+              Change
+            </button>
+          </div>
+
+          {watchProviders.length > 0 && (
+            <div className="mt-3 px-4 py-3 bg-surface border border-border rounded-sm">
+              <p className="text-xs font-medium text-text-muted mb-2">Where to watch</p>
+              <div className="flex flex-wrap gap-2">
+                {watchProviders.map((p) => (
+                  <a
+                    key={p.provider_id}
+                    href={`https://www.themoviedb.org/${selected.media_type === 'movie' ? 'movie' : 'tv'}/${selected.tmdb_id}/watch`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group relative"
+                    title={`${p.provider_name} (${p.type})`}
+                  >
+                    <img
+                      src={getPosterUrl(p.logo_path, 'w185') || ''}
+                      alt={p.provider_name}
+                      className="w-8 h-8 rounded-sm object-cover group-hover:ring-1 group-hover:ring-accent transition-all"
+                    />
+                    <span className="text-[10px] text-text-muted mt-0.5 block leading-none">{p.provider_name}</span>
+                  </a>
+                ))}
               </div>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="heading-sm">{selected.title}</p>
-            <p className="body-small text-text-secondary mt-1">
-              {selected.year || 'N/A'} · {selected.media_type === 'movie' ? 'Film' : 'Series'}
-              {selected.overview && ` · ${selected.overview.slice(0, 120)}...`}
-            </p>
-          </div>
-          <button
-            onClick={clearSelected}
-            className="text-xs text-accent hover:text-accent-hover whitespace-nowrap"
-          >
-            Change
-          </button>
+            </div>
+          )}
+
+          {fetchingProviders && (
+            <p className="text-xs text-text-muted mt-2">Loading watch providers...</p>
+          )}
         </div>
       )}
 
@@ -517,6 +561,20 @@ export default function AddEntryPage() {
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
             />
           )}
+        </div>
+
+        <div>
+          <label htmlFor="download_url" className="block text-sm font-medium text-text-primary mb-1.5">
+            Download link
+          </label>
+          <input
+            id="download_url"
+            type="url"
+            value={form.download_url}
+            onChange={(e) => setForm(prev => ({ ...prev, download_url: e.target.value }))}
+            className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+            placeholder="https://example.com/download"
+          />
         </div>
 
         {error && (
