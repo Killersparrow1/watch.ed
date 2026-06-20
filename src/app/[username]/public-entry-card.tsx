@@ -203,36 +203,47 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
         )}
 
         {entry.watch_providers && entry.watch_providers.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-text-muted">Watch:</span>
-            {entry.watch_providers.filter(p => p.type === 'flatrate' || p.type === 'ads').map((p) => (
-              <a
-                key={p.provider_id}
-                href={`https://www.themoviedb.org/${entry.type === 'movie' ? 'movie' : 'tv'}/${entry.tmdb_id}/watch`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={`${p.provider_name}`}
-              >
-                <img
-                  src={getPosterUrl(p.logo_path, 'w185') || ''}
-                  alt={p.provider_name}
-                  className="w-6 h-6 rounded-sm object-cover hover:ring-1 hover:ring-accent transition-all"
-                />
-              </a>
-            ))}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {(['flatrate', 'ads', 'rent', 'buy'] as const).map(type => {
+              const providers = entry.watch_providers!.filter(p => p.type === type)
+              if (providers.length === 0) return null
+              return (
+                <div key={type} className="flex items-center gap-1">
+                  <span className="text-[10px] uppercase tracking-wider text-text-muted font-medium">{type === 'flatrate' ? 'Stream' : type === 'ads' ? 'Free' : type === 'rent' ? 'Rent' : 'Buy'}:</span>
+                  {providers.map((p) => (
+                    <a
+                      key={p.provider_id}
+                      href={`https://www.themoviedb.org/${entry.type === 'movie' ? 'movie' : 'tv'}/${entry.tmdb_id}/watch`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={p.provider_name}
+                    >
+                      <img
+                        src={getPosterUrl(p.logo_path, 'w92') || ''}
+                        alt={p.provider_name}
+                        className="w-5 h-5 rounded-sm object-cover hover:ring-1 hover:ring-accent transition-all"
+                      />
+                    </a>
+                  ))}
+                </div>
+              )
+            })}
           </div>
         )}
 
         {entry.download_url && (
-          <a
-            href={entry.download_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent-hover transition-colors"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Download
-          </a>
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href={entry.download_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white rounded-sm text-xs font-medium hover:bg-accent-hover transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              Download
+            </a>
+            <span className="text-[10px] text-text-muted italic">Use uBO/adblocker &amp; Firefox</span>
+          </div>
         )}
 
         {entry.notes && (

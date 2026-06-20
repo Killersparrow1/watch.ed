@@ -92,6 +92,17 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid poster URL' }, { status: 400 })
     }
 
+    if (updates.download_url !== undefined) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single()
+      if (!profile?.is_admin) {
+        return NextResponse.json({ error: 'Only admins can set download links' }, { status: 403 })
+      }
+    }
+
     const serviceClient = await createServiceClient()
     const { data, error } = await serviceClient
       .from('entries')

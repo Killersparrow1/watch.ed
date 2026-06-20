@@ -167,10 +167,16 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
         )}
 
         {entry.download_url && (
-          <span className="inline-flex items-center gap-1 text-xs text-accent/70">
+          <a
+            href={entry.download_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1 text-xs text-accent/70 hover:text-accent transition-colors"
+          >
             <ExternalLink className="w-3 h-3" />
             Download
-          </span>
+          </a>
         )}
       </div>
 

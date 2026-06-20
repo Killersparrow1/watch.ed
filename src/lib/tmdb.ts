@@ -128,12 +128,12 @@ export async function getTMDBDetails(
   }
 }
 
-export function getPosterUrl(path: string | null, size: 'w185' | 'w342' | 'w500' | 'original' = 'w342'): string | null {
+export function getPosterUrl(path: string | null, size: 'w92' | 'w185' | 'w342' | 'w500' | 'original' = 'w342'): string | null {
   if (!path) return null
   return `https://image.tmdb.org/t/p/${size}${path}`
 }
 
-export function getEntryPosterUrl(entry: Entry, size: 'w185' | 'w342' | 'w500' | 'original' = 'w342'): string | null {
+export function getEntryPosterUrl(entry: Entry, size: 'w92' | 'w185' | 'w342' | 'w500' | 'original' = 'w342'): string | null {
   if (entry.custom_poster_url) return entry.custom_poster_url
   return getPosterUrl(entry.poster_path, size)
 }
@@ -278,7 +278,8 @@ export async function getWatchProviders(
     addIfNew(regionData.buy, 'buy')
 
     return providers
-  } catch {
+  } catch (e) {
+    console.warn('getWatchProviders failed:', e)
     return []
   }
 }

@@ -113,6 +113,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid poster URL' }, { status: 400 })
     }
 
+    if (download_url !== undefined) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single()
+      if (!profile?.is_admin) {
+        return NextResponse.json({ error: 'Only admins can set download links' }, { status: 403 })
+      }
+    }
+
     const record: Record<string, unknown> = {
       user_id: user.id,
       title: title.trim(),

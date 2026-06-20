@@ -290,23 +290,33 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(
               </div>
             </div>
             {entry.watch_providers && entry.watch_providers.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
-                <span style={{ fontSize: 9, color: '#777', fontWeight: 500 }}>Watch on:</span>
-                {entry.watch_providers.filter(p => p.type === 'flatrate' || p.type === 'ads').map((p) => (
-                  <img
-                    key={p.provider_id}
-                    src={proxyUrl(getPosterUrl(p.logo_path, 'w185') || '')}
-                    alt={p.provider_name}
-                    title={p.provider_name}
-                    style={{ width: 18, height: 18, borderRadius: 3, objectFit: 'cover' }}
-                    crossOrigin="anonymous"
-                  />
-                ))}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px', marginTop: 8 }}>
+                {(['flatrate', 'ads', 'rent', 'buy'] as const).map(type => {
+                  const providers = entry.watch_providers!.filter(p => p.type === type)
+                  if (providers.length === 0) return null
+                  return (
+                    <div key={type} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <span style={{ fontSize: 8, color: '#777', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {type === 'flatrate' ? 'Stream' : type === 'ads' ? 'Free' : type === 'rent' ? 'Rent' : 'Buy'}:
+                      </span>
+                      {providers.map((p) => (
+                        <img
+                          key={p.provider_id}
+                          src={proxyUrl(getPosterUrl(p.logo_path, 'w92') || '')}
+                          alt={p.provider_name}
+                          title={p.provider_name}
+                          style={{ width: 16, height: 16, borderRadius: 2, objectFit: 'cover' }}
+                          crossOrigin="anonymous"
+                        />
+                      ))}
+                    </div>
+                  )
+                })}
               </div>
             )}
             {entry.download_url && (
-              <div style={{ fontSize: 10, color: '#aaa', marginTop: 4 }}>
-                Download: {entry.download_url}
+              <div style={{ fontSize: 10, color: '#E50914', marginTop: 4, fontWeight: 600 }}>
+                Download available
               </div>
             )}
           </div>

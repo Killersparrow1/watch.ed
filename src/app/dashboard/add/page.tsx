@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { WatchProvider } from '@/types/database'
 import { TMDBResult, getPosterUrl, getWatchProviders } from '@/lib/tmdb'
+import { createClient } from '@/lib/supabase/client'
 import { Search, Plus, Star, Film, Tv, ArrowLeft, Award, Zap, ThumbsDown, Sparkles, Undo2 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -35,9 +36,19 @@ export default function AddEntryPage() {
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [rephrasing, setRephrasing] = useState(false)
   const [originalNotes, setOriginalNotes] = useState<string | null>(null)
   const [rephraseError, setRephraseError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase.from('profiles').select('is_admin').eq('id', user.id).single()
+        .then(({ data }) => setIsAdmin(data?.is_admin || false))
+    })
+  }, [])
 
   async function handleRephrase() {
     const text = form.notes.trim()
@@ -563,19 +574,21 @@ export default function AddEntryPage() {
           )}
         </div>
 
-        <div>
-          <label htmlFor="download_url" className="block text-sm font-medium text-text-primary mb-1.5">
-            Download link
-          </label>
-          <input
-            id="download_url"
-            type="url"
-            value={form.download_url}
-            onChange={(e) => setForm(prev => ({ ...prev, download_url: e.target.value }))}
-            className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-            placeholder="https://example.com/download"
-          />
-        </div>
+        {isAdmin && (
+          <div>
+            <label htmlFor="download_url" className="block text-sm font-medium text-text-primary mb-1.5">
+              Download link <span className="text-xs text-text-muted font-normal">(admin only)</span>
+            </label>
+            <input
+              id="download_url"
+              type="url"
+              value={form.download_url}
+              onChange={(e) => setForm(prev => ({ ...prev, download_url: e.target.value }))}
+              className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+              placeholder="https://example.com/download"
+            />
+          </div>
+        )}
 
         {error && (
           <p className="text-sm text-accent bg-accent-light px-3 py-2 rounded-sm">{error}</p>

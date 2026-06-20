@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { Entry, WatchEvent, WatchProvider } from '@/types/database'
 import { getEntryPosterUrl, getPosterUrl, getWatchProviders } from '@/lib/tmdb'
+import { createClient } from '@/lib/supabase/client'
 import { Save, ArrowLeft, Trash2, Star, Award, Zap, ThumbsDown, Sparkles, Undo2, Eye, Plus, X, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 
@@ -25,6 +26,7 @@ export default function EditEntryPage() {
   const [showAddEvent, setShowAddEvent] = useState(false)
   const [newEvent, setNewEvent] = useState({ watch_date: '', notes: '', rating: '', season_number: '', episode_number: '' })
   const [addingEvent, setAddingEvent] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [watchProviders, setWatchProviders] = useState<WatchProvider[]>([])
   const [fetchingProviders, setFetchingProviders] = useState(false)
 
@@ -75,6 +77,12 @@ export default function EditEntryPage() {
       if (eventsRes.ok) {
         const eventsData = await eventsRes.json()
         setWatchEvents(eventsData.events || [])
+      }
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single()
+        setIsAdmin(profile?.is_admin || false)
       }
       setLoading(false)
     }
@@ -522,19 +530,33 @@ export default function EditEntryPage() {
           />
         </div>
 
-        <div>
-          <label htmlFor="edit_download_url" className="block text-sm font-medium text-text-primary mb-1.5">
-            Download link
-          </label>
-          <input
-            id="edit_download_url"
-            type="url"
-            value={form.download_url}
-            onChange={(e) => setForm(prev => ({ ...prev, download_url: e.target.value }))}
-            className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-            placeholder="https://example.com/download"
-          />
-        </div>
+        {isAdmin ? (
+          <div>
+            <label htmlFor="edit_download_url" className="block text-sm font-medium text-text-primary mb-1.5">
+              Download link <span className="text-xs text-text-muted font-normal">(admin only)</span>
+            </label>
+            <input
+              id="edit_download_url"
+              type="url"
+              value={form.download_url}
+              onChange={(e) => setForm(prev => ({ ...prev, download_url: e.target.value }))}
+              className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+              placeholder="https://example.com/download"
+            />
+          </div>
+        ) : entry?.download_url ? (
+          <div>
+            <p className="text-sm font-medium text-text-primary mb-1.5">Download link</p>
+            <a
+              href={entry.download_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-accent hover:text-accent-hover transition-colors"
+            >
+              {entry.download_url}
+            </a>
+          </div>
+        ) : null}
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
