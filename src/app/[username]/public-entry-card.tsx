@@ -242,7 +242,7 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
               <ExternalLink className="w-3.5 h-3.5" />
               Download
             </a>
-            <span className="text-[10px] text-text-muted italic">Use uBO/adblocker &amp; Firefox</span>
+            <span className="text-[10px] text-text-muted italic">Use uBO/adblocker with Firefox Browser to avoid unwanted and annoying ads.</span>
           </div>
         )}
 
