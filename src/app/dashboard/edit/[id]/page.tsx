@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { Entry, WatchEvent, WatchProvider } from '@/types/database'
-import { getEntryPosterUrl, getPosterUrl, getWatchProviders } from '@/lib/tmdb'
+import { getEntryPosterUrl, getPosterUrl } from '@/lib/tmdb'
 import { createClient } from '@/lib/supabase/client'
 import { Save, ArrowLeft, Trash2, Star, Award, Zap, ThumbsDown, Sparkles, Undo2, Eye, Plus, X, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
@@ -299,7 +299,9 @@ export default function EditEntryPage() {
                 type="button"
                 onClick={async () => {
                   setFetchingProviders(true)
-                  const providers = await getWatchProviders(entry.tmdb_id!, entry.type)
+                  const res = await fetch(`/api/tmdb?watch_providers=1&tmdb_id=${entry.tmdb_id}&type=${entry.type}`)
+                  const data = await res.json()
+                  const providers = data.providers || []
                   setWatchProviders(providers)
                   setFetchingProviders(false)
                 }}
@@ -339,7 +341,9 @@ export default function EditEntryPage() {
             type="button"
             onClick={async () => {
               setFetchingProviders(true)
-              const providers = await getWatchProviders(entry.tmdb_id!, entry.type)
+              const res = await fetch(`/api/tmdb?watch_providers=1&tmdb_id=${entry.tmdb_id}&type=${entry.type}`)
+              const data = await res.json()
+              const providers = data.providers || []
               setWatchProviders(providers)
               setFetchingProviders(false)
             }}

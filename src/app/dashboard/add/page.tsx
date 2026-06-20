@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { WatchProvider } from '@/types/database'
-import { TMDBResult, getPosterUrl, getWatchProviders } from '@/lib/tmdb'
+import { TMDBResult, getPosterUrl } from '@/lib/tmdb'
 import { createClient } from '@/lib/supabase/client'
 import { Search, Plus, Star, Film, Tv, ArrowLeft, Award, Zap, ThumbsDown, Sparkles, Undo2 } from 'lucide-react'
 import Link from 'next/link'
@@ -129,8 +129,9 @@ export default function AddEntryPage() {
         .catch(() => {})
 
       setFetchingProviders(true)
-      getWatchProviders(item.tmdb_id, item.media_type)
-        .then(providers => setWatchProviders(providers))
+      fetch(`/api/tmdb?watch_providers=1&tmdb_id=${item.tmdb_id}&type=${item.media_type}`)
+        .then(r => r.json())
+        .then(data => setWatchProviders(data.providers || []))
         .catch(() => {})
         .finally(() => setFetchingProviders(false))
     }

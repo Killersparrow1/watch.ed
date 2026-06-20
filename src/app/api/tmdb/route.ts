@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { searchTMDB, getTMDBDetails } from '@/lib/tmdb'
+import { searchTMDB, getTMDBDetails, getWatchProviders } from '@/lib/tmdb'
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,6 +7,12 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('query')
     const tmdbId = searchParams.get('tmdb_id')
     const type = searchParams.get('type') as 'movie' | 'series' | null
+    const watchProviders = searchParams.get('watch_providers')
+
+    if (watchProviders === '1' && tmdbId && type) {
+      const providers = await getWatchProviders(parseInt(tmdbId), type)
+      return NextResponse.json({ providers })
+    }
 
     if (query) {
       const results = await searchTMDB(query)

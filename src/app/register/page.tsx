@@ -101,7 +101,11 @@ export default function RegisterPage() {
               id="username"
               type="text"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+               onChange={(e) => {
+                 const val = e.target.value
+                 const beforeAt = val.includes('@') ? val.split('@')[0] : val
+                 setUsername(beforeAt.replace(/[^a-zA-Z0-9_-]/g, ''))
+               }}
               className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
               placeholder="your-username"
               required
