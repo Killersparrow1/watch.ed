@@ -12,6 +12,13 @@ export async function GET(request: NextRequest) {
 
     const serviceClient = await createServiceClient()
 
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    await serviceClient
+      .from('watch_parties')
+      .delete()
+      .lt('watch_date', weekAgo)
+      .in('status', ['planned', 'watching'])
+
     if (browse) {
       const { data: hosted } = await serviceClient
         .from('watch_parties')
