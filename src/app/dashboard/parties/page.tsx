@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Calendar, Users, Plus, Clock, Film, Tv, UserCheck, UserX, Loader, X, Search, Globe } from 'lucide-react'
+import { Calendar, Users, Plus, Clock, Film, Tv, UserCheck, UserX, Loader, X, Search, Globe, Trash2, Edit, Save } from 'lucide-react'
 import { getPosterUrl } from '@/lib/tmdb'
 
 interface TMDBResult {
@@ -46,8 +46,14 @@ interface Party {
   watch_date: string
   notes: string | null
   status: string
+  is_public: boolean
   participants: Participant[]
   created_at: string
+}
+
+interface PartyForm {
+  watch_date: string
+  notes: string
 }
 
 type Tab = 'mine' | 'browse'
@@ -66,7 +72,17 @@ export default function PartiesPage() {
   const [watchDate, setWatchDate] = useState('')
   const [notes, setNotes] = useState('')
   const [creating, setCreating] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [editParty, setEditParty] = useState<Party | null>(null)
+  const [editForm, setEditForm] = useState<PartyForm>({ watch_date: '', notes: '' })
+  const [savingEdit, setSavingEdit] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    fetch('/api/account/profile').then(r => r.json()).then(d => {
+      if (d.id) setCurrentUserId(d.id)
+    }).catch(() => {})
+  }, [])
 
   function handleSearch(value: string) {
     setQuery(value)
@@ -147,6 +163,34 @@ export default function PartiesPage() {
     }
   }
 
+  async function handleDeleteParty(id: string) {
+    if (!confirm('Delete this watch party?')) return
+    await fetch(`/api/parties/${id}`, { method: 'DELETE' })
+    setParties(prev => prev.filter(p => p.id !== id))
+  }
+
+  function openEdit(party: Party) {
+    setEditParty(party)
+    setEditForm({ watch_date: party.watch_date, notes: party.notes || '' })
+  }
+
+  async function handleSaveEdit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editParty) return
+    setSavingEdit(true)
+    await fetch(`/api/parties/${editParty.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        watch_date: editForm.watch_date,
+        notes: editForm.notes.trim() || null,
+      }),
+    })
+    setSavingEdit(false)
+    setEditParty(null)
+    load()
+  }
+
   const statusColors: Record<string, string> = {
     planned: 'text-blue-600 bg-blue-100',
     watching: 'text-green-600 bg-green-100',
@@ -210,38 +254,57 @@ export default function PartiesPage() {
         ) : (
           <div className="space-y-3">
             {parties.map(party => (
-              <Link
-                key={party.id}
-                href={`/dashboard/parties/${party.id}`}
-                className="flex items-center gap-4 bg-surface border border-border rounded-sm p-4 hover:border-accent/30 transition-colors group"
-              >
-                <div className="w-12 h-16 shrink-0 rounded-sm overflow-hidden bg-tag-bg flex items-center justify-center">
-                  {party.poster_path ? (
-                    <img src={getPosterUrl(party.poster_path, 'w92') || ''} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    party.media_type === 'series' ? <Tv className="w-5 h-5 text-text-muted/40" /> : <Film className="w-5 h-5 text-text-muted/40" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium group-hover:text-accent transition-colors truncate">{party.title}</p>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium ${statusColors[party.status] || ''}`}>
-                      {party.status}
-                    </span>
+              <div key={party.id} className="flex items-center gap-4 bg-surface border border-border rounded-sm p-4 group">
+                <Link
+                  href={`/dashboard/parties/${party.id}`}
+                  className="flex items-center gap-4 flex-1 min-w-0"
+                >
+                  <div className="w-12 h-16 shrink-0 rounded-sm overflow-hidden bg-tag-bg flex items-center justify-center">
+                    {party.poster_path ? (
+                      <img src={getPosterUrl(party.poster_path, 'w92') || ''} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      party.media_type === 'series' ? <Tv className="w-5 h-5 text-text-muted/40" /> : <Film className="w-5 h-5 text-text-muted/40" />
+                    )}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-text-muted mt-1">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(party.watch_date).toLocaleDateString()}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <UserCheck className="w-3 h-3" />
-                      {acceptedCount(party)}/{totalCount(party)}
-                    </span>
-                    {party.notes && <span className="truncate max-w-[200px]">{party.notes}</span>}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium group-hover:text-accent transition-colors truncate">{party.title}</p>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium ${statusColors[party.status] || ''}`}>
+                        {party.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-text-muted mt-1">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(party.watch_date).toLocaleDateString()}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <UserCheck className="w-3 h-3" />
+                        {acceptedCount(party)}/{totalCount(party)}
+                      </span>
+                      {party.notes && <span className="truncate max-w-[200px]">{party.notes}</span>}
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
+                {party.host_id === currentUserId && (
+                  <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => openEdit(party)}
+                      className="p-2 text-text-muted hover:text-accent hover:bg-accent-light/20 rounded-sm transition-colors"
+                      title="Edit"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteParty(party.id)}
+                      className="p-2 text-text-muted hover:text-red-600 hover:bg-red-50 rounded-sm transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )
@@ -407,6 +470,49 @@ export default function PartiesPage() {
                 className="w-full py-2 bg-accent text-white rounded-sm text-sm hover:bg-accent/90 disabled:opacity-50 transition-colors"
               >
                 {creating ? 'Creating...' : 'Create Party'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editParty && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setEditParty(null)}>
+          <div className="w-full max-w-md bg-surface border border-border rounded-sm p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Edit Party</h2>
+              <button onClick={() => setEditParty(null)} className="text-text-secondary hover:text-text-primary">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <p className="text-sm font-medium">{editParty.title}</p>
+              <div>
+                <label className="block text-sm text-text-secondary mb-1">Watch Date *</label>
+                <input
+                  type="date"
+                  value={editForm.watch_date}
+                  onChange={e => setEditForm(prev => ({ ...prev, watch_date: e.target.value }))}
+                  required
+                  className="w-full px-3 py-2 bg-bg border border-border rounded-sm text-sm focus:outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-text-secondary mb-1">Notes</label>
+                <textarea
+                  value={editForm.notes}
+                  onChange={e => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-bg border border-border rounded-sm text-sm focus:outline-none focus:border-accent resize-y"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={savingEdit}
+                className="w-full flex items-center justify-center gap-2 py-2 bg-accent text-white rounded-sm text-sm hover:bg-accent/90 disabled:opacity-50 transition-colors"
+              >
+                <Save className="w-4 h-4" />
+                {savingEdit ? 'Saving...' : 'Save'}
               </button>
             </form>
           </div>
