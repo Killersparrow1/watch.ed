@@ -40,6 +40,7 @@ export default function WatchPartyPage() {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
+  const [messageError, setMessageError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
   const partyId = params.id as string
@@ -56,7 +57,14 @@ export default function WatchPartyPage() {
   useEffect(() => {
     if (!partyId) return
     function poll() {
-      fetch(`/api/parties/${partyId}/messages`).then(res => res.json()).then(data => {
+      fetch(`/api/parties/${partyId}/messages`).then(async res => {
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({ error: `Failed (${res.status})` }))
+          setMessageError(data.error || 'Failed to load messages')
+          return
+        }
+        setMessageError(null)
+        const data = await res.json()
         if (data.messages) setMessages(data.messages)
       })
     }
@@ -177,7 +185,10 @@ export default function WatchPartyPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-            {messages.length === 0 && (
+            {messageError && (
+              <p className="text-xs text-red-500 text-center py-4">{messageError}</p>
+            )}
+            {!messageError && messages.length === 0 && (
               <p className="text-xs text-text-muted text-center py-8">No messages yet. Start the conversation!</p>
             )}
             {messages.map(msg => (
