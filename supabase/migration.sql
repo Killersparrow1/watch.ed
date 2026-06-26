@@ -525,3 +525,7 @@ CREATE POLICY "Host can delete messages"
   USING (
     auth.uid() IN (SELECT host_id FROM watch_parties WHERE id = watch_party_messages.party_id)
   );
+
+-- Sync position for watch party playback
+ALTER TABLE watch_parties ADD COLUMN IF NOT EXISTS current_time FLOAT DEFAULT 0;
+ALTER TABLE watch_parties ADD COLUMN IF NOT EXISTS is_playing BOOLEAN DEFAULT false;

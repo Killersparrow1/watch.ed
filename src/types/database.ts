@@ -148,23 +148,10 @@ export interface WatchParty {
   watch_date: string
   notes: string | null
   status: 'planned' | 'watching' | 'completed' | 'cancelled'
-  created_at: string
-  updated_at: string
-}
-
-export interface WatchParty {
-  id: string
-  host_id: string
-  title: string
-  tmdb_id: number | null
-  media_type: 'movie' | 'series' | null
-  poster_path: string | null
-  year: number | null
-  watch_date: string
-  notes: string | null
-  status: 'planned' | 'watching' | 'completed' | 'cancelled'
   stream_url: string | null
   is_public: boolean
+  current_time: number
+  is_playing: boolean
   created_at: string
   updated_at: string
 }

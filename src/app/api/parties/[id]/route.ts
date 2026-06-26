@@ -65,6 +65,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (body.year !== undefined) updates.year = body.year
     if (body.stream_url !== undefined) updates.stream_url = body.stream_url
     if (body.is_public !== undefined) updates.is_public = body.is_public
+    if (body.current_time !== undefined) updates.current_time = body.current_time
+    if (body.is_playing !== undefined) updates.is_playing = body.is_playing
 
     const { data, error } = await serviceClient
       .from('watch_parties')
