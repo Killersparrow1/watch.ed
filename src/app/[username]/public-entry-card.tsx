@@ -40,15 +40,21 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
   const [showShare, setShowShare] = useState(false)
   const [showRecommend, setShowRecommend] = useState(false)
   const [friends, setFriends] = useState<{ id: string; username: string; display_name: string | null }[]>([])
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [sendingRec, setSendingRec] = useState(false)
 
   const poster = getEntryPosterUrl(entry, 'w342')
 
   useEffect(() => {
     if (!showRecommend) return
+    setShowLoginPrompt(false)
+    setFriends([])
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return
+      if (!user) {
+        setShowLoginPrompt(true)
+        return
+      }
       const { data } = await supabase
         .from('follows')
         .select('following_id, profiles!inner(id, username, display_name)')
@@ -306,7 +312,9 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
                 <X className="w-4 h-4" />
               </button>
             </div>
-            {friends.length === 0 ? (
+            {showLoginPrompt ? (
+              <p className="text-sm text-text-secondary">Sign in to recommend entries to friends.</p>
+            ) : friends.length === 0 ? (
               <p className="text-sm text-text-secondary">Follow some users first to recommend entries.</p>
             ) : (
               <div className="space-y-1.5">
