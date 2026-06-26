@@ -15,6 +15,7 @@ import {
   Star,
   Search,
   User,
+  Users,
   ChevronDown,
 } from 'lucide-react'
 import { useNotifications } from '@/hooks/use-notifications'
@@ -24,6 +25,7 @@ const navLinks = [
   { href: '/dashboard', label: 'Entries', icon: ListIcon },
   { href: '/dashboard/lists', label: 'Library', icon: Library },
   { href: '/dashboard/timeline', label: 'Timeline', icon: Clock },
+  { href: '/dashboard/parties', label: 'Parties', icon: Users },
   { href: '/dashboard/stats', label: 'Stats', icon: BarChart3 },
   { href: '/dashboard/recommendations', label: 'Recs', icon: Star },
   { href: '/dashboard/search', label: 'Search', icon: Search },

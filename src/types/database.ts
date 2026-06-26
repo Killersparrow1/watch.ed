@@ -136,3 +136,26 @@ export interface ListEntry {
   notes: string | null
   created_at: string
 }
+
+export interface WatchParty {
+  id: string
+  host_id: string
+  title: string
+  tmdb_id: number | null
+  media_type: 'movie' | 'series' | null
+  poster_path: string | null
+  year: number | null
+  watch_date: string
+  notes: string | null
+  status: 'planned' | 'watching' | 'completed' | 'cancelled'
+  created_at: string
+  updated_at: string
+}
+
+export interface WatchPartyParticipant {
+  id: string
+  party_id: string
+  user_id: string
+  status: 'pending' | 'accepted' | 'declined' | 'watched'
+  created_at: string
+}

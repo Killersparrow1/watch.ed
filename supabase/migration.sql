@@ -425,3 +425,71 @@ CREATE POLICY "Recipient can mark as read"
 -- Watch providers (TMDB streaming data) and download URL
 ALTER TABLE entries ADD COLUMN IF NOT EXISTS watch_providers JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE entries ADD COLUMN IF NOT EXISTS download_url TEXT;
+
+-- Watch parties
+CREATE TABLE IF NOT EXISTS watch_parties (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  host_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  tmdb_id INTEGER,
+  media_type TEXT CHECK (media_type IN ('movie', 'series')),
+  poster_path TEXT,
+  year INTEGER,
+  watch_date TEXT NOT NULL,
+  notes TEXT,
+  status TEXT DEFAULT 'planned' CHECK (status IN ('planned', 'watching', 'completed', 'cancelled')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_watch_parties_host ON watch_parties(host_id);
+CREATE INDEX IF NOT EXISTS idx_watch_parties_date ON watch_parties(watch_date);
+
+ALTER TABLE watch_parties ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can view parties" ON watch_parties;
+CREATE POLICY "Anyone can view parties"
+  ON watch_parties FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Host can manage parties" ON watch_parties;
+CREATE POLICY "Host can manage parties"
+  ON watch_parties FOR ALL
+  USING (auth.uid() = host_id);
+
+CREATE TABLE IF NOT EXISTS watch_party_participants (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  party_id UUID NOT NULL REFERENCES watch_parties(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'watched')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(party_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_wpp_party ON watch_party_participants(party_id);
+CREATE INDEX IF NOT EXISTS idx_wpp_user ON watch_party_participants(user_id);
+
+ALTER TABLE watch_party_participants ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Party participants are viewable by participants" ON watch_party_participants;
+CREATE POLICY "Party participants are viewable by participants"
+  ON watch_party_participants FOR SELECT
+  USING (
+    auth.uid() IN (
+      SELECT user_id FROM watch_party_participants WHERE party_id = watch_party_participants.party_id
+    )
+    OR auth.uid() IN (SELECT host_id FROM watch_parties WHERE id = watch_party_participants.party_id)
+  );
+
+DROP POLICY IF EXISTS "Users can manage own participation" ON watch_party_participants;
+CREATE POLICY "Users can manage own participation"
+  ON watch_party_participants FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Host can manage participants" ON watch_party_participants;
+CREATE POLICY "Host can manage participants"
+  ON watch_party_participants FOR ALL
+  USING (
+    auth.uid() IN (SELECT host_id FROM watch_parties WHERE id = watch_party_participants.party_id)
+  );

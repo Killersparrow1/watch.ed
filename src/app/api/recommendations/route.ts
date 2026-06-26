@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient, createServiceClient } from '@/lib/supabase/server'
 import { getPosterUrl } from '@/lib/tmdb'
+import { sendPushNotification } from '@/lib/push'
 
 const TMDB_BASE = 'https://api.themoviedb.org/3'
 
@@ -157,6 +158,13 @@ export async function POST(request: NextRequest) {
         message: `${fromProfile?.display_name || 'Someone'} recommended "${title}"`,
         link: '/dashboard/recommendations',
       })
+
+    sendPushNotification(
+      to_user_id,
+      'New recommendation',
+      `${fromProfile?.display_name || 'Someone'} recommended "${title}"`,
+      '/dashboard/recommendations',
+    )
 
     return NextResponse.json({ recommendation: rec }, { status: 201 })
   } catch (error) {

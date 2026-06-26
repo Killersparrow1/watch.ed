@@ -4,9 +4,11 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Entry, WatchEvent } from '@/types/database'
 import TimelineCard from '@/components/timeline-card'
-import { Film, Tv, Clock, Filter, Eye } from 'lucide-react'
+import FeedCard from '@/components/feed-card'
+import { Film, Tv, Clock, Filter, Eye, Users } from 'lucide-react'
 
 type ActiveFilter = 'all' | 'movie' | 'series'
+type FeedMode = 'mine' | 'following'
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -22,8 +24,11 @@ interface TimelineItem {
 export default function TimelinePage() {
   const [entries, setEntries] = useState<Entry[]>([])
   const [watchEvents, setWatchEvents] = useState<WatchEvent[]>([])
+  const [feedEntries, setFeedEntries] = useState<(Entry & { profile?: { id: string; username: string; display_name: string | null; avatar_url: string | null } | null })[]>([])
   const [loading, setLoading] = useState(true)
+  const [feedLoading, setFeedLoading] = useState(false)
   const [filter, setFilter] = useState<ActiveFilter>('all')
+  const [feedMode, setFeedMode] = useState<FeedMode>('mine')
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
 
@@ -54,6 +59,18 @@ export default function TimelinePage() {
       })
     })
   }, [])
+
+  useEffect(() => {
+    if (feedMode !== 'following') return
+    setFeedLoading(true)
+    fetch('/api/feed')
+      .then(res => res.json())
+      .then(data => {
+        setFeedEntries(data.entries || [])
+        setFeedLoading(false)
+      })
+      .catch(() => setFeedLoading(false))
+  }, [feedMode])
 
   const timelineItems = useMemo((): TimelineItem[] => {
     const items: TimelineItem[] = []
@@ -158,29 +175,75 @@ export default function TimelinePage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mb-6">
-        <Filter className="w-4 h-4 text-text-muted" />
-        {(['all', 'movie', 'series'] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm transition-colors ${
-              filter === f
-                ? 'bg-accent text-white'
-                : 'bg-tag-bg text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            {f === 'all' ? null : f === 'movie' ? (
-              <Film className="w-3.5 h-3.5" />
-            ) : (
-              <Tv className="w-3.5 h-3.5" />
-            )}
-            {f === 'all' ? 'All' : f === 'movie' ? 'Movies' : 'Series'}
-          </button>
-        ))}
+      <div className="flex items-center gap-2 mb-4">
+        <button
+          onClick={() => setFeedMode('mine')}
+          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm transition-colors ${
+            feedMode === 'mine'
+              ? 'bg-accent text-white'
+              : 'bg-tag-bg text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5" />
+          My Timeline
+        </button>
+        <button
+          onClick={() => setFeedMode('following')}
+          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm transition-colors ${
+            feedMode === 'following'
+              ? 'bg-accent text-white'
+              : 'bg-tag-bg text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          Following
+        </button>
       </div>
 
-      {grouped.length === 0 ? (
+      {feedMode === 'mine' && (
+        <div className="flex items-center gap-2 mb-6">
+          <Filter className="w-4 h-4 text-text-muted" />
+          {(['all', 'movie', 'series'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm transition-colors ${
+                filter === f
+                  ? 'bg-accent text-white'
+                  : 'bg-tag-bg text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              {f === 'all' ? null : f === 'movie' ? (
+                <Film className="w-3.5 h-3.5" />
+              ) : (
+                <Tv className="w-3.5 h-3.5" />
+              )}
+              {f === 'all' ? 'All' : f === 'movie' ? 'Movies' : 'Series'}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {feedMode === 'following' ? (
+        feedLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-20 bg-tag-bg rounded-sm animate-pulse" />
+            ))}
+          </div>
+        ) : feedEntries.length === 0 ? (
+          <div className="text-center py-20">
+            <Users className="w-12 h-12 text-text-muted/30 mx-auto mb-3" />
+            <p className="text-text-secondary">No activity from followed users yet</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {feedEntries.map(item => (
+              <FeedCard key={item.id} entry={item} />
+            ))}
+          </div>
+        )
+      ) : grouped.length === 0 ? (
         <div className="text-center py-20">
           <Clock className="w-12 h-12 text-text-muted/30 mx-auto mb-3" />
           <p className="text-text-secondary">No entries yet</p>

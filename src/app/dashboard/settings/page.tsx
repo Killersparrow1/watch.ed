@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Save, Copy, Check, ExternalLink, Target, Upload } from 'lucide-react'
+import { Save, Copy, Check, ExternalLink, Target, Upload, Download } from 'lucide-react'
 import Link from 'next/link'
 
 export default function SettingsPage() {
@@ -337,6 +337,32 @@ export default function SettingsPage() {
             <Upload className="w-4 h-4" />
             Open Import
           </Link>
+        </div>
+
+        <div className="pt-6 border-t border-border">
+          <h2 className="text-sm font-medium text-text-primary mb-3 flex items-center gap-2">
+            <Download className="w-4 h-4 text-accent" />
+            Export
+          </h2>
+          <p className="text-xs text-text-secondary mb-3">
+            Download your entries as CSV or JSON.
+          </p>
+          <div className="flex items-center gap-2">
+            <a
+              href="/api/export?format=csv"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface border border-border rounded-sm text-sm text-text-secondary hover:text-text-primary transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Download CSV
+            </a>
+            <a
+              href="/api/export?format=json"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface border border-border rounded-sm text-sm text-text-secondary hover:text-text-primary transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Download JSON
+            </a>
+          </div>
         </div>
 
         <div className="flex gap-3">

@@ -1,60 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createServerSupabaseClient, createServiceClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('user_id')
+    const format = searchParams.get('format') || 'json'
 
-    if (!userId) {
-      return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
+    const supabase = await createServerSupabaseClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = await createServiceClient()
-
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-
-    if (profileError) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-    }
-
-    const { data: entries, error: entriesError } = await supabase
+    const serviceClient = await createServiceClient()
+    const { data: entries, error } = await serviceClient
       .from('entries')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
-    if (entriesError) throw entriesError
+    if (error) throw error
 
-    const entryIds = (entries || []).map(e => e.id)
+    if (format === 'csv') {
+      const headers = [
+        'title', 'type', 'status', 'rating', 'year', 'tmdb_id', 'imdb_id',
+        'poster_path', 'genres', 'overview', 'tagline', 'cast_crew', 'runtime',
+        'watch_date', 'progress_season', 'progress_episode', 'notes', 'badge',
+        'favorite', 'custom_poster_url', 'watch_providers', 'download_url',
+        'created_at', 'updated_at',
+      ]
 
-    const { data: reactions } = await supabase
-      .from('reactions')
-      .select('entry_id, reaction')
-      .in('entry_id', entryIds.length > 0 ? entryIds : ['none'])
+      const rows = (entries || []).map(e =>
+        headers.map(h => {
+          const val = e[h as keyof typeof e]
+          if (val === null || val === undefined) return ''
+          const str = String(val)
+          return str.includes(',') || str.includes('"') || str.includes('\n')
+            ? `"${str.replace(/"/g, '""')}"`
+            : str
+        }).join(',')
+      )
 
-    const reactionCounts: Record<string, { likes: number; dislikes: number }> = {}
-    for (const entry of entries || []) {
-      reactionCounts[entry.id] = { likes: 0, dislikes: 0 }
+      const csv = [headers.join(','), ...rows].join('\n')
+
+      return new NextResponse(csv, {
+        headers: {
+          'Content-Type': 'text/csv',
+          'Content-Disposition': 'attachment; filename="watch-ed-entries.csv"',
+        },
+      })
     }
-    for (const r of reactions || []) {
-      if (reactionCounts[r.entry_id]) {
-        if (r.reaction === 'like') reactionCounts[r.entry_id].likes++
-        else reactionCounts[r.entry_id].dislikes++
-      }
-    }
 
-    const entriesWithReactions = (entries || []).map(entry => ({
-      ...entry,
-      likes: reactionCounts[entry.id]?.likes || 0,
-      dislikes: reactionCounts[entry.id]?.dislikes || 0,
-    }))
-
-    return NextResponse.json({ profile, entries: entriesWithReactions })
+    return NextResponse.json(entries || [])
   } catch (error) {
     console.error('GET /api/export error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

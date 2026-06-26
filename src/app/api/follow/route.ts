@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { createServerSupabaseClient, createServiceClient } from '@/lib/supabase/server'
+import { sendPushNotification } from '@/lib/push'
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,6 +35,24 @@ export async function POST(request: NextRequest) {
       .insert({ follower_id: user.id, following_id })
 
     if (error) throw error
+
+    const serviceClient = await createServiceClient()
+    const { data: followerProfile } = await serviceClient
+      .from('profiles')
+      .select('display_name, username')
+      .eq('id', user.id)
+      .single()
+
+    const name = followerProfile?.display_name || followerProfile?.username || 'Someone'
+    const msg = `${name} followed you`
+    await serviceClient.from('notifications').insert({
+      user_id: following_id,
+      type: 'follow',
+      message: msg,
+      link: `/${followerProfile?.username || ''}`,
+    }).maybeSingle()
+    sendPushNotification(following_id, 'New follower', msg, `/${followerProfile?.username || ''}`)
+
     return NextResponse.json({ action: 'followed' }, { status: 201 })
   } catch (error) {
     console.error('POST /api/follow error:', error)
