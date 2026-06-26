@@ -527,5 +527,5 @@ CREATE POLICY "Host can delete messages"
   );
 
 -- Sync position for watch party playback
-ALTER TABLE watch_parties ADD COLUMN IF NOT EXISTS current_time FLOAT DEFAULT 0;
+ALTER TABLE watch_parties ADD COLUMN IF NOT EXISTS "current_time" FLOAT DEFAULT 0;
 ALTER TABLE watch_parties ADD COLUMN IF NOT EXISTS is_playing BOOLEAN DEFAULT false;
