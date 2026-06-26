@@ -42,6 +42,7 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
   const [friends, setFriends] = useState<{ id: string; username: string; display_name: string | null }[]>([])
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [sendingRec, setSendingRec] = useState(false)
+  const [recommendError, setRecommendError] = useState<string | null>(null)
 
   const poster = getEntryPosterUrl(entry, 'w342')
 
@@ -49,43 +50,55 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
     if (!showRecommend) return
     setShowLoginPrompt(false)
     setFriends([])
+    setRecommendError(null)
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) {
         setShowLoginPrompt(true)
         return
       }
-      const { data } = await supabase
+      const { data: follows } = await supabase
         .from('follows')
-        .select('following_id, following_id!inner(profiles!inner(id, username, display_name))')
+        .select('following_id')
         .eq('follower_id', user.id)
-      if (data) {
-        setFriends(data.map(f => ({
-          id: f.following_id,
-          username: (f as unknown as { following_id: string; profiles: { id: string; username: string; display_name: string | null } }).profiles.username,
-          display_name: (f as unknown as { following_id: string; profiles: { id: string; username: string; display_name: string | null } }).profiles.display_name,
-        })))
+      if (follows && follows.length > 0) {
+        const ids = follows.map(f => f.following_id)
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, username, display_name')
+          .in('id', ids)
+        if (profiles) setFriends(profiles)
       }
     })
   }, [showRecommend])
 
   async function handleSendRecommend(toUserId: string) {
     setSendingRec(true)
-    const res = await fetch('/api/recommendations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to_user_id: toUserId,
-        entry_id: entry.id,
-        tmdb_id: entry.tmdb_id,
-        title: entry.title,
-        type: entry.type,
-        poster_path: entry.poster_path,
-        year: entry.year,
-      }),
-    })
+    setRecommendError(null)
+    try {
+      const res = await fetch('/api/recommendations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to_user_id: toUserId,
+          entry_id: entry.id,
+          tmdb_id: entry.tmdb_id,
+          title: entry.title,
+          type: entry.type,
+          poster_path: entry.poster_path,
+          year: entry.year,
+        }),
+      })
+      if (res.ok) {
+        setShowRecommend(false)
+      } else {
+        const err = await res.json().catch(() => ({ error: `Request failed (${res.status})` }))
+        setRecommendError(err.error || 'Failed to send recommendation')
+      }
+    } catch {
+      setRecommendError('Network error')
+    }
     setSendingRec(false)
-    if (res.ok) setShowRecommend(false)
   }
 
   async function handleReaction(reaction: 'like' | 'dislike') {
@@ -331,6 +344,7 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
               </div>
             )}
             {sendingRec && <p className="text-xs text-text-secondary mt-2">Sending...</p>}
+            {recommendError && <p className="text-xs text-red-500 mt-2">{recommendError}</p>}
           </div>
         </div>
       )}

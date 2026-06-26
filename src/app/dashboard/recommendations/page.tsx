@@ -39,16 +39,17 @@ export default function RecommendationsPage() {
   async function loadFriends() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const { data } = await supabase
+    const { data: follows } = await supabase
       .from('follows')
-      .select('following_id, following_id!inner(profiles!inner(id, username, display_name))')
+      .select('following_id')
       .eq('follower_id', user.id)
-    if (data) {
-      setFriends(data.map(f => ({
-        id: f.following_id,
-        username: (f as unknown as { following_id: string; profiles: { id: string; username: string; display_name: string | null } }).profiles.username,
-        display_name: (f as unknown as { following_id: string; profiles: { id: string; username: string; display_name: string | null } }).profiles.display_name,
-      })))
+    if (follows && follows.length > 0) {
+      const ids = follows.map(f => f.following_id)
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, display_name')
+        .in('id', ids)
+      if (profiles) setFriends(profiles)
     }
   }
 
