@@ -8,13 +8,29 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     const { data: messages, error } = await serviceClient
       .from('watch_party_messages')
-      .select('*, profiles!inner(id, username, display_name, avatar_url)')
+      .select('*')
       .eq('party_id', id)
       .order('created_at', { ascending: true })
 
     if (error) throw error
 
-    return NextResponse.json({ messages: messages || [] })
+    const userIds = [...new Set((messages || []).map(m => m.user_id))]
+    let profiles: Record<string, { id: string; username: string; display_name: string | null; avatar_url: string | null }> = {}
+    if (userIds.length > 0) {
+      const { data: p } = await serviceClient
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .in('id', userIds)
+      if (p) {
+        for (const profile of p) {
+          profiles[profile.id] = profile
+        }
+      }
+    }
+
+    const enriched = (messages || []).map(m => ({ ...m, profiles: profiles[m.user_id] || null }))
+
+    return NextResponse.json({ messages: enriched })
   } catch (error) {
     console.error('GET /api/parties/[id]/messages error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
