@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { Calendar, Users, Clock, Film, Tv, User, UserCheck, UserX, Trash2, ArrowLeft, Loader, Globe, Lock, ExternalLink, Save } from 'lucide-react'
 import { getPosterUrl } from '@/lib/tmdb'
 import NextLink from 'next/link'
@@ -56,9 +57,9 @@ export default function PartyDetailPage() {
       }
       setLoading(false)
     })
-    fetch('/api/account/profile').then(res => res.json()).then(data => {
-      if (data.id) setCurrentUserId(data.id)
-    }).catch(() => {})
+    createClient().auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id)
+    })
   }, [params.id])
 
   async function handleJoin() {

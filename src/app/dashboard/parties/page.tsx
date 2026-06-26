@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Calendar, Users, Plus, Clock, Film, Tv, UserCheck, UserX, Loader, X, Search, Globe, Trash2, Edit, Save } from 'lucide-react'
 import { getPosterUrl } from '@/lib/tmdb'
+import { createClient } from '@/lib/supabase/client'
 
 interface TMDBResult {
   tmdb_id: number
@@ -79,9 +80,9 @@ export default function PartiesPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    fetch('/api/account/profile').then(r => r.json()).then(d => {
-      if (d.id) setCurrentUserId(d.id)
-    }).catch(() => {})
+    createClient().auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id)
+    })
   }, [])
 
   function handleSearch(value: string) {

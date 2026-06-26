@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Send, ArrowLeft, User, Tv, Film } from 'lucide-react'
 import { getPosterUrl } from '@/lib/tmdb'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 interface Profile {
   id: string
@@ -38,6 +39,7 @@ export default function WatchPartyPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
   const partyId = params.id as string
@@ -46,9 +48,9 @@ export default function WatchPartyPage() {
     fetch(`/api/parties/${partyId}`).then(res => res.json()).then(data => {
       if (data.party) setParty(data.party)
     })
-    fetch('/api/account/profile').then(res => res.json()).then(data => {
-      if (data.id) setCurrentUserId(data.id)
-    }).catch(() => {})
+    createClient().auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id)
+    })
   }, [partyId])
 
   useEffect(() => {
@@ -71,13 +73,19 @@ export default function WatchPartyPage() {
     e.preventDefault()
     if (!input.trim() || sending) return
     setSending(true)
-    await fetch(`/api/parties/${partyId}/messages`, {
+    setSendError(null)
+    const res = await fetch(`/api/parties/${partyId}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: input.trim() }),
     })
     setInput('')
     setSending(false)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `Failed (${res.status})` }))
+      setSendError(err.error || 'Failed to send')
+      return
+    }
     fetch(`/api/parties/${partyId}/messages`).then(res => res.json()).then(data => {
       if (data.messages) setMessages(data.messages)
     })
@@ -214,6 +222,7 @@ export default function WatchPartyPage() {
             {(party.status === 'completed' || party.status === 'cancelled') && (
               <p className="text-xs text-text-muted mt-2">This party has ended.</p>
             )}
+            {sendError && <p className="text-xs text-red-500 mt-2">{sendError}</p>}
           </form>
         </div>
       </div>
