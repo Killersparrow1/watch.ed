@@ -60,7 +60,7 @@ interface PartyForm {
 type Tab = 'mine' | 'browse'
 
 export default function PartiesPage() {
-  const [tab, setTab] = useState<Tab>('mine')
+  const [tab, setTab] = useState<Tab>('browse')
   const [parties, setParties] = useState<Party[]>([])
   const [browseParties, setBrowseParties] = useState<BrowseParty[]>([])
   const [loading, setLoading] = useState(true)
