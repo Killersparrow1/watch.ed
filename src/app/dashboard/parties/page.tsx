@@ -1,9 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Calendar, Users, Plus, Clock, Film, Tv, UserCheck, UserX, Loader } from 'lucide-react'
+import { Calendar, Users, Plus, Clock, Film, Tv, UserCheck, UserX, Loader, X, Search } from 'lucide-react'
 import { getPosterUrl } from '@/lib/tmdb'
+
+interface TMDBResult {
+  tmdb_id: number
+  title: string
+  year: number | null
+  poster_path: string | null
+  media_type: 'movie' | 'series'
+}
 
 interface Participant {
   id: string
@@ -31,10 +39,41 @@ export default function PartiesPage() {
   const [parties, setParties] = useState<Party[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
-  const [title, setTitle] = useState('')
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<TMDBResult[]>([])
+  const [searching, setSearching] = useState(false)
+  const [selected, setSelected] = useState<TMDBResult | null>(null)
   const [watchDate, setWatchDate] = useState('')
   const [notes, setNotes] = useState('')
   const [creating, setCreating] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function handleSearch(value: string) {
+    setQuery(value)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (value.length < 2) { setResults([]); return }
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const res = await fetch(`/api/tmdb?query=${encodeURIComponent(value)}`)
+        const data = await res.json()
+        setResults(data.results || [])
+      } catch { setResults([]) }
+      setSearching(false)
+    }, 400)
+  }
+
+  function selectResult(item: TMDBResult) {
+    setSelected(item)
+    setQuery('')
+    setResults([])
+  }
+
+  function clearSelection() {
+    setSelected(null)
+    setQuery('')
+    setResults([])
+  }
 
   async function load() {
     const res = await fetch('/api/parties')
@@ -49,16 +88,27 @@ export default function PartiesPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
+    if (!selected) return
     setCreating(true)
     const res = await fetch('/api/parties', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: title.trim(), watch_date: watchDate, notes: notes.trim() || null }),
+      body: JSON.stringify({
+        title: selected.title,
+        tmdb_id: selected.tmdb_id,
+        media_type: selected.media_type,
+        poster_path: selected.poster_path,
+        year: selected.year,
+        watch_date: watchDate,
+        notes: notes.trim() || null,
+      }),
     })
     setCreating(false)
     if (res.ok) {
       setShowCreate(false)
-      setTitle('')
+      setSelected(null)
+      setQuery('')
+      setResults([])
       setWatchDate('')
       setNotes('')
       load()
@@ -144,19 +194,82 @@ export default function PartiesPage() {
 
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowCreate(false)}>
-          <div className="w-full max-w-md bg-surface border border-border rounded-sm p-6" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold mb-4">Create Watch Party</h2>
+          <div className="w-full max-w-lg bg-surface border border-border rounded-sm p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Create Watch Party</h2>
+              <button onClick={() => setShowCreate(false)} className="text-text-secondary hover:text-text-primary">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             <form onSubmit={handleCreate} className="space-y-4">
-              <div>
-                <label className="block text-sm text-text-secondary mb-1">Title *</label>
-                <input
-                  value={title}
-                  onChange={e => setTitle(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 bg-bg border border-border rounded-sm text-sm focus:outline-none focus:border-accent"
-                  placeholder="Movie or series title"
-                />
-              </div>
+              {selected ? (
+                <div className="flex items-center gap-3 bg-accent-light/20 border border-accent/30 rounded-sm p-3">
+                  <div className="w-10 h-14 shrink-0 rounded-sm overflow-hidden bg-tag-bg">
+                    {selected.poster_path ? (
+                      <img src={getPosterUrl(selected.poster_path, 'w92') || ''} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        {selected.media_type === 'series' ? <Tv className="w-4 h-4 text-text-muted/40" /> : <Film className="w-4 h-4 text-text-muted/40" />}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{selected.title}</p>
+                    <p className="text-xs text-text-muted">
+                      {selected.media_type === 'movie' ? 'Film' : 'Series'}
+                      {selected.year && <> &middot; {selected.year}</>}
+                    </p>
+                  </div>
+                  <button type="button" onClick={clearSelection} className="p-1 text-text-secondary hover:text-text-primary">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <label className="block text-sm text-text-secondary mb-1">Search TMDB *</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                    <input
+                      value={query}
+                      onChange={e => handleSearch(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2.5 bg-bg border border-border rounded-sm text-sm focus:outline-none focus:border-accent"
+                      placeholder="Search for a movie or series..."
+                      autoFocus
+                    />
+                    {searching && <Loader className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted animate-spin" />}
+                  </div>
+                  {results.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full bg-surface border border-border rounded-sm shadow-lg max-h-64 overflow-y-auto">
+                      {results.map(item => (
+                        <button
+                          key={item.tmdb_id}
+                          type="button"
+                          onClick={() => selectResult(item)}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-tag-bg transition-colors text-left"
+                        >
+                          <div className="w-8 h-12 shrink-0 rounded-sm overflow-hidden bg-tag-bg">
+                            {item.poster_path ? (
+                              <img src={getPosterUrl(item.poster_path, 'w92') || ''} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                {item.media_type === 'series' ? <Tv className="w-3 h-3 text-text-muted/40" /> : <Film className="w-3 h-3 text-text-muted/40" />}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{item.title}</p>
+                            <p className="text-xs text-text-muted">
+                              {item.media_type === 'movie' ? 'Film' : 'Series'}
+                              {item.year && <> &middot; {item.year}</>}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm text-text-secondary mb-1">Watch Date *</label>
                 <input
@@ -179,7 +292,7 @@ export default function PartiesPage() {
               </div>
               <button
                 type="submit"
-                disabled={creating}
+                disabled={creating || !selected}
                 className="w-full py-2 bg-accent text-white rounded-sm text-sm hover:bg-accent/90 disabled:opacity-50 transition-colors"
               >
                 {creating ? 'Creating...' : 'Create Party'}
