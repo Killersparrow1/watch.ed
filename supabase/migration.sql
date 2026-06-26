@@ -493,3 +493,35 @@ CREATE POLICY "Host can manage participants"
   USING (
     auth.uid() IN (SELECT host_id FROM watch_parties WHERE id = watch_party_participants.party_id)
   );
+
+ALTER TABLE watch_parties ADD COLUMN IF NOT EXISTS stream_url TEXT;
+ALTER TABLE watch_parties ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT true;
+
+CREATE TABLE IF NOT EXISTS watch_party_messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  party_id UUID NOT NULL REFERENCES watch_parties(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  message TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_wpm_party ON watch_party_messages(party_id, created_at);
+
+ALTER TABLE watch_party_messages ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can read messages" ON watch_party_messages;
+CREATE POLICY "Anyone can read messages"
+  ON watch_party_messages FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users can send messages" ON watch_party_messages;
+CREATE POLICY "Authenticated users can send messages"
+  ON watch_party_messages FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Host can delete messages" ON watch_party_messages;
+CREATE POLICY "Host can delete messages"
+  ON watch_party_messages FOR DELETE
+  USING (
+    auth.uid() IN (SELECT host_id FROM watch_parties WHERE id = watch_party_messages.party_id)
+  );

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Calendar, Users, Plus, Clock, Film, Tv, UserCheck, UserX, Loader, X, Search } from 'lucide-react'
+import { Calendar, Users, Plus, Clock, Film, Tv, UserCheck, UserX, Loader, X, Search, Globe } from 'lucide-react'
 import { getPosterUrl } from '@/lib/tmdb'
 
 interface TMDBResult {
@@ -20,6 +20,21 @@ interface Participant {
   profiles: { id: string; username: string; display_name: string | null; avatar_url: string | null }
 }
 
+interface BrowseParty {
+  id: string
+  title: string
+  host_id: string
+  tmdb_id: number | null
+  media_type: string | null
+  poster_path: string | null
+  year: number | null
+  watch_date: string
+  notes: string | null
+  status: string
+  host: { id: string; username: string; display_name: string | null; avatar_url: string | null } | null
+  participant_count: { accepted: number; total: number }
+}
+
 interface Party {
   id: string
   title: string
@@ -35,9 +50,14 @@ interface Party {
   created_at: string
 }
 
+type Tab = 'mine' | 'browse'
+
 export default function PartiesPage() {
+  const [tab, setTab] = useState<Tab>('mine')
   const [parties, setParties] = useState<Party[]>([])
+  const [browseParties, setBrowseParties] = useState<BrowseParty[]>([])
   const [loading, setLoading] = useState(true)
+  const [browseLoading, setBrowseLoading] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<TMDBResult[]>([])
@@ -76,6 +96,7 @@ export default function PartiesPage() {
   }
 
   async function load() {
+    setLoading(true)
     const res = await fetch('/api/parties')
     if (res.ok) {
       const data = await res.json()
@@ -84,7 +105,18 @@ export default function PartiesPage() {
     setLoading(false)
   }
 
+  async function loadBrowse() {
+    setBrowseLoading(true)
+    const res = await fetch('/api/parties?browse=true')
+    if (res.ok) {
+      const data = await res.json()
+      setBrowseParties(data.parties || [])
+    }
+    setBrowseLoading(false)
+  }
+
   useEffect(() => { load() }, [])
+  useEffect(() => { if (tab === 'browse') loadBrowse() }, [tab])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -141,55 +173,134 @@ export default function PartiesPage() {
         </button>
       </div>
 
-      {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-24 bg-tag-bg rounded-sm animate-pulse" />
-          ))}
-        </div>
-      ) : parties.length === 0 ? (
-        <div className="text-center py-20">
-          <Calendar className="w-12 h-12 text-text-muted/30 mx-auto mb-3" />
-          <p className="text-text-secondary">No watch parties yet</p>
-          <p className="text-sm text-text-muted mt-1">Create one to coordinate watching with friends.</p>
-        </div>
+      <div className="flex items-center gap-2 mb-6">
+        <button
+          onClick={() => setTab('mine')}
+          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm transition-colors ${
+            tab === 'mine' ? 'bg-accent text-white' : 'bg-tag-bg text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          My Parties
+        </button>
+        <button
+          onClick={() => setTab('browse')}
+          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-sm transition-colors ${
+            tab === 'browse' ? 'bg-accent text-white' : 'bg-tag-bg text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          <Globe className="w-3.5 h-3.5" />
+          Browse
+        </button>
+      </div>
+
+      {tab === 'mine' ? (
+        loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-24 bg-tag-bg rounded-sm animate-pulse" />
+            ))}
+          </div>
+        ) : parties.length === 0 ? (
+          <div className="text-center py-20">
+            <Calendar className="w-12 h-12 text-text-muted/30 mx-auto mb-3" />
+            <p className="text-text-secondary">No watch parties yet</p>
+            <p className="text-sm text-text-muted mt-1">Create one to coordinate watching with friends.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {parties.map(party => (
+              <Link
+                key={party.id}
+                href={`/dashboard/parties/${party.id}`}
+                className="flex items-center gap-4 bg-surface border border-border rounded-sm p-4 hover:border-accent/30 transition-colors group"
+              >
+                <div className="w-12 h-16 shrink-0 rounded-sm overflow-hidden bg-tag-bg flex items-center justify-center">
+                  {party.poster_path ? (
+                    <img src={getPosterUrl(party.poster_path, 'w92') || ''} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    party.media_type === 'series' ? <Tv className="w-5 h-5 text-text-muted/40" /> : <Film className="w-5 h-5 text-text-muted/40" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium group-hover:text-accent transition-colors truncate">{party.title}</p>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium ${statusColors[party.status] || ''}`}>
+                      {party.status}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-text-muted mt-1">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {new Date(party.watch_date).toLocaleDateString()}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <UserCheck className="w-3 h-3" />
+                      {acceptedCount(party)}/{totalCount(party)}
+                    </span>
+                    {party.notes && <span className="truncate max-w-[200px]">{party.notes}</span>}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )
       ) : (
-        <div className="space-y-3">
-          {parties.map(party => (
-            <Link
-              key={party.id}
-              href={`/dashboard/parties/${party.id}`}
-              className="flex items-center gap-4 bg-surface border border-border rounded-sm p-4 hover:border-accent/30 transition-colors group"
-            >
-              <div className="w-12 h-16 shrink-0 rounded-sm overflow-hidden bg-tag-bg flex items-center justify-center">
-                {party.poster_path ? (
-                  <img src={getPosterUrl(party.poster_path, 'w92') || ''} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  party.media_type === 'series' ? <Tv className="w-5 h-5 text-text-muted/40" /> : <Film className="w-5 h-5 text-text-muted/40" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium group-hover:text-accent transition-colors truncate">{party.title}</p>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium ${statusColors[party.status] || ''}`}>
-                    {party.status}
-                  </span>
+        browseLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-24 bg-tag-bg rounded-sm animate-pulse" />
+            ))}
+          </div>
+        ) : browseParties.length === 0 ? (
+          <div className="text-center py-20">
+            <Globe className="w-12 h-12 text-text-muted/30 mx-auto mb-3" />
+            <p className="text-text-secondary">No public parties available</p>
+            <p className="text-sm text-text-muted mt-1">Check back later or create your own!</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {browseParties.map(p => (
+              <Link
+                key={p.id}
+                href={`/dashboard/parties/${p.id}`}
+                className="flex items-center gap-4 bg-surface border border-border rounded-sm p-4 hover:border-accent/30 transition-colors group"
+              >
+                <div className="w-12 h-16 shrink-0 rounded-sm overflow-hidden bg-tag-bg flex items-center justify-center">
+                  {p.poster_path ? (
+                    <img src={getPosterUrl(p.poster_path, 'w92') || ''} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    p.media_type === 'series' ? <Tv className="w-5 h-5 text-text-muted/40" /> : <Film className="w-5 h-5 text-text-muted/40" />
+                  )}
                 </div>
-                <div className="flex items-center gap-3 text-xs text-text-muted mt-1">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {new Date(party.watch_date).toLocaleDateString()}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <UserCheck className="w-3 h-3" />
-                    {acceptedCount(party)}/{totalCount(party)}
-                  </span>
-                  {party.notes && <span className="truncate max-w-[200px]">{party.notes}</span>}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium group-hover:text-accent transition-colors truncate">{p.title}</p>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium ${statusColors[p.status] || ''}`}>
+                      {p.status}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-text-muted mt-1">
+                    {p.host && (
+                      <span className="flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {p.host.display_name || p.host.username}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {new Date(p.watch_date).toLocaleDateString()}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <UserCheck className="w-3 h-3" />
+                      {p.participant_count.accepted}/{p.participant_count.total}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+              </Link>
+            ))}
+          </div>
+        )
       )}
 
       {showCreate && (

@@ -1,13 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient, createServiceClient } from '@/lib/supabase/server'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const browse = searchParams.get('browse') === 'true'
+
     const supabase = await createServerSupabaseClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const serviceClient = await createServiceClient()
+
+    if (browse) {
+      const { data: hosted } = await serviceClient
+        .from('watch_parties')
+        .select('id')
+        .eq('host_id', user.id)
+
+      const { data: joined } = await serviceClient
+        .from('watch_party_participants')
+        .select('party_id')
+        .eq('user_id', user.id)
+
+      const excludeIds = new Set([
+        ...(hosted || []).map(p => p.id),
+        ...(joined || []).map(p => p.party_id),
+      ])
+
+      let query = serviceClient
+        .from('watch_parties')
+        .select('*')
+        .eq('is_public', true)
+        .in('status', ['planned', 'watching'])
+        .order('watch_date', { ascending: true })
+
+      const { data: parties } = await query
+
+      const filtered = (parties || []).filter(p => !excludeIds.has(p.id))
+
+      const partyIds = filtered.map(p => p.id)
+      const [participantsRes, hostsRes] = await Promise.all([
+        serviceClient
+          .from('watch_party_participants')
+          .select('party_id, status')
+          .in('party_id', partyIds),
+        serviceClient
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', filtered.map(p => p.host_id)),
+      ])
+
+      const hostMap = new Map((hostsRes.data || []).map(h => [h.id, h]))
+      const counts: Record<string, { accepted: number; total: number }> = {}
+      for (const p of participantsRes.data || []) {
+        if (!counts[p.party_id]) counts[p.party_id] = { accepted: 0, total: 0 }
+        counts[p.party_id].total++
+        if (p.status === 'accepted') counts[p.party_id].accepted++
+      }
+
+      return NextResponse.json({
+        parties: filtered.map(p => ({
+          ...p,
+          host: hostMap.get(p.host_id) || null,
+          participant_count: counts[p.id] || { accepted: 0, total: 0 },
+        })),
+      })
+    }
 
     const [hostedRes, participantRes] = await Promise.all([
       serviceClient
@@ -61,7 +120,7 @@ export async function POST(request: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
-    const { title, tmdb_id, media_type, poster_path, year, watch_date, notes } = body
+    const { title, tmdb_id, media_type, poster_path, year, watch_date, notes, stream_url } = body
 
     if (!title || !watch_date) {
       return NextResponse.json({ error: 'Title and watch date are required' }, { status: 400 })
@@ -79,6 +138,7 @@ export async function POST(request: NextRequest) {
         year: year || null,
         watch_date,
         notes: notes || null,
+        stream_url: stream_url || null,
       })
       .select()
       .single()

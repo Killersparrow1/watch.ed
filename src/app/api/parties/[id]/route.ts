@@ -47,7 +47,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const { data: party } = await serviceClient
       .from('watch_parties')
-      .select('host_id')
+      .select('host_id, status')
       .eq('id', id)
       .single()
 
@@ -63,6 +63,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (body.media_type !== undefined) updates.media_type = body.media_type
     if (body.poster_path !== undefined) updates.poster_path = body.poster_path
     if (body.year !== undefined) updates.year = body.year
+    if (body.stream_url !== undefined) updates.stream_url = body.stream_url
+    if (body.is_public !== undefined) updates.is_public = body.is_public
 
     const { data, error } = await serviceClient
       .from('watch_parties')
@@ -72,6 +74,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       .single()
 
     if (error) throw error
+
+    if ((body.status === 'completed' || body.status === 'cancelled') && party.status !== body.status) {
+      await serviceClient
+        .from('watch_party_messages')
+        .delete()
+        .eq('party_id', id)
+    }
+
     return NextResponse.json({ party: data })
   } catch (error) {
     console.error('PATCH /api/parties/[id] error:', error)
