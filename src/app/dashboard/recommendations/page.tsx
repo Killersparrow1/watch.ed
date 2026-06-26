@@ -41,7 +41,7 @@ export default function RecommendationsPage() {
     if (!user) return
     const { data } = await supabase
       .from('follows')
-      .select('following_id, profiles!inner(id, username, display_name)')
+      .select('following_id, following_id!inner(profiles!inner(id, username, display_name))')
       .eq('follower_id', user.id)
     if (data) {
       setFriends(data.map(f => ({

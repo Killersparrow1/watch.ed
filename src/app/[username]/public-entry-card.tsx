@@ -57,7 +57,7 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
       }
       const { data } = await supabase
         .from('follows')
-        .select('following_id, profiles!inner(id, username, display_name)')
+        .select('following_id, following_id!inner(profiles!inner(id, username, display_name))')
         .eq('follower_id', user.id)
       if (data) {
         setFriends(data.map(f => ({
