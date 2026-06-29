@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getEntryPosterUrl, getPosterUrl } from '@/lib/tmdb'
 import { Entry, WatchEvent } from '@/types/database'
@@ -47,6 +47,18 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
   const [recommendError, setRecommendError] = useState<string | null>(null)
 
   const poster = getEntryPosterUrl(entry, 'w342')
+
+  const seriesAvgRating = useMemo(() => {
+    if (entry.type !== 'series') return null
+    const ratings: number[] = []
+    if (entry.rating) ratings.push(entry.rating)
+    for (const event of entryWatchEvents) {
+      if (event.rating) ratings.push(event.rating)
+    }
+    if (ratings.length === 0) return null
+    const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length
+    return Math.round(avg * 10) / 10
+  }, [entry, entryWatchEvents])
 
   useEffect(() => {
     if (!showRecommend) return
@@ -177,11 +189,20 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {entry.rating && (
-            <div className="flex items-center gap-1 text-sm">
-              <Star className="w-4 h-4 text-rating fill-current" />
-              <span className="font-medium">{entry.rating}/10</span>
-            </div>
+          {entry.type === 'series' ? (
+            seriesAvgRating && (
+              <div className="flex items-center gap-1 text-sm">
+                <Star className="w-4 h-4 text-rating fill-current" />
+                <span className="font-medium">{seriesAvgRating}/10</span>
+              </div>
+            )
+          ) : (
+            entry.rating && (
+              <div className="flex items-center gap-1 text-sm">
+                <Star className="w-4 h-4 text-rating fill-current" />
+                <span className="font-medium">{entry.rating}/10</span>
+              </div>
+            )
           )}
           {entry.badge === 'golden' && (
             <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium bg-rating/10 text-rating">
@@ -267,21 +288,13 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
           </div>
         )}
 
-        {entry.type === 'movie' && entry.notes && (
-          <div className="text-sm text-text-secondary leading-relaxed">
-            {renderNotes(entry.notes)}
-          </div>
-        )}
-
-        {(entry.type === 'series' ? (entry.notes || entry.rating || entryWatchEvents.length > 0) : entryWatchEvents.length > 0) && (
+        {(entry.notes || entry.rating || entryWatchEvents.length > 0) && (
           <button
             onClick={() => setShowViewings(true)}
             className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent-hover transition-colors self-start"
           >
             <Eye className="w-3.5 h-3.5" />
-            {entry.type === 'series'
-              ? `+${entryWatchEvents.length + (entry.notes || entry.rating ? 1 : 0)} viewing${entryWatchEvents.length + (entry.notes || entry.rating ? 1 : 0) > 1 ? 's' : ''}`
-              : `+${entryWatchEvents.length} viewing${entryWatchEvents.length > 1 ? 's' : ''}`}
+            View opinion
           </button>
         )}
 
@@ -336,14 +349,14 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold flex items-center gap-2">
                 <Eye className="w-4 h-4 text-accent" />
-                {entry.type === 'series' ? 'Reviews' : 'Viewings'} &mdash; {entry.title}
+                Reviews &mdash; {entry.title}
               </h3>
               <button onClick={() => setShowViewings(false)} className="text-text-secondary hover:text-text-primary">
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="space-y-3">
-              {entry.type === 'series' && (entry.notes || entry.rating) && (
+              {(entry.notes || entry.rating) && (
                 <div className="p-3 bg-tag-bg border border-accent/10 rounded-sm">
                   <div className="flex items-center gap-2 text-sm">
                     {entry.watch_date && <span className="text-text-primary font-medium">{entry.watch_date}</span>}
@@ -382,7 +395,7 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
                   )}
                 </div>
               ))}
-              {entry.type === 'series' && !entry.notes && !entry.rating && entryWatchEvents.length === 0 && (
+              {!entry.notes && !entry.rating && entryWatchEvents.length === 0 && (
                 <p className="text-xs text-text-muted text-center py-4">No reviews yet</p>
               )}
             </div>
