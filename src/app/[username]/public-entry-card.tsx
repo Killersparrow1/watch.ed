@@ -267,7 +267,7 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
           </div>
         )}
 
-        {entry.notes && (
+        {entry.type === 'movie' && entry.notes && (
           <div className="text-sm text-text-secondary leading-relaxed">
             {renderNotes(entry.notes)}
           </div>
