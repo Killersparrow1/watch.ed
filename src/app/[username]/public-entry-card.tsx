@@ -48,6 +48,41 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
 
   const poster = getEntryPosterUrl(entry, 'w342')
 
+  const seriesProgress = useMemo(() => {
+    if (entry.type !== 'series') return null
+    let season = entry.progress_season
+    let rangeStart: number | null = null
+    let rangeEnd: number | null = null
+
+    if (entry.progress_episode) {
+      const nums = entry.progress_episode.match(/\d+/g)
+      if (nums) {
+        const parsed = nums.map(Number)
+        rangeStart = Math.min(...parsed)
+        rangeEnd = Math.max(...parsed)
+      }
+    }
+
+    for (const event of entryWatchEvents) {
+      if (event.season_number != null && (season === null || event.season_number > season)) {
+        season = event.season_number
+      }
+      if (event.episode_number != null) {
+        if (rangeStart === null || event.episode_number < rangeStart) rangeStart = event.episode_number
+        if (rangeEnd === null || event.episode_number > rangeEnd) rangeEnd = event.episode_number
+      }
+    }
+
+    if (!season && rangeStart === null) return null
+    let episodeStr = ''
+    if (rangeStart !== null && rangeEnd !== null) {
+      episodeStr = rangeStart === rangeEnd ? String(rangeStart) : `${rangeStart}-${rangeEnd}`
+    } else if (entry.progress_episode) {
+      episodeStr = entry.progress_episode
+    }
+    return `S${season || '?'}${episodeStr ? ` E${episodeStr}` : ''}`
+  }, [entry, entryWatchEvents])
+
   const seriesAvgRating = useMemo(() => {
     if (entry.type !== 'series') return null
     const ratings: number[] = []
@@ -230,10 +265,8 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
           )}
         </div>
 
-        {entry.type === 'series' && (entry.progress_season || entry.progress_episode) && (
-          <p className="body-xs text-text-secondary">
-            {entry.progress_season ? `S${entry.progress_season}` : ''}{entry.progress_episode ? ` E${entry.progress_episode}` : ''}
-          </p>
+        {seriesProgress && (
+          <p className="body-xs text-text-secondary">{seriesProgress}</p>
         )}
 
         {entry.tagline && (
