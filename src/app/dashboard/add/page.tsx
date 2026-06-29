@@ -21,7 +21,7 @@ export default function AddEntryPage() {
   const [form, setForm] = useState({
     title: '',
     type: 'movie' as 'movie' | 'series',
-    status: 'plan_to_watch' as string,
+    status: 'completed' as string,
     rating: '',
     notes: '',
     watch_date: '',
