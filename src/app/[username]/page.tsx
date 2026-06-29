@@ -56,6 +56,12 @@ export default async function PublicProfilePage({ params }: Props) {
 
   const entryIds = (entries || []).map(e => e.id)
 
+  const { data: watchEvents } = await supabase
+    .from('watch_events')
+    .select('*')
+    .in('entry_id', entryIds.length > 0 ? entryIds : ['none'])
+    .order('watch_date', { ascending: false })
+
   const { data: reactions } = await supabase
     .from('reactions')
     .select('entry_id, reaction')
@@ -226,6 +232,7 @@ export default async function PublicProfilePage({ params }: Props) {
         {entries && entries.length > 0 ? (
           <PublicFilters
             entries={entries}
+            watchEvents={watchEvents || []}
             reactionCounts={reactionCounts}
             profileUsername={profile.username}
             profileDisplayName={profile.display_name}

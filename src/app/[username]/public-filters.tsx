@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Entry } from '@/types/database'
+import { Entry, WatchEvent } from '@/types/database'
 import { ArrowUpDown, Grid3X3, Clock } from 'lucide-react'
 import PublicEntryCard from './public-entry-card'
 import PublicTimeline from '@/components/public-timeline'
 
 interface Props {
   entries: Entry[]
+  watchEvents: WatchEvent[]
   reactionCounts: Record<string, { likes: number; dislikes: number }>
   profileUsername: string
   profileDisplayName: string
@@ -17,7 +18,7 @@ interface Props {
 type FilterType = 'all' | 'movie' | 'series' | 'plan_to_watch'
 type SortKey = 'watch_date' | 'rating' | 'title' | 'year'
 
-export default function PublicFilters({ entries, reactionCounts, profileUsername, profileDisplayName, profileAvatarUrl }: Props) {
+export default function PublicFilters({ entries, watchEvents, reactionCounts, profileUsername, profileDisplayName, profileAvatarUrl }: Props) {
   const [filter, setFilter] = useState<FilterType>('all')
   const [sort, setSort] = useState<SortKey>('watch_date')
   const [asc, setAsc] = useState(false)
@@ -142,7 +143,7 @@ export default function PublicFilters({ entries, reactionCounts, profileUsername
       </div>
 
       {viewMode === 'timeline' ? (
-        <PublicTimeline entries={filtered} />
+        <PublicTimeline entries={filtered} watchEvents={watchEvents} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
           {filtered.map((entry) => {
