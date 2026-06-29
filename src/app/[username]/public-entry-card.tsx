@@ -273,13 +273,15 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
           </div>
         )}
 
-        {entryWatchEvents.length > 0 && (
+        {(entry.type === 'series' ? (entry.notes || entry.rating || entryWatchEvents.length > 0) : entryWatchEvents.length > 0) && (
           <button
             onClick={() => setShowViewings(true)}
             className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent-hover transition-colors self-start"
           >
             <Eye className="w-3.5 h-3.5" />
-            +{entryWatchEvents.length} viewing{entryWatchEvents.length > 1 ? 's' : ''}
+            {entry.type === 'series'
+              ? `+${entryWatchEvents.length + (entry.notes || entry.rating ? 1 : 0)} viewing${entryWatchEvents.length + (entry.notes || entry.rating ? 1 : 0) > 1 ? 's' : ''}`
+              : `+${entryWatchEvents.length} viewing${entryWatchEvents.length > 1 ? 's' : ''}`}
           </button>
         )}
 
@@ -334,13 +336,30 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold flex items-center gap-2">
                 <Eye className="w-4 h-4 text-accent" />
-                Viewings &mdash; {entry.title}
+                {entry.type === 'series' ? 'Reviews' : 'Viewings'} &mdash; {entry.title}
               </h3>
               <button onClick={() => setShowViewings(false)} className="text-text-secondary hover:text-text-primary">
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="space-y-3">
+              {entry.type === 'series' && (entry.notes || entry.rating) && (
+                <div className="p-3 bg-tag-bg border border-accent/10 rounded-sm">
+                  <div className="flex items-center gap-2 text-sm">
+                    {entry.watch_date && <span className="text-text-primary font-medium">{entry.watch_date}</span>}
+                    {entry.rating && (
+                      <span className="text-xs text-rating flex items-center gap-0.5">
+                        <Star className="w-3 h-3 fill-current" /> {entry.rating}
+                      </span>
+                    )}
+                  </div>
+                  {entry.notes && (
+                    <div className="text-xs text-text-secondary mt-1 leading-relaxed">
+                      {renderNotes(entry.notes)}
+                    </div>
+                  )}
+                </div>
+              )}
               {entryWatchEvents.map(event => (
                 <div key={event.id} className="p-3 bg-tag-bg border border-border rounded-sm">
                   <div className="flex items-center gap-2 text-sm">
@@ -363,6 +382,9 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
                   )}
                 </div>
               ))}
+              {entry.type === 'series' && !entry.notes && !entry.rating && entryWatchEvents.length === 0 && (
+                <p className="text-xs text-text-muted text-center py-4">No reviews yet</p>
+              )}
             </div>
           </div>
         </div>
