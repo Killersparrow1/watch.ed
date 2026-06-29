@@ -52,6 +52,15 @@ export default function PublicFilters({ entries, watchEvents, reactionCounts, pr
     return list
   }, [entries, filter, sort, asc, watched])
 
+  const watchEventsByEntry = useMemo(() => {
+    const map: Record<string, WatchEvent[]> = {}
+    for (const we of watchEvents) {
+      if (!map[we.entry_id]) map[we.entry_id] = []
+      map[we.entry_id].push(we)
+    }
+    return map
+  }, [watchEvents])
+
   const counts = {
     all: watched.length,
     movie: watched.filter(e => e.type === 'movie').length,
@@ -152,6 +161,7 @@ export default function PublicFilters({ entries, watchEvents, reactionCounts, pr
               <PublicEntryCard
                 key={entry.id}
                 entry={entry}
+                entryWatchEvents={watchEventsByEntry[entry.id] || []}
                 likes={counts.likes}
                 dislikes={counts.dislikes}
                 profileUsername={profileUsername}

@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getEntryPosterUrl, getPosterUrl } from '@/lib/tmdb'
-import { Entry } from '@/types/database'
-import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award, Zap, Share2, Heart, Send, X, ExternalLink } from 'lucide-react'
+import { Entry, WatchEvent } from '@/types/database'
+import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award, Zap, Share2, Heart, Send, X, ExternalLink, Eye } from 'lucide-react'
 import { renderNotes } from '@/lib/render-notes'
 import ShareModal from '@/components/share-modal'
 
 interface Props {
   entry: Entry
+  entryWatchEvents: WatchEvent[]
   likes: number
   dislikes: number
   profileUsername: string
@@ -33,12 +34,13 @@ const statusLabels: Record<string, string> = {
   plan_to_watch: 'Plan to Watch',
 }
 
-export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: initialDislikes, profileUsername, profileDisplayName, profileAvatarUrl }: Props) {
+export default function PublicEntryCard({ entry, entryWatchEvents, likes: initialLikes, dislikes: initialDislikes, profileUsername, profileDisplayName, profileAvatarUrl }: Props) {
   const [likes, setLikes] = useState(initialLikes)
   const [dislikes, setDislikes] = useState(initialDislikes)
   const [userReaction, setUserReaction] = useState<string | null>(null)
   const [showShare, setShowShare] = useState(false)
   const [showRecommend, setShowRecommend] = useState(false)
+  const [showViewings, setShowViewings] = useState(false)
   const [friends, setFriends] = useState<{ id: string; username: string; display_name: string | null }[]>([])
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [sendingRec, setSendingRec] = useState(false)
@@ -271,6 +273,16 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
           </div>
         )}
 
+        {entryWatchEvents.length > 0 && (
+          <button
+            onClick={() => setShowViewings(true)}
+            className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent-hover transition-colors self-start"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            +{entryWatchEvents.length} viewing{entryWatchEvents.length > 1 ? 's' : ''}
+          </button>
+        )}
+
         <div className="flex items-center gap-3 mt-auto pt-2 border-t border-border-light">
           <button
             onClick={() => setShowShare(true)}
@@ -314,6 +326,46 @@ export default function PublicEntryCard({ entry, likes: initialLikes, dislikes: 
           avatarUrl={profileAvatarUrl}
           onClose={() => setShowShare(false)}
         />
+      )}
+
+      {showViewings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowViewings(false)}>
+          <div className="w-full max-w-md bg-surface border border-border rounded-sm p-5 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Eye className="w-4 h-4 text-accent" />
+                Viewings &mdash; {entry.title}
+              </h3>
+              <button onClick={() => setShowViewings(false)} className="text-text-secondary hover:text-text-primary">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              {entryWatchEvents.map(event => (
+                <div key={event.id} className="p-3 bg-tag-bg border border-border rounded-sm">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-text-primary font-medium">{event.watch_date}</span>
+                    {event.season_number != null && (
+                      <span className="text-xs text-text-muted">
+                        S{event.season_number}{event.episode_number != null ? `E${event.episode_number}` : ''}
+                      </span>
+                    )}
+                    {event.rating && (
+                      <span className="text-xs text-rating flex items-center gap-0.5">
+                        <Star className="w-3 h-3 fill-current" /> {event.rating}
+                      </span>
+                    )}
+                  </div>
+                  {event.notes && (
+                    <div className="text-xs text-text-secondary mt-1 leading-relaxed">
+                      {renderNotes(event.notes)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       {showRecommend && (
