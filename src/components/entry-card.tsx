@@ -6,6 +6,7 @@ import { Entry } from '@/types/database'
 import { Film, Tv, Star, Award, Zap, Share2, Heart, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import ShareModal from './share-modal'
+import CastModal from './cast-modal'
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   watching: { label: 'Watching', color: 'text-status-watching bg-status-watching/10' },
@@ -28,6 +29,7 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
   const status = statusConfig[entry.status]
   const [showDetails, setShowDetails] = useState(false)
   const [showShare, setShowShare] = useState(false)
+  const [showCast, setShowCast] = useState(false)
   const [favorite, setFavorite] = useState(entry.favorite)
 
   async function toggleFavorite(e: React.MouseEvent) {
@@ -163,7 +165,12 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
         )}
 
         {entry.cast_crew && (
-          <p className="text-xs text-text-muted line-clamp-1">{entry.cast_crew}</p>
+          <button
+            onClick={(e) => { e.preventDefault(); setShowCast(true) }}
+            className="text-xs text-text-muted hover:text-accent transition-colors text-left line-clamp-1"
+          >
+            {entry.cast_crew}
+          </button>
         )}
 
         {entry.download_url && (
@@ -179,6 +186,15 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
           </a>
         )}
       </div>
+
+      {showCast && (
+        <CastModal
+          tmdbId={entry.tmdb_id}
+          mediaType={entry.type}
+          title={entry.title}
+          onClose={() => setShowCast(false)}
+        />
+      )}
 
       {showShare && username && displayName && (
         <ShareModal

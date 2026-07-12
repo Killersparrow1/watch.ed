@@ -7,6 +7,7 @@ import { Entry, WatchEvent } from '@/types/database'
 import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award, Zap, Share2, Heart, Send, X, ExternalLink, Eye } from 'lucide-react'
 import { renderNotes } from '@/lib/render-notes'
 import ShareModal from '@/components/share-modal'
+import CastModal from '@/components/cast-modal'
 
 interface Props {
   entry: Entry
@@ -41,6 +42,7 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
   const [showShare, setShowShare] = useState(false)
   const [showRecommend, setShowRecommend] = useState(false)
   const [showViewings, setShowViewings] = useState(false)
+  const [showCast, setShowCast] = useState(false)
   const [friends, setFriends] = useState<{ id: string; username: string; display_name: string | null }[]>([])
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [sendingRec, setSendingRec] = useState(false)
@@ -274,7 +276,12 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
         )}
 
         {entry.cast_crew && (
-          <p className="text-xs text-text-muted">{entry.cast_crew}</p>
+          <button
+            onClick={() => setShowCast(true)}
+            className="text-xs text-text-muted hover:text-accent transition-colors text-left"
+          >
+            {entry.cast_crew}
+          </button>
         )}
 
         {entry.watch_providers && entry.watch_providers.length > 0 && (
@@ -365,6 +372,15 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
           </button>
         </div>
       </div>
+
+      {showCast && (
+        <CastModal
+          tmdbId={entry.tmdb_id}
+          mediaType={entry.type}
+          title={entry.title}
+          onClose={() => setShowCast(false)}
+        />
+      )}
 
       {showShare && (
         <ShareModal

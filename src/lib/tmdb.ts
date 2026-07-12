@@ -66,8 +66,16 @@ interface TMDBDetailResult {
   episode_run_time?: number[]
 }
 
+export interface TMDBCastMember {
+  id: number
+  name: string
+  character: string | null
+  profile_path: string | null
+  order: number
+}
+
 interface TMDBCreditsResult {
-  cast: { name: string }[]
+  cast: TMDBCastMember[]
 }
 
 export async function searchTMDB(query: string): Promise<TMDBResult[]> {
@@ -125,6 +133,19 @@ export async function getTMDBDetails(
     genres: (data.genres || []).map((g) => g.name),
     media_type: type,
     runtime: type === 'movie' ? data.runtime || null : (data.episode_run_time?.[0] || null),
+  }
+}
+
+export async function getTMDBFullCast(
+  tmdbId: number,
+  type: 'movie' | 'series'
+): Promise<TMDBCastMember[]> {
+  const endpoint = type === 'movie' ? `/movie/${tmdbId}/credits` : `/tv/${tmdbId}/credits`
+  try {
+    const data = await tmdbFetch(endpoint) as TMDBCreditsResult
+    return (data.cast || []).sort((a, b) => a.order - b.order)
+  } catch {
+    return []
   }
 }
 
