@@ -164,6 +164,23 @@ export interface WatchPartyParticipant {
   created_at: string
 }
 
+export interface Comment {
+  id: string
+  entry_id: string
+  user_id: string
+  content: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CommentWithAuthor extends Comment {
+  author: {
+    username: string
+    display_name: string | null
+    avatar_url: string | null
+  }
+}
+
 export interface WatchPartyMessage {
   id: string
   party_id: string

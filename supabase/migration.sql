@@ -177,6 +177,34 @@ CREATE TRIGGER set_updated_at
   BEFORE UPDATE ON entries
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+-- Comments table (followers can comment on reviews)
+CREATE TABLE IF NOT EXISTS comments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  entry_id UUID NOT NULL REFERENCES entries(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_comments_entry_id ON comments(entry_id);
+CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments(user_id);
+
+DROP POLICY IF EXISTS "Anyone can view comments" ON comments;
+CREATE POLICY "Anyone can view comments"
+  ON comments FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users can insert comments" ON comments;
+CREATE POLICY "Authenticated users can insert comments"
+  ON comments FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+DROP TRIGGER IF EXISTS set_updated_at ON comments;
+CREATE TRIGGER set_updated_at
+  BEFORE UPDATE ON comments
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
 -- Instagram URL for profiles
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS instagram_url TEXT;
 

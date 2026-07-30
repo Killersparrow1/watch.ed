@@ -1,4 +1,4 @@
-export type NotificationType = 'reaction' | 'system'
+export type NotificationType = 'reaction' | 'system' | 'follow' | 'comment'
 
 export interface Notification {
   id: string

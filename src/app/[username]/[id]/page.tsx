@@ -1,9 +1,10 @@
-import { createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient, createServerSupabaseClient } from '@/lib/supabase/server'
 import { ArrowLeft, Calendar, Film, Tv, Timer } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getEntryPosterUrl } from '@/lib/tmdb'
 import type { Metadata } from 'next'
+import type { CommentWithAuthor } from '@/types/database'
 import ReviewContent from './review-content'
 
 interface Props {
@@ -92,6 +93,43 @@ export default async function ReviewPage({ params }: Props) {
 
   const poster = getEntryPosterUrl(entry, 'w342')
 
+  const authSupabase = await createServerSupabaseClient()
+  const { data: { user } } = await authSupabase.auth.getUser()
+
+  let currentUserId: string | null = null
+  let isFollowing = false
+  if (user) {
+    currentUserId = user.id
+    if (user.id !== profile.id) {
+      const { data: follow } = await supabase
+        .from('follows')
+        .select('id')
+        .eq('follower_id', user.id)
+        .eq('following_id', profile.id)
+        .maybeSingle()
+      isFollowing = !!follow
+    } else {
+      isFollowing = true
+    }
+  }
+
+  const { data: rawComments } = await supabase
+    .from('comments')
+    .select('*')
+    .eq('entry_id', id)
+    .order('created_at', { ascending: true })
+
+  const commentUserIds = [...new Set((rawComments || []).map(c => c.user_id))]
+  const { data: commentProfiles } = commentUserIds.length > 0
+    ? await supabase.from('profiles').select('id, username, display_name, avatar_url').in('id', commentUserIds)
+    : { data: [] }
+
+  const profileMap = new Map((commentProfiles || []).map(p => [p.id, p]))
+  const comments: CommentWithAuthor[] = (rawComments || []).map(c => ({
+    ...c,
+    author: profileMap.get(c.user_id) || { username: 'unknown', display_name: null, avatar_url: null },
+  }))
+
   return (
     <div className="min-h-screen bg-bg">
       <header className="border-b border-border bg-surface">
@@ -167,6 +205,10 @@ export default async function ReviewPage({ params }: Props) {
               likes={likes}
               dislikes={dislikes}
               username={username}
+              currentUserId={currentUserId}
+              isFollowing={isFollowing}
+              comments={comments}
+              entryOwnerId={profile.id}
             />
           </div>
         </div>

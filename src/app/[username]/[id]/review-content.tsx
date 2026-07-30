@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Star, ThumbsUp, ThumbsDown, Link as LinkIcon, Check } from 'lucide-react'
+import { Star, ThumbsUp, ThumbsDown, Link as LinkIcon, Check, MessageCircle, Send, User } from 'lucide-react'
 import { renderNotes } from '@/lib/render-notes'
-import type { Entry, WatchEvent } from '@/types/database'
+import type { Entry, WatchEvent, CommentWithAuthor } from '@/types/database'
 
 interface Props {
   entry: Entry
@@ -11,10 +11,18 @@ interface Props {
   likes: number
   dislikes: number
   username: string
+  currentUserId: string | null
+  isFollowing: boolean
+  comments: CommentWithAuthor[]
+  entryOwnerId: string
 }
 
-export default function ReviewContent({ entry, watchEvents, likes, dislikes, username }: Props) {
+export default function ReviewContent({ entry, watchEvents, likes, dislikes, username, currentUserId, isFollowing, comments: initialComments, entryOwnerId }: Props) {
   const [copied, setCopied] = useState(false)
+  const [comments, setComments] = useState<CommentWithAuthor[]>(initialComments)
+  const [newComment, setNewComment] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [commentError, setCommentError] = useState<string | null>(null)
 
   async function handleCopyLink() {
     const url = `${window.location.origin}/${username}/${entry.id}`
@@ -32,6 +40,34 @@ export default function ReviewContent({ entry, watchEvents, likes, dislikes, use
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
+  }
+
+  async function handleSubmitComment(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newComment.trim() || submitting) return
+
+    setSubmitting(true)
+    setCommentError(null)
+
+    try {
+      const res = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entry_id: entry.id, content: newComment.trim() }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setComments(prev => [...prev, data.comment])
+        setNewComment('')
+      } else {
+        const err = await res.json().catch(() => ({ error: 'Failed to post comment' }))
+        setCommentError(err.error || 'Failed to post comment')
+      }
+    } catch {
+      setCommentError('Network error')
+    }
+    setSubmitting(false)
   }
 
   return (
@@ -118,6 +154,77 @@ export default function ReviewContent({ entry, watchEvents, likes, dislikes, use
             </>
           )}
         </button>
+      </div>
+
+      <div className="pt-4 border-t border-border">
+        <h2 className="heading-sm mb-4 flex items-center gap-2">
+          <MessageCircle className="w-4 h-4 text-text-muted" />
+          Comments{comments.length > 0 ? ` (${comments.length})` : ''}
+        </h2>
+
+        {comments.length > 0 ? (
+          <div className="space-y-3 mb-6">
+            {comments.map((comment) => (
+              <div key={comment.id} className="flex gap-3 p-3 bg-surface border border-border rounded-sm">
+                <div className="w-7 h-7 rounded-full bg-tag-bg flex-shrink-0 flex items-center justify-center overflow-hidden">
+                  {comment.author.avatar_url ? (
+                    <img src={comment.author.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-3.5 h-3.5 text-text-muted" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="font-medium text-text-primary">
+                      {comment.author.display_name || comment.author.username}
+                    </span>
+                    <span className="text-text-muted">
+                      {new Date(comment.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="text-sm text-text-secondary mt-1">{comment.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-text-muted mb-6">No comments yet.</p>
+        )}
+
+        {currentUserId ? (
+          isFollowing ? (
+            <form onSubmit={handleSubmitComment} className="flex gap-2">
+              <input
+                type="text"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Write a comment..."
+                maxLength={1000}
+                className="flex-1 px-3 py-2 border border-border bg-bg rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={!newComment.trim() || submitting}
+                className="flex items-center gap-1.5 px-4 py-2 bg-accent text-white rounded-sm text-sm hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Send className="w-3.5 h-3.5" />
+                {submitting ? '...' : 'Post'}
+              </button>
+            </form>
+          ) : (
+            <p className="text-sm text-text-muted">
+              Follow @{username} to leave a comment.
+            </p>
+          )
+        ) : (
+          <p className="text-sm text-text-muted">
+            <a href="/login" className="text-accent hover:text-accent-hover underline underline-offset-2">Sign in</a> to leave a comment.
+          </p>
+        )}
+
+        {commentError && (
+          <p className="text-xs text-red-500 mt-2">{commentError}</p>
+        )}
       </div>
     </div>
   )
