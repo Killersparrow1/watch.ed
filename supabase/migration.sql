@@ -190,6 +190,8 @@ CREATE TABLE IF NOT EXISTS comments (
 CREATE INDEX IF NOT EXISTS idx_comments_entry_id ON comments(entry_id);
 CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments(user_id);
 
+ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+
 DROP POLICY IF EXISTS "Anyone can view comments" ON comments;
 CREATE POLICY "Anyone can view comments"
   ON comments FOR SELECT
