@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Star, ThumbsUp, ThumbsDown, Link as LinkIcon, Check, MessageCircle, Send, User } from 'lucide-react'
+import { Star, ThumbsUp, ThumbsDown, Link as LinkIcon, Check, MessageCircle, Send, User, Trash2 } from 'lucide-react'
 import { renderNotes } from '@/lib/render-notes'
 import type { Entry, WatchEvent, CommentWithAuthor } from '@/types/database'
 
@@ -23,6 +23,7 @@ export default function ReviewContent({ entry, watchEvents, likes, dislikes, use
   const [newComment, setNewComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [commentError, setCommentError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   async function handleCopyLink() {
     const url = `${window.location.origin}/${username}/${entry.id}`
@@ -68,6 +69,18 @@ export default function ReviewContent({ entry, watchEvents, likes, dislikes, use
       setCommentError('Network error')
     }
     setSubmitting(false)
+  }
+
+  async function handleDeleteComment(commentId: string) {
+    if (deletingId) return
+    setDeletingId(commentId)
+    try {
+      const res = await fetch(`/api/comments?id=${commentId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setComments(prev => prev.filter(c => c.id !== commentId))
+      }
+    } catch {}
+    setDeletingId(null)
   }
 
   return (
@@ -165,7 +178,7 @@ export default function ReviewContent({ entry, watchEvents, likes, dislikes, use
         {comments.length > 0 ? (
           <div className="space-y-3 mb-6">
             {comments.map((comment) => (
-              <div key={comment.id} className="flex gap-3 p-3 bg-surface border border-border rounded-sm">
+              <div key={comment.id} className="flex gap-3 p-3 bg-surface border border-border rounded-sm group">
                 <div className="w-7 h-7 rounded-full bg-tag-bg flex-shrink-0 flex items-center justify-center overflow-hidden">
                   {comment.author.avatar_url ? (
                     <img src={comment.author.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -184,6 +197,16 @@ export default function ReviewContent({ entry, watchEvents, likes, dislikes, use
                   </div>
                   <p className="text-sm text-text-secondary mt-1">{comment.content}</p>
                 </div>
+                {(currentUserId === comment.user_id || currentUserId === entryOwnerId) && (
+                  <button
+                    onClick={() => handleDeleteComment(comment.id)}
+                    disabled={deletingId === comment.id}
+                    className="self-start text-text-muted hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"
+                    title="Delete comment"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             ))}
           </div>

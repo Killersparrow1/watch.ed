@@ -202,6 +202,16 @@ CREATE POLICY "Authenticated users can insert comments"
   ON comments FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Comment author or entry owner can delete" ON comments;
+CREATE POLICY "Comment author or entry owner can delete"
+  ON comments FOR DELETE
+  USING (
+    auth.uid() = user_id
+    OR auth.uid() IN (
+      SELECT user_id FROM entries WHERE id = entry_id
+    )
+  );
+
 DROP TRIGGER IF EXISTS set_updated_at ON comments;
 CREATE TRIGGER set_updated_at
   BEFORE UPDATE ON comments

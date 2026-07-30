@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient, createServiceClient } from '@/lib/supabase/server'
 import { sendPushNotification } from '@/lib/push'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -118,6 +119,56 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ comment: commentWithAuthor }, { status: 201 })
   } catch (error) {
     console.error('POST /api/comments error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await requireAuth()
+
+    const { searchParams } = new URL(request.url)
+    const commentId = searchParams.get('id')
+    if (!commentId) {
+      return NextResponse.json({ error: 'Comment id is required' }, { status: 400 })
+    }
+
+    const serviceClient = await createServiceClient()
+
+    const { data: comment } = await serviceClient
+      .from('comments')
+      .select('id, user_id, entry_id')
+      .eq('id', commentId)
+      .single()
+
+    if (!comment) {
+      return NextResponse.json({ error: 'Comment not found' }, { status: 404 })
+    }
+
+    const { data: entry } = await serviceClient
+      .from('entries')
+      .select('user_id')
+      .eq('id', comment.entry_id)
+      .single()
+
+    if (!entry) {
+      return NextResponse.json({ error: 'Entry not found' }, { status: 404 })
+    }
+
+    if (comment.user_id !== user.id && entry.user_id !== user.id) {
+      return NextResponse.json({ error: 'Not authorized to delete this comment' }, { status: 403 })
+    }
+
+    const { error: deleteError } = await serviceClient
+      .from('comments')
+      .delete()
+      .eq('id', commentId)
+
+    if (deleteError) throw deleteError
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('DELETE /api/comments error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
