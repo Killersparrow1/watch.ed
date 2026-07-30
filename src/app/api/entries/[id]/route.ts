@@ -92,7 +92,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid poster URL' }, { status: 400 })
     }
 
-    if (updates.download_url !== undefined) {
+    if (updates.download_url) {
       const { data: profile } = await supabase
         .from('profiles')
         .select('is_admin')

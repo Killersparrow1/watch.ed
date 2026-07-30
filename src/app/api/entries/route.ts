@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid poster URL' }, { status: 400 })
     }
 
-    if (download_url !== undefined) {
+    if (download_url) {
       const { data: profile } = await supabase
         .from('profiles')
         .select('is_admin')
