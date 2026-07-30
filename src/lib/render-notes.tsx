@@ -1,6 +1,5 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import remarkBreaks from 'remark-breaks'
 
 const DIRECT_IMAGE_RE = /(https?:\/\/[^\s]+?\.(?:gif|png|jpe?g|webp|avif)(?:\?[^\s]*)?)/gi
 const PROXY_GIF_RE = /(\/api\/gif-proxy\?url=[^\s]+)/gi
@@ -37,11 +36,13 @@ export function renderNotes(text: string) {
 
   processed = processed.replace(/\x01(\d+)\x01/g, (_, n) => saved[parseInt(n)])
 
+  processed = processed.replace(/\n/g, '  \n')
+
   if (!processed.trim()) return null
 
   return (
     <ReactMarkdown
-      remarkPlugins={[remarkGfm, remarkBreaks]}
+      remarkPlugins={[remarkGfm]}
       components={{
         a({ href, children }) {
           return (
