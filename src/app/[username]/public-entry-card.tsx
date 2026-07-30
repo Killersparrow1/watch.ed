@@ -50,6 +50,7 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
   const [recommendError, setRecommendError] = useState<string | null>(null)
 
   const poster = getEntryPosterUrl(entry, 'w342')
+  const isTmdbPoster = !!poster && poster.startsWith('https://image.tmdb.org/')
 
   const seriesProgress = useMemo(() => {
     if (entry.type !== 'series') return null
@@ -188,13 +189,22 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
     <div className="bg-surface border border-border rounded-sm overflow-hidden flex" onContextMenu={(e) => e.preventDefault()}>
       <div className="w-28 flex-shrink-0 self-start bg-tag-bg relative aspect-[2/3]">
         {poster ? (
-          <Image
-            src={poster}
-            alt={entry.title}
-            fill
-            className="object-cover"
-            sizes="112px"
-          />
+          isTmdbPoster ? (
+            <Image
+              src={poster}
+              alt={entry.title}
+              fill
+              className="object-cover"
+              sizes="112px"
+            />
+          ) : (
+            <img
+              src={poster}
+              alt={entry.title}
+              className="w-full aspect-[2/3] object-cover"
+              loading="lazy"
+            />
+          )
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             {entry.type === 'movie' ? (
