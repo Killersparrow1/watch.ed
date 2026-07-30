@@ -96,7 +96,7 @@ export default async function ReviewPage({ params }: Props) {
     <div className="min-h-screen bg-bg">
       <header className="border-b border-border bg-surface">
         <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href={`/${username}`} className="flex items-center gap-3">
+          <Link href={`/${username}`} className="flex items-center gap-3 hover:bg-tag-bg/50 rounded-sm px-2 -mx-2 transition-all">
             <img src="/logo.svg" alt="watch.ed" className="h-14" />
             <span className="text-sm text-text-muted border-l border-border pl-3">
               {profile.display_name}
@@ -104,7 +104,7 @@ export default async function ReviewPage({ params }: Props) {
           </Link>
           <Link
             href={`/${username}`}
-            className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors"
+            className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary hover:bg-tag-bg/50 rounded-sm px-3 -mx-3 active:scale-95 transition-all"
           >
             <ArrowLeft className="w-4 h-4" />
             Profile
