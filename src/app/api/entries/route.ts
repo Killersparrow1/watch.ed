@@ -10,6 +10,8 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get('sort') || 'created_at'
     const order = searchParams.get('order') || 'desc'
     const search = searchParams.get('search')
+    const limit = searchParams.get('limit')
+    const offset = searchParams.get('offset')
 
     const supabase = await createServerSupabaseClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -37,6 +39,9 @@ export async function GET(request: NextRequest) {
     } else {
       query = query.order(sortCol, { ascending: sortOrder })
     }
+
+    if (limit) query = query.limit(parseInt(limit))
+    if (offset) query = query.range(parseInt(offset), parseInt(offset) + (limit ? parseInt(limit) - 1 : 9999))
 
     const { data: entries, error } = await query
 

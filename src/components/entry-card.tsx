@@ -5,6 +5,7 @@ import { getEntryPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
 import { Film, Tv, Star, Award, Zap, Share2, Heart, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import ShareModal from './share-modal'
 import CastModal from './cast-modal'
 
@@ -52,11 +53,12 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
         className="block aspect-[2/3] bg-tag-bg overflow-hidden relative"
       >
         {poster ? (
-          <img
+          <Image
             src={poster}
             alt={entry.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">

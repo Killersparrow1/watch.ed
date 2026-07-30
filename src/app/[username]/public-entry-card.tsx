@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getEntryPosterUrl, getPosterUrl } from '@/lib/tmdb'
 import { Entry, WatchEvent } from '@/types/database'
 import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award, Zap, Share2, Heart, Send, X, ExternalLink, Eye } from 'lucide-react'
+import Image from 'next/image'
 import { renderNotes } from '@/lib/render-notes'
 import ShareModal from '@/components/share-modal'
 import CastModal from '@/components/cast-modal'
@@ -185,9 +186,15 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
 
   return (
     <div className="bg-surface border border-border rounded-sm overflow-hidden flex" onContextMenu={(e) => e.preventDefault()}>
-      <div className="w-28 flex-shrink-0 self-start bg-tag-bg relative">
+      <div className="w-28 flex-shrink-0 self-start bg-tag-bg relative aspect-[2/3]">
         {poster ? (
-          <img src={poster} alt={entry.title} className="w-full aspect-[2/3] object-cover" loading="lazy" />
+          <Image
+            src={poster}
+            alt={entry.title}
+            fill
+            className="object-cover"
+            sizes="112px"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             {entry.type === 'movie' ? (

@@ -1,7 +1,23 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'image.tmdb.org' },
+      { protocol: 'https', hostname: 'i.postimg.cc' },
+      { protocol: 'https', hostname: 'media.giphy.com' },
+      { protocol: 'https', hostname: 'i.imgur.com' },
+      { protocol: 'https', hostname: 'i.imgflip.com' },
+    ],
+  },
+  headers: async () => [
+    {
+      source: '/api/:path*',
+      headers: [
+        { key: 'Cache-Control', value: 'public, max-age=60, s-maxage=60, stale-while-revalidate=120' },
+      ],
+    },
+  ],
 };
 
 export default nextConfig;

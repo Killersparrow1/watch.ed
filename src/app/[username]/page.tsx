@@ -6,6 +6,8 @@ import type { Viewport } from 'next'
 import PublicFilters from './public-filters'
 import FollowButton from '@/components/follow-button'
 
+export const revalidate = 60
+
 export const viewport: Viewport = {
   userScalable: false,
   maximumScale: 1,
