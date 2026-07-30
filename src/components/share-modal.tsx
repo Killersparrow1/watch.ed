@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import { toPng } from 'html-to-image'
 import { Entry } from '@/types/database'
 import ShareCard from './share-card'
-import { X, Download, Copy, Share2, Check } from 'lucide-react'
+import { X, Download, Copy, Share2, Link as LinkIcon, Check } from 'lucide-react'
 
 interface Props {
   entry: Entry
@@ -17,6 +17,7 @@ interface Props {
 export default function ShareModal({ entry, username, displayName, avatarUrl, onClose }: Props) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [copied, setCopied] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
   const [generating, setGenerating] = useState(false)
 
   async function handleDownload() {
@@ -53,6 +54,24 @@ export default function ShareModal({ entry, username, displayName, avatarUrl, on
       document.body.removeChild(ta)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  async function handleCopyLink() {
+    const url = `${window.location.origin}/${username}/${entry.id}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 2000)
+    } catch {
+      const ta = document.createElement('textarea')
+      ta.value = url
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 2000)
     }
   }
 
@@ -119,6 +138,13 @@ export default function ShareModal({ entry, username, displayName, avatarUrl, on
           >
             {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
             {copied ? 'Copied' : 'Copy text'}
+          </button>
+          <button
+            onClick={handleCopyLink}
+            className="flex items-center gap-2 px-4 py-2 border border-border rounded-sm text-sm text-text-secondary hover:text-text-primary hover:bg-tag-bg transition-colors"
+          >
+            {linkCopied ? <Check className="w-4 h-4 text-success" /> : <LinkIcon className="w-4 h-4" />}
+            {linkCopied ? 'Copied' : 'Copy link'}
           </button>
           <button
             onClick={handleShare}

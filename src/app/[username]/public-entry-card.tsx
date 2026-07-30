@@ -7,6 +7,7 @@ import { Entry, WatchEvent } from '@/types/database'
 import { Film, Tv, Star, ArrowBigUp, ArrowBigDown, Award, Zap, Share2, Heart, Send, X, ExternalLink, Eye } from 'lucide-react'
 import Image from 'next/image'
 import { renderNotes } from '@/lib/render-notes'
+import Link from 'next/link'
 import ShareModal from '@/components/share-modal'
 import CastModal from '@/components/cast-modal'
 
@@ -346,13 +347,22 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
         )}
 
         {(entry.notes || entry.rating || entryWatchEvents.length > 0) && (
-          <button
-            onClick={() => setShowViewings(true)}
-            className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent-hover transition-colors self-start"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            View opinion
-          </button>
+          <div className="flex items-center gap-2 self-start">
+            <button
+              onClick={() => setShowViewings(true)}
+              className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent-hover transition-colors"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              View opinion
+            </button>
+            <Link
+              href={`/${profileUsername}/${entry.id}`}
+              className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-accent transition-colors"
+              title="Open review page"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         )}
 
         <div className="flex items-center gap-3 mt-auto pt-2 border-t border-border-light">
