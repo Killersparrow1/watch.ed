@@ -223,7 +223,7 @@ export default function ListDetailPage() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {entries.map((entry, index) => {
-              const posterUrl = getEntryPosterUrl(entry, 'w185')
+              const posterUrl = getEntryPosterUrl(entry, 'w92')
               return (
                 <div key={entry.id} className="group relative bg-surface border border-border rounded-sm overflow-hidden">
                   <div className="aspect-[2/3] bg-tag-bg relative">
@@ -270,7 +270,7 @@ export default function ListDetailPage() {
         {availableEntries.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {availableEntries.slice(0, 30).map((entry) => {
-              const posterUrl = getEntryPosterUrl(entry, 'w185')
+              const posterUrl = getEntryPosterUrl(entry, 'w92')
               return (
                 <div key={entry.id} className="group relative bg-surface border border-border rounded-sm overflow-hidden cursor-pointer" onClick={() => handleAddEntry(entry.id)}>
                   <div className="aspect-[2/3] bg-tag-bg relative">

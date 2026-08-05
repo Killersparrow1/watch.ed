@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import type { Viewport } from 'next'
 import PublicFilters from './public-filters'
 import FollowButton from '@/components/follow-button'
+import ListPosterStrip from '@/components/list-poster-strip'
 
 export const revalidate = 60
 
@@ -79,11 +80,22 @@ export default async function PublicProfilePage({ params }: Props) {
 
   const listsWithCounts = await Promise.all(
     (publicLists || []).map(async (list) => {
-      const { count } = await supabase
-        .from('list_entries')
-        .select('*', { count: 'exact', head: true })
-        .eq('list_id', list.id)
-      return { ...list, entry_count: count || 0 }
+      const [countResult, previewResult] = await Promise.all([
+        supabase
+          .from('list_entries')
+          .select('*', { count: 'exact', head: true })
+          .eq('list_id', list.id),
+        supabase
+          .from('list_entries')
+          .select('entries(poster_path, custom_poster_url, title)')
+          .eq('list_id', list.id)
+          .order('position', { ascending: true })
+          .limit(4),
+      ])
+      const previewEntries = ((previewResult.data || []) as unknown as { entries: { poster_path: string | null; custom_poster_url: string | null; title: string } | null }[])
+        .map(le => le.entries)
+        .filter(Boolean)
+      return { ...list, entry_count: countResult.count || 0, preview_entries: previewEntries }
     })
   )
 
@@ -221,10 +233,13 @@ export default async function PublicProfilePage({ params }: Props) {
                 <Link
                   key={list.id}
                   href={`/${username}/lists/${list.id}`}
-                  className="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-sm hover:border-accent/30 transition-colors group"
+                  className="block w-44 bg-surface border border-border rounded-sm p-3 hover:border-accent/30 transition-colors group"
                 >
-                  <span className="text-sm text-text-primary group-hover:text-accent transition-colors">{list.name}</span>
-                  <span className="body-xs text-text-muted">{list.entry_count}</span>
+                  <ListPosterStrip entries={list.preview_entries || []} count={list.entry_count} columns={4} />
+                  <p className="text-sm text-text-primary group-hover:text-accent transition-colors mt-2 truncate">{list.name}</p>
+                  <p className="body-xs text-text-muted">
+                    {list.entry_count} {list.entry_count === 1 ? 'entry' : 'entries'}
+                  </p>
                 </Link>
               ))}
             </div>

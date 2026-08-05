@@ -22,11 +22,22 @@ export async function GET() {
 
     const listsWithCounts = await Promise.all(
       (lists || []).map(async (list) => {
-        const { count } = await serviceClient
-          .from('list_entries')
-          .select('*', { count: 'exact', head: true })
-          .eq('list_id', list.id)
-        return { ...list, entry_count: count || 0 }
+        const [countResult, previewResult] = await Promise.all([
+          serviceClient
+            .from('list_entries')
+            .select('*', { count: 'exact', head: true })
+            .eq('list_id', list.id),
+          serviceClient
+            .from('list_entries')
+            .select('entries(poster_path, custom_poster_url, title)')
+            .eq('list_id', list.id)
+            .order('position', { ascending: true })
+            .limit(5),
+        ])
+        const previewEntries = ((previewResult.data || []) as unknown as { entries: { poster_path: string | null; custom_poster_url: string | null; title: string } | null }[])
+          .map(le => le.entries)
+          .filter(Boolean)
+        return { ...list, entry_count: countResult.count || 0, preview_entries: previewEntries }
       })
     )
 

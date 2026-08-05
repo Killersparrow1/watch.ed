@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, Globe, Lock, Pencil, Trash2, ExternalLink } from 'lucide-react'
 import type { List } from '@/types/database'
+import ListPosterStrip from '@/components/list-poster-strip'
 
 interface ListWithCount extends List {
   entry_count: number
+  preview_entries?: { poster_path: string | null; custom_poster_url: string | null; title?: string }[]
 }
 
 export default function ListsPage() {
@@ -153,6 +155,9 @@ export default function ListsPage() {
               className="bg-surface border border-border rounded-sm p-5 hover:border-accent/30 transition-colors group"
             >
               <Link href={`/dashboard/lists/${list.id}`} className="block">
+                <div className="mb-3">
+                  <ListPosterStrip entries={list.preview_entries || []} count={list.entry_count} />
+                </div>
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="heading-sm truncate flex-1">{list.name}</h3>
                   <span className={`ml-2 flex-shrink-0 ${list.is_public ? 'text-text-muted' : 'text-text-muted'}`}>
