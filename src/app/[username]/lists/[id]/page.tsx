@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { Globe, Lock, ArrowLeft } from 'lucide-react'
+import { Globe, Lock, ArrowLeft, Star } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getEntryPosterUrl } from '@/lib/tmdb'
@@ -96,26 +96,44 @@ export default async function PublicListPage({ params }: Props) {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {entryList.map((entry) => {
               const posterUrl = getEntryPosterUrl(entry, 'w185')
+              const notesExcerpt = entry.notes
+                ?.replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
+                .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+                .replace(/[#>*`~|_]/g, '')
+                .replace(/\n+/g, ' ')
+                .trim()
+                .slice(0, 160)
+              const hasReview = !!entry.rating || !!notesExcerpt
               return (
                 <div key={entry.id} className="bg-surface border border-border rounded-sm overflow-hidden group">
-                  <div className="aspect-[2/3] bg-tag-bg relative">
-                    {posterUrl ? (
-                      <img src={posterUrl} alt={entry.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-text-muted text-xs p-2 text-center">
-                        {entry.title}
-                      </div>
-                    )}
-                    {entry.rating && (
-                      <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-surface/90 border border-border rounded-sm text-xs font-medium text-text-primary">
-                        {entry.rating}/10
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-2">
-                    <p className="text-xs text-text-primary truncate font-medium">{entry.title}</p>
-                    <p className="body-xs text-text-muted">{entry.year || ''}</p>
-                  </div>
+                  <Link
+                    href={`/${username}/${entry.id}`}
+                    className={`block ${hasReview ? '' : 'cursor-default'}`}
+                    onClick={hasReview ? undefined : (e) => e.preventDefault()}
+                  >
+                    <div className="aspect-[2/3] bg-tag-bg relative">
+                      {posterUrl ? (
+                        <img src={posterUrl} alt={entry.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-text-muted text-xs p-2 text-center">
+                          {entry.title}
+                        </div>
+                      )}
+                      {entry.rating && (
+                        <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-surface/90 border border-border rounded-sm text-xs font-medium text-text-primary flex items-center gap-1">
+                          <Star className="w-3 h-3 text-rating fill-current" />
+                          {entry.rating}/10
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-2">
+                      <p className="text-xs text-text-primary truncate font-medium group-hover:text-accent transition-colors">{entry.title}</p>
+                      <p className="body-xs text-text-muted">{entry.year || ''}</p>
+                      {notesExcerpt && (
+                        <p className="text-[11px] text-text-secondary leading-snug mt-1 line-clamp-2">{notesExcerpt}</p>
+                      )}
+                    </div>
+                  </Link>
                 </div>
               )
             })}
