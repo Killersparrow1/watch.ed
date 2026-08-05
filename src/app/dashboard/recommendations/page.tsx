@@ -106,7 +106,7 @@ export default function RecommendationsPage() {
       <div className={`flex gap-3 p-3 rounded-sm border ${!rec.read && isIncoming ? 'border-accent/30 bg-accent-light/20' : 'border-border bg-surface'}`}>
         <div className="w-12 h-16 shrink-0 rounded-sm overflow-hidden bg-tag-bg flex items-center justify-center text-text-secondary">
           {rec.poster_path ? (
-            <img src={getPosterUrl(rec.poster_path, 'w185') || ''} alt="" className="w-full h-full object-cover" />
+            <img src={getPosterUrl(rec.poster_path, 'w342') || ''} alt="" className="w-full h-full object-cover" />
           ) : (
             <Star className="w-5 h-5" />
           )}

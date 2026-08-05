@@ -14,7 +14,7 @@ interface Props {
 export default function ListEntryTile({ entry, watchEvents }: Props) {
   const [showOpinion, setShowOpinion] = useState(false)
 
-  const posterUrl = getEntryPosterUrl(entry, 'w185')
+  const posterUrl = getEntryPosterUrl(entry, 'w342')
   const hasOpinion = !!entry.rating || !!entry.notes || watchEvents.length > 0
 
   return (

@@ -91,7 +91,7 @@ export default function SearchPage() {
       >
         <div className="w-10 h-14 shrink-0 rounded-sm overflow-hidden bg-tag-bg flex items-center justify-center">
           {entry.poster_path ? (
-            <img src={getPosterUrl(entry.poster_path, 'w185') || ''} alt="" className="w-full h-full object-cover" />
+            <img src={getPosterUrl(entry.poster_path, 'w342') || ''} alt="" className="w-full h-full object-cover" />
           ) : (
             entry.type === 'movie' ? <Film className="w-4 h-4 text-text-secondary" /> : <Tv className="w-4 h-4 text-text-secondary" />
           )}

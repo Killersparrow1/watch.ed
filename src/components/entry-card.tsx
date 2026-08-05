@@ -26,7 +26,7 @@ interface Props {
 }
 
 export default function EntryCard({ entry, isPublic, username, displayName, avatarUrl }: Props) {
-  const poster = getEntryPosterUrl(entry, 'w185')
+  const poster = getEntryPosterUrl(entry, 'w342')
   const isTmdbPoster = !!poster && poster.startsWith('https://image.tmdb.org/')
   const status = statusConfig[entry.status]
   const [showDetails, setShowDetails] = useState(false)
