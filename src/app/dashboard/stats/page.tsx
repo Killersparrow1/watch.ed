@@ -16,6 +16,9 @@ export default function StatsPage() {
   const [confirmDeleteEntries, setConfirmDeleteEntries] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [fetchingRuntime, setFetchingRuntime] = useState(false)
+  const [aiText, setAiText] = useState<string | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
 
   const currentYear = new Date().getFullYear()
   const [wrapYear, setWrapYear] = useState(currentYear)
@@ -57,6 +60,31 @@ export default function StatsPage() {
     }
     load()
   }, [])
+
+  useEffect(() => {
+    setAiText(null)
+    setAiError(null)
+  }, [wrapYear])
+
+  async function handleAiWrap() {
+    setAiLoading(true)
+    setAiError(null)
+    setAiText(null)
+    try {
+      const res = await fetch('/api/ai/wrapped', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ year: wrapYear }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to generate')
+      setAiText(data.text)
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : 'Failed to generate')
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   const years = useMemo(() => {
     const y = new Set<number>()
@@ -336,8 +364,28 @@ export default function StatsPage() {
               Back to {currentYear}
             </button>
           )}
+          <button
+            onClick={handleAiWrap}
+            disabled={aiLoading || wrapStats.totalEntries === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-accent text-white rounded-sm text-xs font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            {aiLoading ? 'Writing...' : 'Write with AI'}
+          </button>
         </div>
       </div>
+
+      {aiError && <p className="text-xs text-accent mb-4">{aiError}</p>}
+
+      {aiText && (
+        <div className="bg-surface border border-accent/20 rounded-sm p-6 mb-6">
+          <h3 className="heading-sm mb-3 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-accent" />
+            Your {wrapYear} story
+          </h3>
+          <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">{aiText}</p>
+        </div>
+      )}
 
       {wrapStats.totalEntries === 0 ? (
         <div className="text-center py-12 border border-border rounded-sm">

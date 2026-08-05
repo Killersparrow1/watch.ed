@@ -3,8 +3,20 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Check, X, RefreshCw } from 'lucide-react'
+import { Check, X, RefreshCw, Sparkles, Trash2 } from 'lucide-react'
 import { Profile } from '@/types/database'
+
+interface ModComment {
+  id: string
+  content: string
+  created_at: string
+  author: { username: string; display_name: string | null }
+}
+
+interface ModVerdict {
+  verdict: 'ok' | 'flag'
+  reason: string
+}
 
 export default function AdminPage() {
   const router = useRouter()
@@ -12,6 +24,11 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [comments, setComments] = useState<ModComment[]>([])
+  const [verdicts, setVerdicts] = useState<Record<string, ModVerdict>>({})
+  const [moderatingId, setModeratingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [modError, setModError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -49,6 +66,12 @@ export default function AdminPage() {
         setProfiles(data || [])
         setLoading(false)
       }
+
+      const commentsRes = await fetch('/api/ai/moderation')
+      if (commentsRes.ok) {
+        const commentsData = await commentsRes.json()
+        if (!cancelled) setComments(commentsData.comments || [])
+      }
     }
 
     load()
@@ -61,6 +84,38 @@ export default function AdminPage() {
     await supabase.from('profiles').update({ status }).eq('id', id)
     setProfiles(prev => prev.map(p => p.id === id ? { ...p, status } : p))
     setActionLoading(null)
+  }
+
+  async function scanComment(id: string) {
+    setModeratingId(id)
+    setModError(null)
+    try {
+      const res = await fetch('/api/ai/moderation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentId: id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Scan failed')
+      setVerdicts(prev => ({ ...prev, [id]: { verdict: data.verdict, reason: data.reason } }))
+    } catch (e) {
+      setModError(e instanceof Error ? e.message : 'Scan failed')
+    } finally {
+      setModeratingId(null)
+    }
+  }
+
+  async function deleteComment(id: string) {
+    setDeletingId(id)
+    const res = await fetch(`/api/comments?id=${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setComments(prev => prev.filter(c => c.id !== id))
+      setVerdicts(prev => { const next = { ...prev }; delete next[id]; return next })
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setModError(data.error || 'Failed to delete comment')
+    }
+    setDeletingId(null)
   }
 
   if (loading) {
@@ -183,6 +238,66 @@ export default function AdminPage() {
           </div>
         </section>
       )}
+
+      <section className="mt-10">
+        <h2 className="text-sm font-medium text-text-primary mb-4">
+          AI comment moderation ({comments.length})
+        </h2>
+        {modError && <p className="text-xs text-accent mb-4">{modError}</p>}
+        {comments.length === 0 ? (
+          <p className="text-sm text-text-muted">No recent comments.</p>
+        ) : (
+          <div className="space-y-3">
+            {comments.map(comment => {
+              const verdict = verdicts[comment.id]
+              return (
+                <div key={comment.id} className="p-4 bg-surface border border-border rounded-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm font-medium">{comment.author.display_name || comment.author.username}</span>
+                    {comment.created_at && (
+                      <span className="text-xs text-text-muted">{new Date(comment.created_at).toLocaleDateString()}</span>
+                    )}
+                  </div>
+                  <p className="text-sm text-text-secondary mb-3 whitespace-pre-wrap break-words">{comment.content}</p>
+                  <div className="flex items-center gap-2">
+                    {!verdict && (
+                      <button
+                        onClick={() => scanComment(comment.id)}
+                        disabled={moderatingId === comment.id}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-tag-bg border border-border rounded-sm text-xs text-text-secondary hover:text-text-primary transition-colors disabled:opacity-50"
+                      >
+                        <Sparkles className={`w-3.5 h-3.5 ${moderatingId === comment.id ? 'animate-pulse' : ''}`} />
+                        {moderatingId === comment.id ? 'Scanning...' : 'Scan'}
+                      </button>
+                    )}
+                    {verdict && (
+                      <>
+                        <span className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${
+                          verdict.verdict === 'flag' ? 'bg-accent-light text-accent' : 'bg-success/10 text-success'
+                        }`}>
+                          {verdict.verdict === 'flag' ? <X className="w-3 h-3" /> : <Check className="w-3 h-3" />}
+                          {verdict.verdict === 'flag' ? 'Flagged' : 'Ok'}
+                        </span>
+                        <span className="text-xs text-text-muted">{verdict.reason}</span>
+                        {verdict.verdict === 'flag' && (
+                          <button
+                            onClick={() => deleteComment(comment.id)}
+                            disabled={deletingId === comment.id}
+                            className="ml-auto flex items-center gap-1 px-3 py-1.5 bg-accent text-white rounded-sm text-xs hover:bg-accent-hover transition-colors disabled:opacity-50"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            {deletingId === comment.id ? 'Deleting...' : 'Delete'}
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </section>
     </div>
   )
 }

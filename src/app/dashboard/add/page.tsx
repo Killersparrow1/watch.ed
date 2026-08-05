@@ -40,6 +40,8 @@ export default function AddEntryPage() {
   const [rephrasing, setRephrasing] = useState(false)
   const [originalNotes, setOriginalNotes] = useState<string | null>(null)
   const [rephraseError, setRephraseError] = useState<string | null>(null)
+  const [voiceing, setVoiceing] = useState(false)
+  const [voiceError, setVoiceError] = useState<string | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -77,11 +79,46 @@ export default function AddEntryPage() {
     }
   }
 
+  async function handleVoice() {
+    const text = form.notes.trim()
+    if (!text) {
+      setVoiceError('Write a rough draft first — even 2-5 words is fine')
+      return
+    }
+    setVoiceing(true)
+    setVoiceError(null)
+    setRephraseError(null)
+    setOriginalNotes(form.notes)
+
+    try {
+      const res = await fetch('/api/ai/voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          title: selected?.title || form.title,
+          year: selected?.year || null,
+          type: selected?.media_type || form.type,
+          genres: selected?.genres || [],
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to write review')
+      setForm(prev => ({ ...prev, notes: data.review }))
+    } catch (e) {
+      setVoiceError(e instanceof Error ? e.message : 'Failed to write review')
+      setOriginalNotes(null)
+    } finally {
+      setVoiceing(false)
+    }
+  }
+
   function handleUndo() {
     if (originalNotes !== null) {
       setForm(prev => ({ ...prev, notes: originalNotes }))
       setOriginalNotes(null)
-      setRephraseError(null)
+setRephraseError(null)
+      setVoiceError(null)
     }
   }
 
@@ -535,6 +572,16 @@ export default function AddEntryPage() {
                 <Sparkles className={`w-3 h-3 ${rephrasing ? 'animate-pulse' : ''}`} />
                 {rephrasing ? 'Rephrasing...' : 'Rephrase'}
               </button>
+              <button
+                type="button"
+                onClick={handleVoice}
+                disabled={voiceing || !form.notes.trim()}
+                className="flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Turn a rough 2-5 word draft into a full review written in your style"
+              >
+                <Sparkles className={`w-3 h-3 ${voiceing ? 'animate-pulse' : ''}`} />
+                {voiceing ? 'Writing...' : 'Write in my style'}
+              </button>
             </div>
           </div>
           <textarea
@@ -550,6 +597,9 @@ export default function AddEntryPage() {
           />
           {rephraseError && (
             <p className="mt-1 text-xs text-accent">{rephraseError}</p>
+          )}
+          {voiceError && (
+            <p className="mt-1 text-xs text-accent">{voiceError}</p>
           )}
         </div>
 

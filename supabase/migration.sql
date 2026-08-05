@@ -569,3 +569,18 @@ CREATE POLICY "Host can delete messages"
 -- Sync position for watch party playback
 ALTER TABLE watch_parties ADD COLUMN IF NOT EXISTS "current_time" FLOAT DEFAULT 0;
 ALTER TABLE watch_parties ADD COLUMN IF NOT EXISTS is_playing BOOLEAN DEFAULT false;
+
+-- AI usage & cache (service-role only, no RLS needed)
+CREATE TABLE IF NOT EXISTS ai_usage (
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  usage_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  count INTEGER NOT NULL DEFAULT 0,
+  last_called_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (user_id, usage_date)
+);
+
+CREATE TABLE IF NOT EXISTS ai_cache (
+  cache_key TEXT PRIMARY KEY,
+  result TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

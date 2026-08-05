@@ -22,6 +22,10 @@ export default function EditEntryPage() {
   const [rephrasing, setRephrasing] = useState(false)
   const [originalNotes, setOriginalNotes] = useState<string | null>(null)
   const [rephraseError, setRephraseError] = useState<string | null>(null)
+  const [voiceing, setVoiceing] = useState(false)
+  const [voiceError, setVoiceError] = useState<string | null>(null)
+  const [suggestingTagline, setSuggestingTagline] = useState(false)
+  const [taglineError, setTaglineError] = useState<string | null>(null)
   const [watchEvents, setWatchEvents] = useState<WatchEvent[]>([])
   const [showAddEvent, setShowAddEvent] = useState(false)
   const [newEvent, setNewEvent] = useState({ watch_date: '', notes: '', rating: '', season_number: '', episode_number: '' })
@@ -174,6 +178,66 @@ export default function EditEntryPage() {
       setForm(prev => ({ ...prev, notes: originalNotes }))
       setOriginalNotes(null)
       setRephraseError(null)
+      setVoiceError(null)
+    }
+  }
+
+  async function handleVoice() {
+    const text = form.notes.trim()
+    if (!text) {
+      setVoiceError('Write a rough draft first — even 2-5 words is fine')
+      return
+    }
+    setVoiceing(true)
+    setVoiceError(null)
+    setRephraseError(null)
+    setOriginalNotes(form.notes)
+
+    try {
+      const res = await fetch('/api/ai/voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          title: entry?.title || form.title,
+          year: entry?.year || null,
+          type: entry?.type || form.type,
+          genres: entry?.genres || [],
+          excludeEntryId: id,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to write review')
+      setForm(prev => ({ ...prev, notes: data.review }))
+    } catch (e) {
+      setVoiceError(e instanceof Error ? e.message : 'Failed to write review')
+      setOriginalNotes(null)
+    } finally {
+      setVoiceing(false)
+    }
+  }
+
+  async function handleSuggestTagline() {
+    setSuggestingTagline(true)
+    setTaglineError(null)
+    try {
+      const res = await fetch('/api/ai/tagline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: entry?.title || form.title,
+          year: entry?.year || null,
+          type: entry?.type || form.type,
+          genres: entry?.genres || [],
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to suggest a hook')
+      setForm(prev => ({ ...prev, tagline: data.tagline }))
+    } catch (e) {
+      setTaglineError(e instanceof Error ? e.message : 'Failed to suggest a hook')
+    } finally {
+      setSuggestingTagline(false)
     }
   }
 
@@ -587,6 +651,16 @@ export default function EditEntryPage() {
                 <Sparkles className={`w-3 h-3 ${rephrasing ? 'animate-pulse' : ''}`} />
                 {rephrasing ? 'Rephrasing...' : 'Rephrase'}
               </button>
+              <button
+                type="button"
+                onClick={handleVoice}
+                disabled={voiceing || !form.notes.trim()}
+                className="flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Turn a rough 2-5 word draft into a full review written in your style"
+              >
+                <Sparkles className={`w-3 h-3 ${voiceing ? 'animate-pulse' : ''}`} />
+                {voiceing ? 'Writing...' : 'Write in my style'}
+              </button>
             </div>
           </div>
           <textarea
@@ -601,6 +675,37 @@ export default function EditEntryPage() {
           />
           {rephraseError && (
             <p className="mt-1 text-xs text-accent">{rephraseError}</p>
+          )}
+          {voiceError && (
+            <p className="mt-1 text-xs text-accent">{voiceError}</p>
+          )}
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label htmlFor="tagline" className="text-sm font-medium text-text-primary">
+              Tagline / Hook
+            </label>
+            <button
+              type="button"
+              onClick={handleSuggestTagline}
+              disabled={suggestingTagline}
+              className="flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Sparkles className={`w-3 h-3 ${suggestingTagline ? 'animate-pulse' : ''}`} />
+              {suggestingTagline ? 'Writing...' : 'Suggest with AI'}
+            </button>
+          </div>
+          <input
+            id="tagline"
+            type="text"
+            value={form.tagline}
+            onChange={(e) => setForm(prev => ({ ...prev, tagline: e.target.value }))}
+            className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+            placeholder="A one-line hook shown on your public page..."
+          />
+          {taglineError && (
+            <p className="mt-1 text-xs text-accent">{taglineError}</p>
           )}
         </div>
 

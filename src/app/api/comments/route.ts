@@ -135,6 +135,12 @@ export async function DELETE(request: NextRequest) {
 
     const serviceClient = await createServiceClient()
 
+    const { data: profile } = await serviceClient
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single()
+
     const { data: comment } = await serviceClient
       .from('comments')
       .select('id, user_id, entry_id')
@@ -155,7 +161,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Entry not found' }, { status: 404 })
     }
 
-    if (comment.user_id !== user.id && entry.user_id !== user.id) {
+    if (comment.user_id !== user.id && entry.user_id !== user.id && !profile?.is_admin) {
       return NextResponse.json({ error: 'Not authorized to delete this comment' }, { status: 403 })
     }
 

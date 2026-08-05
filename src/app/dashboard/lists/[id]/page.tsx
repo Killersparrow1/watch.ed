@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Search, Plus, X, GripVertical, Globe, Lock, Save } from 'lucide-react'
+import { ArrowLeft, Search, Plus, X, GripVertical, Globe, Lock, Save, Sparkles } from 'lucide-react'
 import type { Entry, List } from '@/types/database'
 import { getEntryPosterUrl } from '@/lib/tmdb'
 
@@ -27,6 +27,7 @@ export default function ListDetailPage() {
   const [orderDirty, setOrderDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [generatingDesc, setGeneratingDesc] = useState(false)
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
 
   async function load() {
@@ -67,6 +68,26 @@ export default function ListDetailPage() {
         (e.year && String(e.year).includes(query))
     })
   }, [allUserEntries, entries, searchQuery])
+
+  async function handleGenerateDescription() {
+    setGeneratingDesc(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/ai/list-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listId: id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to generate description')
+      setEditingDescription(data.description)
+      setHasChanges(true)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to generate description')
+    } finally {
+      setGeneratingDesc(false)
+    }
+  }
 
   async function handleAddEntry(entryId: string) {
     const res = await fetch(`/api/lists/${id}/entries`, {
@@ -131,6 +152,7 @@ export default function ListDetailPage() {
 
   async function handleSaveMetadata() {
     setSaving(true)
+    setError(null)
     setError(null)
     const res = await fetch(`/api/lists/${id}`, {
       method: 'PATCH',
@@ -202,6 +224,15 @@ export default function ListDetailPage() {
               className="w-full mt-1 bg-transparent border-none outline-none text-sm text-text-secondary placeholder:text-text-muted resize-none"
               placeholder="Add a description..."
             />
+            <button
+              onClick={handleGenerateDescription}
+              disabled={generatingDesc || entries.length === 0}
+              className="mt-1 inline-flex items-center gap-1.5 text-xs text-accent hover:text-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={entries.length === 0 ? 'Add entries first' : 'Write a description from your entries with AI'}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              {generatingDesc ? 'Writing...' : 'Generate with AI'}
+            </button>
           </div>
           <div className="flex items-center gap-2 ml-4">
             <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs cursor-pointer transition-colors ${editingPublic ? 'bg-tag-bg text-text-secondary' : 'bg-tag-bg text-text-muted'}`}>
