@@ -27,7 +27,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pb-16 sm:pb-0">
       <PushSetup />
       <Navbar />
       <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-8">

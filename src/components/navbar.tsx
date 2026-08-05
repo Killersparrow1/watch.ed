@@ -80,6 +80,7 @@ export default function Navbar() {
   }
 
   return (
+    <>
     <header className="border-b border-border bg-surface">
       <div className="max-w-6xl mx-auto px-6 h-12 sm:h-16 flex items-center justify-between">
         <div className="flex items-center gap-4 sm:gap-8">
@@ -87,7 +88,7 @@ export default function Navbar() {
             <img src="/logo.svg" alt="watch.ed" className="h-12 sm:h-16" />
           </Link>
 
-          <nav className="flex items-center gap-1">
+          <nav className="hidden sm:flex items-center gap-1">
             {navLinks.map((link) => {
               const Icon = link.icon
               const isActive = pathname === link.href
@@ -162,5 +163,25 @@ export default function Navbar() {
         </div>
       </div>
     </header>
+
+    <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-surface border-t border-border flex items-stretch justify-around pb-[env(safe-area-inset-bottom)]">
+      {navLinks.map((link) => {
+        const Icon = link.icon
+        const isActive = pathname === link.href
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-[10px] font-medium transition-colors ${
+              isActive ? 'text-accent' : 'text-text-muted hover:text-text-primary'
+            }`}
+          >
+            <Icon className="w-5 h-5" />
+            {link.label}
+          </Link>
+        )
+      })}
+    </nav>
+    </>
   )
 }

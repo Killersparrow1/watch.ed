@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false }),
       serviceClient
         .from('entries')
-        .select('title, tmdb_id, type')
+        .select('title, tmdb_id, type, rating')
         .eq('user_id', user.id),
     ])
 
@@ -52,8 +52,10 @@ export async function GET(request: NextRequest) {
     let tmdbSuggestions: Record<string, unknown>[] = []
 
     if (type === 'all' || type === 'tmdb') {
-      const topRated = (entriesRes.data || [])
-        .filter(e => e.tmdb_id)
+      const withId = (entriesRes.data || []).filter(e => e.tmdb_id)
+      const rated = withId.filter(e => e.rating)
+      const topRated = (rated.length > 0 ? rated : withId)
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
         .slice(0, 5)
 
       const seen = new Set<number>()
