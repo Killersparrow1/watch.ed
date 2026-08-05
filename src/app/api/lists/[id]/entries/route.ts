@@ -29,11 +29,13 @@ export async function GET(
 
     const { data: entries } = await serviceClient
       .from('list_entries')
-      .select('entries(*)')
+      .select('id, entries(*)')
       .eq('list_id', id)
       .order('position', { ascending: true })
 
-    const mappedEntries = ((entries || []) as { entries: unknown }[]).map(le => le.entries).filter(Boolean)
+    const mappedEntries = ((entries || []) as { id: string; entries: unknown }[])
+      .map(le => (le.entries ? { ...(le.entries as Record<string, unknown>), list_entry_id: le.id } : null))
+      .filter(Boolean)
 
     return NextResponse.json({ entries: mappedEntries })
   } catch (error) {

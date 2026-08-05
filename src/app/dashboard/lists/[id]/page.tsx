@@ -7,12 +7,16 @@ import { ArrowLeft, Search, Plus, X, GripVertical, Globe, Lock, Save } from 'luc
 import type { Entry, List } from '@/types/database'
 import { getEntryPosterUrl } from '@/lib/tmdb'
 
+interface ListEntryItem extends Entry {
+  list_entry_id: string
+}
+
 export default function ListDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
 
   const [list, setList] = useState<List | null>(null)
-  const [entries, setEntries] = useState<Entry[]>([])
+  const [entries, setEntries] = useState<ListEntryItem[]>([])
   const [allUserEntries, setAllUserEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -20,6 +24,7 @@ export default function ListDetailPage() {
   const [editingDescription, setEditingDescription] = useState('')
   const [editingPublic, setEditingPublic] = useState(true)
   const [hasChanges, setHasChanges] = useState(false)
+  const [orderDirty, setOrderDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
@@ -70,9 +75,10 @@ export default function ListDetailPage() {
       body: JSON.stringify({ entry_id: entryId }),
     })
     if (res.ok) {
+      const data = await res.json()
       const addedEntry = allUserEntries.find(e => e.id === entryId)
-      if (addedEntry) {
-        setEntries([...entries, addedEntry])
+      if (addedEntry && data?.list_entry?.id) {
+        setEntries([...entries, { ...addedEntry, list_entry_id: data.list_entry.id }])
       }
     }
   }
@@ -93,18 +99,34 @@ export default function ListDetailPage() {
     const [moved] = newEntries.splice(fromIndex, 1)
     newEntries.splice(toIndex, 0, moved)
     setEntries(newEntries)
+    setOrderDirty(true)
+  }
+
+  function handleDragStart(index: number) {
+    setDraggedIndex(index)
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault()
+  }
+
+  function handleDrop(index: number) {
+    if (draggedIndex === null || draggedIndex === index) return
+    handleMoveEntry(draggedIndex, index)
+    setDraggedIndex(null)
   }
 
   async function handleSaveReorder() {
     const reorderData = entries.map((e, i) => ({
-      id: e.id,
+      id: e.list_entry_id,
       position: i,
     }))
-    await fetch(`/api/lists/${id}/entries`, {
+    const res = await fetch(`/api/lists/${id}/entries`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ entries: reorderData }),
     })
+    if (res.ok) setOrderDirty(false)
   }
 
   async function handleSaveMetadata() {
@@ -213,6 +235,15 @@ export default function ListDetailPage() {
           <h2 className="heading-sm">
             Entries <span className="text-text-muted">({entries.length})</span>
           </h2>
+          {orderDirty && (
+            <button
+              onClick={handleSaveReorder}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white rounded-sm text-xs hover:bg-accent-hover transition-colors font-medium"
+            >
+              <Save className="w-3.5 h-3.5" />
+              Save order
+            </button>
+          )}
         </div>
 
         {entries.length === 0 ? (
@@ -225,7 +256,15 @@ export default function ListDetailPage() {
             {entries.map((entry, index) => {
               const posterUrl = getEntryPosterUrl(entry, 'w92')
               return (
-                <div key={entry.id} className="group relative bg-surface border border-border rounded-sm overflow-hidden">
+                <div
+                  key={entry.id}
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={handleDragOver}
+                  onDrop={() => handleDrop(index)}
+                  onDragEnd={() => setDraggedIndex(null)}
+                  className={`group relative bg-surface border border-border rounded-sm overflow-hidden cursor-grab active:cursor-grabbing ${draggedIndex === index ? 'opacity-50' : ''}`}
+                >
                   <div className="aspect-[2/3] bg-tag-bg relative">
                     {posterUrl ? (
                       <img src={posterUrl} alt={entry.title} className="w-full h-full object-cover" />
@@ -234,6 +273,9 @@ export default function ListDetailPage() {
                         {entry.title}
                       </div>
                     )}
+                    <div className="absolute top-1.5 right-1.5 text-white/90 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <GripVertical className="w-4 h-4 drop-shadow" />
+                    </div>
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                       <button
                         onClick={() => handleRemoveEntry(entry.id)}

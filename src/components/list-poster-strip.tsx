@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from 'react'
 import { getPosterUrl } from '@/lib/tmdb'
 
 interface PreviewEntry {
@@ -13,6 +16,8 @@ interface ListPosterStripProps {
 }
 
 export default function ListPosterStrip({ entries, count, columns = 5 }: ListPosterStripProps) {
+  const [failed, setFailed] = useState<string[]>([])
+
   const tiles = Math.min(entries.length, columns)
   const extra = Math.max(count - columns, 0)
 
@@ -25,13 +30,20 @@ export default function ListPosterStrip({ entries, count, columns = 5 }: ListPos
         if (i < tiles) {
           const entry = entries[i]
           const posterUrl = entry?.custom_poster_url || getPosterUrl(entry?.poster_path ?? null, 'w92')
+          const failedKey = posterUrl || `title:${entry?.title}:${i}`
+          const isFailed = failed.includes(failedKey)
           return (
             <div
               key={i}
               className="aspect-[2/3] bg-tag-bg border border-border rounded-sm overflow-hidden"
             >
-              {posterUrl ? (
-                <img src={posterUrl} alt={entry?.title || ''} className="w-full h-full object-cover" />
+              {posterUrl && !isFailed ? (
+                <img
+                  src={posterUrl}
+                  alt={entry?.title || ''}
+                  className="w-full h-full object-cover"
+                  onError={() => setFailed(f => (f.includes(failedKey) ? f : [...f, failedKey]))}
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-text-muted text-[10px] p-0.5 text-center leading-tight">
                   {entry?.title}

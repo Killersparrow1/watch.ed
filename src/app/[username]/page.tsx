@@ -78,26 +78,31 @@ export default async function PublicProfilePage({ params }: Props) {
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false })
 
-  const listsWithCounts = await Promise.all(
-    (publicLists || []).map(async (list) => {
-      const [countResult, previewResult] = await Promise.all([
-        supabase
-          .from('list_entries')
-          .select('*', { count: 'exact', head: true })
-          .eq('list_id', list.id),
-        supabase
-          .from('list_entries')
-          .select('entries(poster_path, custom_poster_url, title)')
-          .eq('list_id', list.id)
-          .order('position', { ascending: true })
-          .limit(4),
-      ])
-      const previewEntries = ((previewResult.data || []) as unknown as { entries: { poster_path: string | null; custom_poster_url: string | null; title: string } | null }[])
-        .map(le => le.entries)
-        .filter(Boolean)
-      return { ...list, entry_count: countResult.count || 0, preview_entries: previewEntries }
-    })
-  )
+  const publicListIds = (publicLists || []).map(l => l.id)
+  let publicEntryRows: { list_id: string; entries: { poster_path: string | null; custom_poster_url: string | null; title: string } | null }[] = []
+  if (publicListIds.length > 0) {
+    const { data } = await supabase
+      .from('list_entries')
+      .select('list_id, position, entries(poster_path, custom_poster_url, title)')
+      .in('list_id', publicListIds)
+      .order('position', { ascending: true })
+    publicEntryRows = (data || []) as unknown as { list_id: string; entries: { poster_path: string | null; custom_poster_url: string | null; title: string } | null }[]
+  }
+
+  const listCounts: Record<string, number> = {}
+  const listPreviews: Record<string, { poster_path: string | null; custom_poster_url: string | null; title: string }[]> = {}
+  for (const row of publicEntryRows) {
+    listCounts[row.list_id] = (listCounts[row.list_id] || 0) + 1
+    if (row.entries && (listPreviews[row.list_id] || []).length < 4) {
+      ;(listPreviews[row.list_id] ||= []).push(row.entries)
+    }
+  }
+
+  const listsWithCounts = (publicLists || []).map(list => ({
+    ...list,
+    entry_count: listCounts[list.id] || 0,
+    preview_entries: listPreviews[list.id] || [],
+  }))
 
   const reactionCounts: Record<string, { likes: number; dislikes: number }> = {}
   for (const entry of entries || []) {

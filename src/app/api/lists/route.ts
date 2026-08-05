@@ -20,26 +20,31 @@ export async function GET() {
 
     if (error) throw error
 
-    const listsWithCounts = await Promise.all(
-      (lists || []).map(async (list) => {
-        const [countResult, previewResult] = await Promise.all([
-          serviceClient
-            .from('list_entries')
-            .select('*', { count: 'exact', head: true })
-            .eq('list_id', list.id),
-          serviceClient
-            .from('list_entries')
-            .select('entries(poster_path, custom_poster_url, title)')
-            .eq('list_id', list.id)
-            .order('position', { ascending: true })
-            .limit(5),
-        ])
-        const previewEntries = ((previewResult.data || []) as unknown as { entries: { poster_path: string | null; custom_poster_url: string | null; title: string } | null }[])
-          .map(le => le.entries)
-          .filter(Boolean)
-        return { ...list, entry_count: countResult.count || 0, preview_entries: previewEntries }
-      })
-    )
+    const listIds = (lists || []).map(l => l.id)
+    let entryRows: { list_id: string; entries: { poster_path: string | null; custom_poster_url: string | null; title: string } | null }[] = []
+    if (listIds.length > 0) {
+      const { data } = await serviceClient
+        .from('list_entries')
+        .select('list_id, position, entries(poster_path, custom_poster_url, title)')
+        .in('list_id', listIds)
+        .order('position', { ascending: true })
+      entryRows = (data || []) as unknown as { list_id: string; entries: { poster_path: string | null; custom_poster_url: string | null; title: string } | null }[]
+    }
+
+    const counts: Record<string, number> = {}
+    const previews: Record<string, { poster_path: string | null; custom_poster_url: string | null; title: string }[]> = {}
+    for (const row of entryRows) {
+      counts[row.list_id] = (counts[row.list_id] || 0) + 1
+      if (row.entries && (previews[row.list_id] || []).length < 5) {
+        ;(previews[row.list_id] ||= []).push(row.entries)
+      }
+    }
+
+    const listsWithCounts = (lists || []).map(list => ({
+      ...list,
+      entry_count: counts[list.id] || 0,
+      preview_entries: previews[list.id] || [],
+    }))
 
     return NextResponse.json({ lists: listsWithCounts })
   } catch (error) {
