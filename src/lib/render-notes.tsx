@@ -165,6 +165,61 @@ function splitSegments(text: string): string[] {
   return segments
 }
 
+const INLINE_EMPH_RE = /(\*\*[^*]+\*\*|\*[^*]+\*|~~[^~]+~~|`[^`]+`)/g
+
+function emphasis(tag: string, children: ReactNode): ReactNode {
+  switch (tag) {
+    case 'strong':
+      return <strong>{children}</strong>
+    case 'em':
+      return <em>{children}</em>
+    case 'del':
+      return <del>{children}</del>
+    default:
+      return <code className="rounded-sm bg-black/10 px-1 py-0.5 text-sm">{children}</code>
+  }
+}
+
+function parseInline(text: string): ReactNode[] {
+  const nodes: ReactNode[] = []
+  let last = 0
+  let key = 0
+  let m: RegExpExecArray | null
+  INLINE_EMPH_RE.lastIndex = 0
+  while ((m = INLINE_EMPH_RE.exec(text))) {
+    if (m.index > last) nodes.push(text.slice(last, m.index))
+    const token = m[1]
+    let tag = 'strong'
+    let inner = token.slice(2, -2)
+    if (token.startsWith('**')) {
+      tag = 'strong'
+      inner = token.slice(2, -2)
+    } else if (token.startsWith('*')) {
+      tag = 'em'
+      inner = token.slice(1, -1)
+    } else if (token.startsWith('~~')) {
+      tag = 'del'
+      inner = token.slice(2, -2)
+    } else {
+      tag = 'code'
+      inner = token.slice(1, -1)
+    }
+    nodes.push(
+      <span key={key++}>{emphasis(tag, <>{parseInline(inner)}</>)}</span>
+    )
+    last = m.index + token.length
+  }
+  if (last < text.length) nodes.push(text.slice(last))
+  if (nodes.length === 0) nodes.push(text)
+  return nodes
+}
+
+function renderTextRun(text: string, keyPrefix: string): ReactNode[] {
+  return parseInline(text).map((node, i) => (
+    <span key={`${keyPrefix}:${i}`}>{node}</span>
+  ))
+}
+
 function renderPlainText(text: string): ReactNode {
   const normalized = normalizeUrl(text)
 
@@ -186,7 +241,7 @@ function renderPlainText(text: string): ReactNode {
     if (!normalized.trim()) return null
     return (
       <div className="whitespace-pre-wrap break-words">
-        {normalized}
+        {renderTextRun(normalized, 't')}
       </div>
     )
   }
@@ -197,7 +252,7 @@ function renderPlainText(text: string): ReactNode {
   let imgKey = 0
   IMAGE_TOKEN_RE.lastIndex = 0
   while ((m = IMAGE_TOKEN_RE.exec(processed))) {
-    if (m.index > last) nodes.push(processed.slice(last, m.index))
+    if (m.index > last) nodes.push(...renderTextRun(processed.slice(last, m.index), `a${imgKey}`))
     const img = images[parseInt(m[1])]
     nodes.push(
       <img
@@ -224,13 +279,11 @@ function renderPlainText(text: string): ReactNode {
     )
     last = m.index + m[0].length
   }
-  if (last < processed.length) nodes.push(processed.slice(last))
+  if (last < processed.length) nodes.push(...renderTextRun(processed.slice(last), 'z'))
 
   return (
     <div className="whitespace-pre-wrap break-words">
-      {nodes.map((node, i) => (
-        <span key={i}>{node}</span>
-      ))}
+      {nodes}
     </div>
   )
 }
