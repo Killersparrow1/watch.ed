@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Star, ThumbsUp, ThumbsDown, Link as LinkIcon, Check, MessageCircle, Send, User, Trash2 } from 'lucide-react'
 import { renderNotes } from '@/lib/render-notes'
+import FollowButton from '@/components/follow-button'
 import type { Entry, WatchEvent, CommentWithAuthor } from '@/types/database'
 
 interface Props {
@@ -24,6 +25,7 @@ export default function ReviewContent({ entry, watchEvents, likes, dislikes, use
   const [submitting, setSubmitting] = useState(false)
   const [commentError, setCommentError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [following, setFollowing] = useState(isFollowing)
 
   async function handleCopyLink() {
     const url = `${window.location.origin}/${username}/${entry.id}`
@@ -215,7 +217,7 @@ export default function ReviewContent({ entry, watchEvents, likes, dislikes, use
         )}
 
         {currentUserId ? (
-          isFollowing ? (
+          following ? (
             <form onSubmit={handleSubmitComment} className="flex gap-2">
               <input
                 type="text"
@@ -235,9 +237,10 @@ export default function ReviewContent({ entry, watchEvents, likes, dislikes, use
               </button>
             </form>
           ) : (
-            <p className="text-sm text-text-muted">
-              Follow @{username} to leave a comment.
-            </p>
+            <div className="flex items-center gap-2 text-sm text-text-muted flex-wrap">
+              <span>Follow @{username} to leave a comment.</span>
+              <FollowButton followingId={entryOwnerId} initialFollowing={following} onFollowChange={setFollowing} />
+            </div>
           )
         ) : (
           <p className="text-sm text-text-muted">
