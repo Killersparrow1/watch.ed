@@ -1,9 +1,38 @@
+import type { CSSProperties, ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 const DIRECT_IMAGE_RE = /(https?:\/\/[^\s]+?\.(?:gif|png|jpe?g|webp|avif)(?:\?[^\s]*)?)/gi
 const PROXY_GIF_RE = /(\/api\/gif-proxy\?url=[^\s]+)/gi
 const MARKDOWN_IMAGE_RE = /!\[([^\]]*)\]\(([^)]+)\)/g
+const IFRAME_RE = /<iframe\b[^>]*(?:\/>|>[\s\S]*?<\/iframe\s*>)/gi
+const IFRAME_ATTR_RE = /([a-zA-Z-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g
+
+const ALLOWED_EMBED_DOMAINS = [
+  'spotify.com',
+  'music.apple.com',
+  'youtube.com',
+  'youtube-nocookie.com',
+  'vimeo.com',
+  'soundcloud.com',
+  'bandcamp.com',
+  'twitch.tv',
+  'redditmedia.com',
+  'tiktok.com',
+]
+
+interface ParsedIframe {
+  src: string
+  title?: string
+  width?: string
+  height?: string
+  allow?: string
+  frameBorder?: string
+  loading?: string
+  sandbox?: string
+  allowFullScreen?: boolean
+  style?: string
+}
 
 function normalizeUrl(text: string): string {
   return text
@@ -22,7 +51,122 @@ function normalizeUrl(text: string): string {
     })
 }
 
-export function renderNotes(text: string) {
+function isAllowedEmbedUrl(src: string): boolean {
+  try {
+    const host = new URL(src).hostname.toLowerCase()
+    return ALLOWED_EMBED_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))
+  } catch {
+    return false
+  }
+}
+
+function parseIframe(tag: string): ParsedIframe | null {
+  const parsed: ParsedIframe = { src: '' }
+  let m: RegExpExecArray | null
+  IFRAME_ATTR_RE.lastIndex = 0
+  while ((m = IFRAME_ATTR_RE.exec(tag))) {
+    const name = m[1].toLowerCase()
+    const value = m[2] ?? m[3] ?? m[4] ?? ''
+    switch (name) {
+      case 'src':
+        parsed.src = value
+        break
+      case 'title':
+        parsed.title = value
+        break
+      case 'width':
+        parsed.width = value
+        break
+      case 'height':
+        parsed.height = value
+        break
+      case 'allow':
+        parsed.allow = value
+        break
+      case 'frameborder':
+        parsed.frameBorder = value
+        break
+      case 'loading':
+        parsed.loading = value
+        break
+      case 'sandbox':
+        parsed.sandbox = value
+        break
+      case 'allowfullscreen':
+        parsed.allowFullScreen = true
+        break
+      case 'style':
+        parsed.style = value
+        break
+    }
+  }
+  if (!parsed.src || !/^https:\/\//i.test(parsed.src) || !isAllowedEmbedUrl(parsed.src)) return null
+  return parsed
+}
+
+function parseStyle(style?: string): CSSProperties | undefined {
+  if (!style) return undefined
+  const css: CSSProperties = {}
+  for (const pair of style.split(';')) {
+    const colon = pair.indexOf(':')
+    if (colon === -1) continue
+    const key = pair
+      .slice(0, colon)
+      .trim()
+      .replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+    const value = pair.slice(colon + 1).trim()
+    if (!key || !value) continue
+    ;(css as Record<string, string>)[key] = value
+  }
+  return Object.keys(css).length ? css : undefined
+}
+
+function renderIframe(tag: string): ReactNode {
+  const parsed = parseIframe(tag)
+  if (!parsed) {
+    const src = tag.match(/\bsrc\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/i)
+    const url = src ? src[2] ?? src[3] ?? src[4] : null
+    if (url) {
+      return (
+        <a href={url} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover underline underline-offset-2">
+          {url}
+        </a>
+      )
+    }
+    return null
+  }
+  return (
+    <iframe
+      src={parsed.src}
+      title={parsed.title || 'Embedded content'}
+      width={parsed.width}
+      height={parsed.height}
+      frameBorder={parsed.frameBorder}
+      allow={parsed.allow}
+      allowFullScreen={parsed.allowFullScreen}
+      loading={(parsed.loading === 'lazy' || parsed.loading === 'eager' ? parsed.loading : undefined)}
+      sandbox={parsed.sandbox}
+      style={parseStyle(parsed.style)}
+      className="max-w-full"
+    />
+  )
+}
+
+function splitSegments(text: string): string[] {
+  const segments: string[] = []
+  let last = 0
+  let m: RegExpExecArray | null
+  IFRAME_RE.lastIndex = 0
+  while ((m = IFRAME_RE.exec(text))) {
+    if (m.index > last) segments.push(text.slice(last, m.index))
+    segments.push(m[0])
+    last = m.index + m[0].length
+  }
+  if (last < text.length) segments.push(text.slice(last))
+  return segments
+}
+
+function renderMarkdown(text: string): ReactNode {
   const normalized = normalizeUrl(text)
 
   const saved: string[] = []
@@ -68,5 +212,23 @@ export function renderNotes(text: string) {
     >
       {processed}
     </ReactMarkdown>
+  )
+}
+
+export function renderNotes(text: string) {
+  const segments = splitSegments(text)
+  if (segments.length === 1) return renderMarkdown(segments[0])
+  return (
+    <>
+      {segments.map((seg, i) =>
+        /^\s*<iframe\b/i.test(seg) ? (
+          <div key={i} className="my-2">
+            {renderIframe(seg)}
+          </div>
+        ) : (
+          <div key={i}>{renderMarkdown(seg)}</div>
+        )
+      )}
+    </>
   )
 }
