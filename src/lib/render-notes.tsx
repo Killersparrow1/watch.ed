@@ -1,12 +1,11 @@
 import type { CSSProperties, ReactNode } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 
 const DIRECT_IMAGE_RE = /(https?:\/\/[^\s]+?\.(?:gif|png|jpe?g|webp|avif)(?:\?[^\s]*)?)/gi
 const PROXY_GIF_RE = /(\/api\/gif-proxy\?url=[^\s]+)/gi
 const MARKDOWN_IMAGE_RE = /!\[([^\]]*)\]\(([^)]+)\)/g
 const IFRAME_RE = /<iframe\b[^>]*(?:\/>|>[\s\S]*?<\/iframe\s*>)/gi
 const IFRAME_ATTR_RE = /([a-zA-Z-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g
+const IMAGE_TOKEN_RE = /\x02(\d+)\x02/g
 
 const ALLOWED_EMBED_DOMAINS = [
   'spotify.com',
@@ -144,7 +143,7 @@ function renderIframe(tag: string): ReactNode {
       frameBorder={parsed.frameBorder}
       allow={parsed.allow}
       allowFullScreen={parsed.allowFullScreen}
-      loading={(parsed.loading === 'lazy' || parsed.loading === 'eager' ? parsed.loading : undefined)}
+      loading={parsed.loading === 'lazy' || parsed.loading === 'eager' ? parsed.loading : undefined}
       sandbox={parsed.sandbox}
       style={parseStyle(parsed.style)}
       className="max-w-full"
@@ -166,58 +165,79 @@ function splitSegments(text: string): string[] {
   return segments
 }
 
-function renderMarkdown(text: string): ReactNode {
+function renderPlainText(text: string): ReactNode {
   const normalized = normalizeUrl(text)
 
-  const saved: string[] = []
-  let processed = normalized.replace(MARKDOWN_IMAGE_RE, (m) => {
-    saved.push(m)
-    return `\x01${saved.length - 1}\x01`
+  const images: { url: string; alt: string }[] = []
+  let processed = normalized.replace(MARKDOWN_IMAGE_RE, (_m, alt: string, url: string) => {
+    images.push({ url, alt })
+    return `\x02${images.length - 1}\x02`
+  })
+  processed = processed.replace(DIRECT_IMAGE_RE, (m, url: string) => {
+    images.push({ url, alt: '' })
+    return `\x02${images.length - 1}\x02`
+  })
+  processed = processed.replace(PROXY_GIF_RE, (m, url: string) => {
+    images.push({ url, alt: '' })
+    return `\x02${images.length - 1}\x02`
   })
 
-  processed = processed.replace(DIRECT_IMAGE_RE, '![]( $& )')
-  processed = processed.replace(PROXY_GIF_RE, '![]( $& )')
+  if (images.length === 0) {
+    if (!normalized.trim()) return null
+    return (
+      <div className="whitespace-pre-wrap break-words">
+        {normalized}
+      </div>
+    )
+  }
 
-  processed = processed.replace(/\x01(\d+)\x01/g, (_, n) => saved[parseInt(n)])
-
-  processed = processed.replace(/\n/g, '  \n')
-
-  if (!processed.trim()) return null
+  const nodes: ReactNode[] = []
+  let last = 0
+  let m: RegExpExecArray | null
+  let imgKey = 0
+  IMAGE_TOKEN_RE.lastIndex = 0
+  while ((m = IMAGE_TOKEN_RE.exec(processed))) {
+    if (m.index > last) nodes.push(processed.slice(last, m.index))
+    const img = images[parseInt(m[1])]
+    nodes.push(
+      <img
+        key={imgKey++}
+        src={img.url}
+        alt={img.alt || ''}
+        loading="lazy"
+        className="max-w-full max-h-60 rounded-sm my-2 object-contain"
+        onError={(e) => {
+          const el = e.target as HTMLImageElement
+          const url = el.getAttribute('src')
+          el.style.display = 'none'
+          if (url) {
+            const link = document.createElement('a')
+            link.href = url
+            link.target = '_blank'
+            link.rel = 'noopener noreferrer'
+            link.className = 'text-accent hover:text-accent-hover underline underline-offset-2'
+            link.textContent = url
+            el.replaceWith(link)
+          }
+        }}
+      />
+    )
+    last = m.index + m[0].length
+  }
+  if (last < processed.length) nodes.push(processed.slice(last))
 
   return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      components={{
-        a({ href, children }) {
-          return (
-            <a href={href} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover underline underline-offset-2">
-              {children}
-            </a>
-          )
-        },
-        img({ src, alt }) {
-          return (
-            <img
-              src={src}
-              alt={alt || ''}
-              loading="lazy"
-              className="max-w-full max-h-60 rounded-sm my-2 object-contain"
-              onError={(e) => {
-                ;(e.target as HTMLImageElement).style.display = 'none'
-              }}
-            />
-          )
-        },
-      }}
-    >
-      {processed}
-    </ReactMarkdown>
+    <div className="whitespace-pre-wrap break-words">
+      {nodes.map((node, i) => (
+        <span key={i}>{node}</span>
+      ))}
+    </div>
   )
 }
 
 export function renderNotes(text: string) {
   const segments = splitSegments(text)
-  if (segments.length === 1) return renderMarkdown(segments[0])
+  if (segments.length === 1) return renderPlainText(segments[0])
   return (
     <>
       {segments.map((seg, i) =>
@@ -226,7 +246,7 @@ export function renderNotes(text: string) {
             {renderIframe(seg)}
           </div>
         ) : (
-          <div key={i}>{renderMarkdown(seg)}</div>
+          <div key={i}>{renderPlainText(seg)}</div>
         )
       )}
     </>
