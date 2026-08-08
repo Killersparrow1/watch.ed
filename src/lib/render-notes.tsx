@@ -165,7 +165,7 @@ function splitSegments(text: string): string[] {
   return segments
 }
 
-const INLINE_EMPH_RE = /(\*\*[^*]+\*\*|\*[^*]+\*|~~[^~]+~~|`[^`]+`)/g
+const INLINE_EMPH_SRC = String.raw`(\*\*[^*]+\*\*|\*[^*]+\*|~~[^~]+~~|\`[^\`]+\`)`
 
 function emphasis(tag: string, children: ReactNode): ReactNode {
   switch (tag) {
@@ -181,12 +181,12 @@ function emphasis(tag: string, children: ReactNode): ReactNode {
 }
 
 function parseInline(text: string): ReactNode[] {
+  const re = new RegExp(INLINE_EMPH_SRC, 'g')
   const nodes: ReactNode[] = []
   let last = 0
   let key = 0
   let m: RegExpExecArray | null
-  INLINE_EMPH_RE.lastIndex = 0
-  while ((m = INLINE_EMPH_RE.exec(text))) {
+  while ((m = re.exec(text))) {
     if (m.index > last) nodes.push(text.slice(last, m.index))
     const token = m[1]
     let tag = 'strong'
