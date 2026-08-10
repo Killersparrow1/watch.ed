@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { Entry, WatchEvent, WatchProvider } from '@/types/database'
+import { Entry, WatchEvent, WatchProvider, EntryPoster } from '@/types/database'
 import { getEntryPosterUrl, getPosterUrl } from '@/lib/tmdb'
 import { createClient } from '@/lib/supabase/client'
-import { Save, ArrowLeft, Trash2, Star, Award, Zap, ThumbsDown, Sparkles, Undo2, Eye, Plus, X, RefreshCw } from 'lucide-react'
+import { Save, ArrowLeft, Trash2, Star, Award, Zap, ThumbsDown, Sparkles, Undo2, Eye, Plus, X, RefreshCw, Images, Link as LinkIcon, ChevronUp, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 
 export default function EditEntryPage() {
@@ -29,6 +29,21 @@ export default function EditEntryPage() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [watchProviders, setWatchProviders] = useState<WatchProvider[]>([])
   const [fetchingProviders, setFetchingProviders] = useState(false)
+
+  const [posters, setPosters] = useState<EntryPoster[]>([])
+  const [showAddPoster, setShowAddPoster] = useState(false)
+  const [addingPoster, setAddingPoster] = useState(false)
+  const [posterError, setPosterError] = useState<string | null>(null)
+  const [newPoster, setNewPoster] = useState({
+    image_url: '',
+    make_main: false,
+    links: [{ label: '', url: '' }] as { label: string; url: string }[],
+  })
+  const [editingPoster, setEditingPoster] = useState<EntryPoster | null>(null)
+  const [editImageUrl, setEditImageUrl] = useState('')
+  const [editLinks, setEditLinks] = useState<{ label: string; url: string }[]>([])
+  const [savingPosterEdit, setSavingPosterEdit] = useState(false)
+  const [mainPosterUrl, setMainPosterUrl] = useState('')
 
   const [form, setForm] = useState({
     title: '',
@@ -73,6 +88,12 @@ export default function EditEntryPage() {
         download_url: data.entry.download_url || '',
       })
       setWatchProviders(data.entry.watch_providers || [])
+      setMainPosterUrl(data.entry.custom_poster_url || '')
+      const postersRes = await fetch(`/api/entries/${id}/posters`)
+      if (postersRes.ok) {
+        const postersData = await postersRes.json()
+        setPosters(postersData.posters || [])
+      }
       const eventsRes = await fetch(`/api/entries/${id}/watch-events`)
       if (eventsRes.ok) {
         const eventsData = await eventsRes.json()
@@ -207,6 +228,117 @@ export default function EditEntryPage() {
     }
   }
 
+  async function handleAddPoster(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newPoster.image_url.trim()) return
+    setAddingPoster(true)
+    setPosterError(null)
+    const links = newPoster.links
+      .filter(l => l.url.trim())
+      .map(l => ({ label: l.label.trim() || null, url: l.url.trim() }))
+    const res = await fetch(`/api/entries/${id}/posters`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image_url: newPoster.image_url.trim(),
+        links,
+        make_main: newPoster.make_main,
+      }),
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      setPosterError(data.error || 'Failed to add poster')
+      setAddingPoster(false)
+      return
+    }
+    setPosters(prev => [...prev, data.poster])
+    if (newPoster.make_main) {
+      setMainPosterUrl(data.poster.image_url)
+      setForm(prev => ({ ...prev, custom_poster_url: data.poster.image_url }))
+    }
+    setNewPoster({ image_url: '', make_main: false, links: [{ label: '', url: '' }] })
+    setShowAddPoster(false)
+    setAddingPoster(false)
+  }
+
+  async function handleDeletePoster(posterId: string) {
+    const res = await fetch(`/api/posters/${posterId}`, { method: 'DELETE' })
+    if (res.ok) {
+      setPosters(prev => prev.filter(p => p.id !== posterId))
+      if (editingPoster?.id === posterId) setEditingPoster(null)
+    }
+  }
+
+  async function handleMakeMain(poster: EntryPoster) {
+    const res = await fetch(`/api/posters/${poster.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_url: poster.image_url, make_main: true }),
+    })
+    if (res.ok) {
+      setMainPosterUrl(poster.image_url)
+      setForm(prev => ({ ...prev, custom_poster_url: poster.image_url }))
+    }
+  }
+
+  async function handleMovePoster(index: number, dir: -1 | 1) {
+    const ordered = [...posters].sort((a, b) => a.position - b.position)
+    const target = index + dir
+    if (target < 0 || target >= ordered.length) return
+    const a = ordered[index]
+    const b = ordered[target]
+    const results = await Promise.all([
+      fetch(`/api/posters/${a.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ position: b.position }),
+      }),
+      fetch(`/api/posters/${b.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ position: a.position }),
+      }),
+    ])
+    if (results.every(r => r.ok)) {
+      setPosters(prev => prev.map(p =>
+        p.id === a.id ? { ...p, position: b.position } : p.id === b.id ? { ...p, position: a.position } : p
+      ))
+    }
+  }
+
+  function handleStartEditPoster(poster: EntryPoster) {
+    setEditingPoster(poster)
+    setEditImageUrl(poster.image_url)
+    setEditLinks((poster.links || []).map(l => ({ label: l.label || '', url: l.url })))
+  }
+
+  async function handleSavePosterEdit() {
+    if (!editingPoster || !editImageUrl.trim()) return
+    setSavingPosterEdit(true)
+    setPosterError(null)
+    const links = editLinks
+      .filter(l => l.url.trim())
+      .map(l => ({ label: l.label.trim() || null, url: l.url.trim() }))
+    const res = await fetch(`/api/posters/${editingPoster.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_url: editImageUrl.trim(), links }),
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      setPosterError(data.error || 'Failed to save poster')
+      setSavingPosterEdit(false)
+      return
+    }
+    setPosters(prev => prev.map(p => (p.id === data.poster.id ? data.poster : p)))
+    if (mainPosterUrl === editingPoster.image_url) {
+      setMainPosterUrl(data.poster.image_url)
+      setForm(prev => ({ ...prev, custom_poster_url: data.poster.image_url }))
+    }
+    setEditingPoster(null)
+    setSavingPosterEdit(false)
+  }
+
   if (loading) {
     return (
       <div className="animate-pulse space-y-4">
@@ -257,6 +389,291 @@ export default function EditEntryPage() {
             >
               Cancel
             </button>
+          </div>
+        )}
+      </div>
+
+      <div className="mb-6 p-4 bg-surface border border-border rounded-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-medium text-text-primary flex items-center gap-1.5">
+            <Images className="w-4 h-4" />
+            Poster collection <span className="text-text-muted font-normal">({posters.length})</span>
+          </h2>
+          <button
+            type="button"
+            onClick={() => setShowAddPoster(!showAddPoster)}
+            className="flex items-center gap-1 text-xs text-accent hover:text-accent-hover transition-colors"
+          >
+            <Plus className="w-3 h-3" />
+            Add poster
+          </button>
+        </div>
+
+        {posters.length > 0 ? (
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+            {[...posters].sort((a, b) => a.position - b.position).map((p, i) => (
+              <div key={p.id} className="bg-tag-bg border border-border rounded-sm overflow-hidden">
+                <img
+                  src={p.image_url}
+                  alt="Poster"
+                  className="w-full aspect-[2/3] object-cover bg-tag-bg"
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/logo.svg' }}
+                />
+                <div className="p-1.5 space-y-1">
+                  {mainPosterUrl === p.image_url && (
+                    <span className="inline-block px-1.5 py-0.5 text-[10px] font-medium bg-accent/10 text-accent rounded-sm">
+                      Main
+                    </span>
+                  )}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleMakeMain(p)}
+                      title="Set as main poster"
+                      className="p-1 text-text-muted hover:text-accent transition-colors"
+                    >
+                      <Star className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStartEditPoster(p)}
+                      title="Edit links"
+                      className="p-1 text-text-muted hover:text-accent transition-colors"
+                    >
+                      <LinkIcon className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleMovePoster(i, -1)}
+                      disabled={i === 0}
+                      title="Move up"
+                      className="p-1 text-text-muted hover:text-text-primary transition-colors disabled:opacity-30"
+                    >
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleMovePoster(i, 1)}
+                      disabled={i === posters.length - 1}
+                      title="Move down"
+                      className="p-1 text-text-muted hover:text-text-primary transition-colors disabled:opacity-30"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePoster(p.id)}
+                      title="Remove poster"
+                      className="p-1 text-text-muted hover:text-accent transition-colors ml-auto"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  {p.links && p.links.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {p.links.map((link, li) => (
+                        <a
+                          key={li}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] text-text-muted hover:text-accent transition-colors underline underline-offset-2"
+                        >
+                          {link.label || 'Link'}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-text-muted">No posters in collection yet. Add posters with optional links.</p>
+        )}
+
+        {showAddPoster && (
+          <form onSubmit={handleAddPoster} className="mt-4 p-4 bg-tag-bg border border-border rounded-sm space-y-3">
+            <div>
+              <label className="block body-xs text-text-muted mb-1">Poster image URL *</label>
+              <input
+                type="url"
+                required
+                value={newPoster.image_url}
+                onChange={(e) => setNewPoster(prev => ({ ...prev, image_url: e.target.value }))}
+                className="w-full px-3 py-2 border border-border bg-bg rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                placeholder="https://example.com/poster.jpg"
+              />
+              {newPoster.image_url && (
+                <img
+                  src={newPoster.image_url}
+                  alt="Preview"
+                  className="mt-2 w-16 rounded-sm"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                />
+              )}
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block body-xs text-text-muted">Links (add as many as you want)</label>
+                <button
+                  type="button"
+                  onClick={() => setNewPoster(prev => ({ ...prev, links: [...prev.links, { label: '', url: '' }] }))}
+                  className="flex items-center gap-1 text-[10px] text-accent hover:text-accent-hover transition-colors"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add link
+                </button>
+              </div>
+              <div className="space-y-1.5">
+                {newPoster.links.map((link, i) => (
+                  <div key={i} className="flex gap-1.5">
+                    <input
+                      value={link.label}
+                      onChange={(e) => {
+                        const links = [...newPoster.links]
+                        links[i] = { ...links[i], label: e.target.value }
+                        setNewPoster(prev => ({ ...prev, links }))
+                      }}
+                      className="w-28 px-2 py-1.5 border border-border bg-bg rounded-sm text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                      placeholder="Label"
+                    />
+                    <input
+                      value={link.url}
+                      onChange={(e) => {
+                        const links = [...newPoster.links]
+                        links[i] = { ...links[i], url: e.target.value }
+                        setNewPoster(prev => ({ ...prev, links }))
+                      }}
+                      className="flex-1 px-2 py-1.5 border border-border bg-bg rounded-sm text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                      placeholder="https://example.com"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setNewPoster(prev => ({ ...prev, links: prev.links.filter((_, li) => li !== i) }))}
+                      className="p-1.5 text-text-muted hover:text-accent transition-colors"
+                      title="Remove link"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-xs text-text-secondary">
+              <input
+                type="checkbox"
+                checked={newPoster.make_main}
+                onChange={(e) => setNewPoster(prev => ({ ...prev, make_main: e.target.checked }))}
+                className="accent-accent"
+              />
+              Use as main poster (shown everywhere)
+            </label>
+            {posterError && <p className="text-xs text-accent">{posterError}</p>}
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={addingPoster}
+                className="px-3 py-1.5 bg-accent text-white rounded-sm text-xs hover:bg-accent-hover transition-colors disabled:opacity-50"
+              >
+                {addingPoster ? 'Adding...' : 'Add poster'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddPoster(false)}
+                className="px-3 py-1.5 border border-border rounded-sm text-xs text-text-secondary hover:text-text-primary transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
+        {editingPoster && (
+          <div className="mt-4 p-4 bg-tag-bg border border-border rounded-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-text-primary">Edit poster</p>
+              <button
+                type="button"
+                onClick={() => setEditingPoster(null)}
+                className="p-1 text-text-muted hover:text-accent transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div>
+              <label className="block body-xs text-text-muted mb-1">Image URL</label>
+              <input
+                type="url"
+                value={editImageUrl}
+                onChange={(e) => setEditImageUrl(e.target.value)}
+                className="w-full px-3 py-2 border border-border bg-bg rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block body-xs text-text-muted">Links</label>
+                <button
+                  type="button"
+                  onClick={() => setEditLinks(prev => [...prev, { label: '', url: '' }])}
+                  className="flex items-center gap-1 text-[10px] text-accent hover:text-accent-hover transition-colors"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add link
+                </button>
+              </div>
+              <div className="space-y-1.5">
+                {editLinks.map((link, i) => (
+                  <div key={i} className="flex gap-1.5">
+                    <input
+                      value={link.label}
+                      onChange={(e) => {
+                        const links = [...editLinks]
+                        links[i] = { ...links[i], label: e.target.value }
+                        setEditLinks(links)
+                      }}
+                      className="w-28 px-2 py-1.5 border border-border bg-bg rounded-sm text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                      placeholder="Label"
+                    />
+                    <input
+                      value={link.url}
+                      onChange={(e) => {
+                        const links = [...editLinks]
+                        links[i] = { ...links[i], url: e.target.value }
+                        setEditLinks(links)
+                      }}
+                      className="flex-1 px-2 py-1.5 border border-border bg-bg rounded-sm text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                      placeholder="https://example.com"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setEditLinks(prev => prev.filter((_, li) => li !== i))}
+                      className="p-1.5 text-text-muted hover:text-accent transition-colors"
+                      title="Remove link"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleSavePosterEdit}
+                disabled={savingPosterEdit}
+                className="px-3 py-1.5 bg-accent text-white rounded-sm text-xs hover:bg-accent-hover transition-colors disabled:opacity-50"
+              >
+                {savingPosterEdit ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingPoster(null)}
+                className="px-3 py-1.5 border border-border rounded-sm text-xs text-text-secondary hover:text-text-primary transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         )}
       </div>

@@ -584,3 +584,29 @@ CREATE TABLE IF NOT EXISTS ai_cache (
   result TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Poster collection per entry (multiple posters, each with optional links)
+CREATE TABLE IF NOT EXISTS entry_posters (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  entry_id UUID NOT NULL REFERENCES entries(id) ON DELETE CASCADE,
+  image_url TEXT NOT NULL,
+  links JSONB DEFAULT '[]'::jsonb,
+  position INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_entry_posters_entry_id ON entry_posters(entry_id);
+
+ALTER TABLE entry_posters ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Owner can manage posters" ON entry_posters;
+CREATE POLICY "Owner can manage posters"
+  ON entry_posters FOR ALL
+  USING (
+    EXISTS (SELECT 1 FROM entries WHERE entries.id = entry_posters.entry_id AND entries.user_id = auth.uid())
+  );
+
+DROP POLICY IF EXISTS "Anyone can view posters" ON entry_posters;
+CREATE POLICY "Anyone can view posters"
+  ON entry_posters FOR SELECT
+  USING (true);

@@ -6,6 +6,7 @@ import { getEntryPosterUrl } from '@/lib/tmdb'
 import type { Metadata } from 'next'
 import type { CommentWithAuthor } from '@/types/database'
 import ReviewContent from './review-content'
+import PosterGallery from './poster-gallery'
 
 interface Props {
   params: Promise<{ username: string; id: string }>
@@ -88,6 +89,15 @@ export default async function ReviewPage({ params }: Props) {
 
   const watchEvents = watchEventsResult.data || []
   const reactions = reactionsResult.data || []
+
+  const { data: rawPosters } = await supabase
+    .from('entry_posters')
+    .select('*')
+    .eq('entry_id', id)
+    .order('position', { ascending: true })
+    .order('created_at', { ascending: true })
+
+  const posters = rawPosters || []
   const likes = reactions.filter(r => r.reaction === 'like').length
   const dislikes = reactions.filter(r => r.reaction === 'dislike').length
 
@@ -210,6 +220,8 @@ export default async function ReviewPage({ params }: Props) {
               comments={comments}
               entryOwnerId={profile.id}
             />
+
+            <PosterGallery posters={posters} />
           </div>
         </div>
       </main>

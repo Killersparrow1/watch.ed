@@ -181,6 +181,20 @@ export interface CommentWithAuthor extends Comment {
   }
 }
 
+export interface PosterLink {
+  label: string | null
+  url: string
+}
+
+export interface EntryPoster {
+  id: string
+  entry_id: string
+  image_url: string
+  links: PosterLink[]
+  position: number
+  created_at: string
+}
+
 export interface WatchPartyMessage {
   id: string
   party_id: string
