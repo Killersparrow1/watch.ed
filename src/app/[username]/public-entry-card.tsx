@@ -53,6 +53,8 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
   const poster = getEntryPosterUrl(entry, 'w342')
   const isTmdbPoster = !!poster && poster.startsWith('https://image.tmdb.org/')
 
+  const timesWatched = (entry.watch_date ? 1 : 0) + entryWatchEvents.length
+
   const seriesProgress = useMemo(() => {
     if (entry.type !== 'series') return null
     let season = entry.progress_season
@@ -244,6 +246,15 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {timesWatched > 1 && (
+            <span
+              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium bg-tag-bg text-text-secondary"
+              title={`Watched ${timesWatched} times`}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              {timesWatched}×
+            </span>
+          )}
           {entry.type === 'series' ? (
             seriesAvgRating && (
               <div className="flex items-center gap-1 text-sm">
