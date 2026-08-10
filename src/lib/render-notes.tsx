@@ -1,11 +1,13 @@
 import type { CSSProperties, ReactNode } from 'react'
+import FilesterEmbed from '@/components/filester-embed'
 
 const DIRECT_IMAGE_RE = /(https?:\/\/[^\s]+?\.(?:gif|png|jpe?g|webp|avif)(?:\?[^\s]*)?)/gi
 const PROXY_GIF_RE = /(\/api\/gif-proxy\?url=[^\s]+)/gi
 const MARKDOWN_IMAGE_RE = /!\[([^\]]*)\]\(([^)]+)\)/g
+const FILESTER_RE = /https?:\/\/(?:www\.)?filester\.(?:me|s[hi]|gg)\/d\/([a-zA-Z0-9_-]+)/gi
 const IFRAME_RE = /<iframe\b[^>]*(?:\/>|>[\s\S]*?<\/iframe\s*>)/gi
 const IFRAME_ATTR_RE = /([a-zA-Z-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g
-const IMAGE_TOKEN_RE = /\x02(\d+)\x02/g
+const TOKEN_RE = /[\x02\x03](\d+)[\x02\x03]/g
 
 const ALLOWED_EMBED_DOMAINS = [
   'spotify.com',
@@ -223,8 +225,14 @@ function renderTextRun(text: string, keyPrefix: string): ReactNode[] {
 function renderPlainText(text: string): ReactNode {
   const normalized = normalizeUrl(text)
 
+  const embeds: string[] = []
+  let processed = normalized.replace(FILESTER_RE, (_m, slug: string) => {
+    embeds.push(slug)
+    return `\x03${embeds.length - 1}\x03`
+  })
+
   const images: { url: string; alt: string }[] = []
-  let processed = normalized.replace(MARKDOWN_IMAGE_RE, (_m, alt: string, url: string) => {
+  processed = processed.replace(MARKDOWN_IMAGE_RE, (_m, alt: string, url: string) => {
     images.push({ url, alt })
     return `\x02${images.length - 1}\x02`
   })
@@ -237,7 +245,7 @@ function renderPlainText(text: string): ReactNode {
     return `\x02${images.length - 1}\x02`
   })
 
-  if (images.length === 0) {
+  if (images.length === 0 && embeds.length === 0) {
     if (!normalized.trim()) return null
     return (
       <div className="whitespace-pre-wrap break-words">
@@ -249,34 +257,40 @@ function renderPlainText(text: string): ReactNode {
   const nodes: ReactNode[] = []
   let last = 0
   let m: RegExpExecArray | null
-  let imgKey = 0
-  IMAGE_TOKEN_RE.lastIndex = 0
-  while ((m = IMAGE_TOKEN_RE.exec(processed))) {
-    if (m.index > last) nodes.push(...renderTextRun(processed.slice(last, m.index), `a${imgKey}`))
-    const img = images[parseInt(m[1])]
-    nodes.push(
-      <img
-        key={imgKey++}
-        src={img.url}
-        alt={img.alt || ''}
-        loading="lazy"
-        className="max-w-full max-h-60 rounded-sm my-2 object-contain"
-        onError={(e) => {
-          const el = e.target as HTMLImageElement
-          const url = el.getAttribute('src')
-          el.style.display = 'none'
-          if (url) {
-            const link = document.createElement('a')
-            link.href = url
-            link.target = '_blank'
-            link.rel = 'noopener noreferrer'
-            link.className = 'text-accent hover:text-accent-hover underline underline-offset-2'
-            link.textContent = url
-            el.replaceWith(link)
-          }
-        }}
-      />
-    )
+  let key = 0
+  TOKEN_RE.lastIndex = 0
+  while ((m = TOKEN_RE.exec(processed))) {
+    if (m.index > last) nodes.push(...renderTextRun(processed.slice(last, m.index), `a${key}`))
+    const isEmbed = m[0][0] === '\x03'
+    const index = parseInt(m[1])
+    if (isEmbed) {
+      nodes.push(<FilesterEmbed key={key++} slug={embeds[index]} />)
+    } else {
+      const img = images[index]
+      nodes.push(
+        <img
+          key={key++}
+          src={img.url}
+          alt={img.alt || ''}
+          loading="lazy"
+          className="max-w-full max-h-60 rounded-sm my-2 object-contain"
+          onError={(e) => {
+            const el = e.target as HTMLImageElement
+            const url = el.getAttribute('src')
+            el.style.display = 'none'
+            if (url) {
+              const link = document.createElement('a')
+              link.href = url
+              link.target = '_blank'
+              link.rel = 'noopener noreferrer'
+              link.className = 'text-accent hover:text-accent-hover underline underline-offset-2'
+              link.textContent = url
+              el.replaceWith(link)
+            }
+          }}
+        />
+      )
+    }
     last = m.index + m[0].length
   }
   if (last < processed.length) nodes.push(...renderTextRun(processed.slice(last), 'z'))

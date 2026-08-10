@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { renderNotes } from '@/lib/render-notes'
 import { Check, X, RefreshCw, Sparkles, Trash2 } from 'lucide-react'
 import { Profile } from '@/types/database'
 
@@ -258,7 +259,7 @@ export default function AdminPage() {
                       <span className="text-xs text-text-muted">{new Date(comment.created_at).toLocaleDateString()}</span>
                     )}
                   </div>
-                  <p className="text-sm text-text-secondary mb-3 whitespace-pre-wrap break-words">{comment.content}</p>
+                  <p className="text-sm text-text-secondary mb-3 whitespace-pre-wrap break-words">{renderNotes(comment.content)}</p>
                   <div className="flex items-center gap-2">
                     {!verdict && (
                       <button

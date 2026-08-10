@@ -197,7 +197,7 @@ export default function ReviewContent({ entry, watchEvents, likes, dislikes, use
                       {new Date(comment.created_at).toLocaleDateString()}
                     </span>
                   </div>
-                  <p className="text-sm text-text-secondary mt-1">{comment.content}</p>
+                  <p className="text-sm text-text-secondary mt-1">{renderNotes(comment.content)}</p>
                 </div>
                 {(currentUserId === comment.user_id || currentUserId === entryOwnerId) && (
                   <button
