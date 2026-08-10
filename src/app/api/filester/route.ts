@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const FILESTER_API = 'https://filester.sh/api/public/download'
+const FILESTER_API = 'https://filester.sh/v2/api/public/view'
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'
 
 const resolvedCache = new Map<string, { url: string; expires: number }>()
@@ -19,23 +19,28 @@ function setCache(slug: string, url: string) {
   }
 }
 
-async function resolveDirectUrl(slug: string): Promise<string | null> {
+async function resolveStreamUrl(slug: string): Promise<string | null> {
   const cached = cachedResolve(slug)
   if (cached) return cached
 
   try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', 'User-Agent': UA }
+    if (process.env.FILSTER_API_KEY) {
+      headers.Authorization = `Bearer ${process.env.FILSTER_API_KEY}`
+    }
     const res = await fetch(FILESTER_API, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'User-Agent': UA },
+      headers,
       body: JSON.stringify({ file_slug: slug }),
       signal: AbortSignal.timeout(12000),
     })
     if (!res.ok) return null
     const data = await res.json()
     const server: string | undefined = data.server
-    const path: string | undefined = data.download_url
-    if (!server || !path) return null
-    const url = `${server}${path}`
+    const file: string | undefined = data.file
+    const token: string | undefined = data.token
+    if (!server || !file || !token) return null
+    const url = `${server}/v2/${encodeURIComponent(file)}?token=${encodeURIComponent(token)}`
     setCache(slug, url)
     return url
   } catch {
@@ -49,7 +54,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing slug param' }, { status: 400 })
   }
 
-  const directUrl = await resolveDirectUrl(slug)
+  const directUrl = await resolveStreamUrl(slug)
   if (!directUrl) {
     return NextResponse.json({ error: 'Could not resolve file' }, { status: 502 })
   }
