@@ -30,6 +30,7 @@ export default function FilesterEmbed({ slug }: Props) {
   }, [slug])
 
   const src = `/api/filester?slug=${encodeURIComponent(slug)}`
+  const originalLink = `https://filester.sh/d/${slug}`
 
   if (status === 'loading') {
     return <div className="my-2 text-xs text-text-muted animate-pulse">Loading stream…</div>
@@ -38,7 +39,7 @@ export default function FilesterEmbed({ slug }: Props) {
   if (status === 'error' || !type || (!type.startsWith('video/') && !type.startsWith('image/') && !type.startsWith('audio/'))) {
     return (
       <a
-        href={src}
+        href={originalLink}
         target="_blank"
         rel="noopener noreferrer"
         className="text-accent hover:text-accent-hover underline underline-offset-2"
