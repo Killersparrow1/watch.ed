@@ -209,6 +209,8 @@ export default async function ReviewPage({ params }: Props) {
               <p className="text-sm italic text-text-secondary mb-4">&ldquo;{entry.tagline}&rdquo;</p>
             )}
 
+            <PosterGallery posters={posters} />
+
             <ReviewContent
               entry={entry}
               watchEvents={watchEvents}
@@ -220,8 +222,6 @@ export default async function ReviewPage({ params }: Props) {
               comments={comments}
               entryOwnerId={profile.id}
             />
-
-            <PosterGallery posters={posters} />
           </div>
         </div>
       </main>
