@@ -1,7 +1,7 @@
 import { createServiceClient, createServerSupabaseClient } from '@/lib/supabase/server'
 import { ArrowLeft, Calendar, Film, Tv, Timer } from 'lucide-react'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { getEntryPosterUrl } from '@/lib/tmdb'
 import type { Metadata } from 'next'
 import type { CommentWithAuthor } from '@/types/database'
@@ -31,7 +31,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .eq('user_id', profile.id)
     .single()
 
-  if (!entry) return {}
+  if (!entry) {
+    const { data: redirectRow } = await supabase
+      .from('entry_redirects')
+      .select('target_entry_id')
+      .eq('entry_id', id)
+      .maybeSingle()
+    if (redirectRow) redirect(`/${username}/${redirectRow.target_entry_id}`)
+    return {}
+  }
 
   const poster = entry.custom_poster_url || (entry.poster_path ? `https://image.tmdb.org/t/p/w500${entry.poster_path}` : null)
   const excerpt = entry.notes?.slice(0, 200).replace(/\s+\S*$/, '') || entry.tagline || entry.overview?.slice(0, 200) || `Review of ${entry.title}`
@@ -73,7 +81,15 @@ export default async function ReviewPage({ params }: Props) {
     .eq('user_id', profile.id)
     .single()
 
-  if (!entry) notFound()
+  if (!entry) {
+    const { data: redirectRow } = await supabase
+      .from('entry_redirects')
+      .select('target_entry_id')
+      .eq('entry_id', id)
+      .maybeSingle()
+    if (redirectRow) redirect(`/${username}/${redirectRow.target_entry_id}`)
+    notFound()
+  }
 
   const [watchEventsResult, reactionsResult] = await Promise.all([
     supabase

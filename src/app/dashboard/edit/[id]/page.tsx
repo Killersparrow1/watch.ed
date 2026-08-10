@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { Entry, WatchEvent, WatchProvider, EntryPoster } from '@/types/database'
 import { getEntryPosterUrl, getPosterUrl } from '@/lib/tmdb'
 import { createClient } from '@/lib/supabase/client'
-import { Save, ArrowLeft, Trash2, Star, Award, Zap, ThumbsDown, Sparkles, Undo2, Eye, Plus, X, RefreshCw, Images, Link as LinkIcon, ChevronUp, ChevronDown } from 'lucide-react'
+import { Save, ArrowLeft, Trash2, Star, Award, Zap, ThumbsDown, Sparkles, Undo2, Eye, Plus, X, RefreshCw, Images, Link as LinkIcon, ChevronUp, ChevronDown, Merge } from 'lucide-react'
 import Link from 'next/link'
 
 export default function EditEntryPage() {
@@ -44,6 +44,14 @@ export default function EditEntryPage() {
   const [editLinks, setEditLinks] = useState<{ label: string; url: string }[]>([])
   const [savingPosterEdit, setSavingPosterEdit] = useState(false)
   const [mainPosterUrl, setMainPosterUrl] = useState('')
+
+  const [mergeOpen, setMergeOpen] = useState(false)
+  const [mergeQuery, setMergeQuery] = useState('')
+  const [mergeResults, setMergeResults] = useState<Entry[]>([])
+  const [mergeLoading, setMergeLoading] = useState(false)
+  const [mergeConfirm, setMergeConfirm] = useState<Entry | null>(null)
+  const [merging, setMerging] = useState(false)
+  const [mergeError, setMergeError] = useState<string | null>(null)
 
   const [form, setForm] = useState({
     title: '',
@@ -337,6 +345,56 @@ export default function EditEntryPage() {
     }
     setEditingPoster(null)
     setSavingPosterEdit(false)
+  }
+
+  async function loadMergeSuggestions(query?: string) {
+    setMergeLoading(true)
+    setMergeError(null)
+    const q = (query ?? '').trim()
+    try {
+      const params = new URLSearchParams()
+      if (q) {
+        params.set('search', q)
+      } else if (entry?.tmdb_id) {
+        params.set('tmdb_id', String(entry.tmdb_id))
+      } else {
+        setMergeResults([])
+        setMergeLoading(false)
+        return
+      }
+      const res = await fetch(`/api/entries?${params.toString()}`)
+      const data = await res.json()
+      setMergeResults((data.entries || []).filter((e: Entry) => e.id !== id))
+    } catch {
+      setMergeError('Failed to load entries')
+    }
+    setMergeLoading(false)
+  }
+
+  function handleOpenMerge() {
+    setMergeOpen(true)
+    setMergeConfirm(null)
+    setMergeQuery('')
+    loadMergeSuggestions()
+  }
+
+  async function handleConfirmMerge() {
+    if (!mergeConfirm) return
+    setMerging(true)
+    setMergeError(null)
+    const res = await fetch(`/api/entries/${id}/merge`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_entry_id: mergeConfirm.id }),
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      setMergeError(data.error || 'Failed to merge')
+      setMerging(false)
+      return
+    }
+    router.push('/dashboard')
+    router.refresh()
   }
 
   if (loading) {
@@ -674,6 +732,111 @@ export default function EditEntryPage() {
                 Cancel
               </button>
             </div>
+          </div>
+        )}
+      </div>
+
+      <div className="mb-6 p-4 bg-surface border border-border rounded-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-medium text-text-primary flex items-center gap-1.5">
+            <Merge className="w-4 h-4" />
+            Merge duplicate into another entry
+          </h2>
+          <button
+            type="button"
+            onClick={handleOpenMerge}
+            className="flex items-center gap-1 text-xs text-accent hover:text-accent-hover transition-colors"
+          >
+            {mergeOpen ? 'Close' : 'Find duplicate'}
+          </button>
+        </div>
+
+        {mergeOpen && (
+          <div className="space-y-3">
+            <p className="text-xs text-text-muted">
+              This logs <strong className="text-text-secondary">{form.watch_date || 'this entry'}</strong> as a rewatch on
+              the target entry, moves comments/posters/list membership over, keeps this old link working as a redirect,
+              and deletes this duplicate.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={mergeQuery}
+                onChange={(e) => setMergeQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); loadMergeSuggestions(mergeQuery) } }}
+                className="flex-1 px-3 py-2 border border-border bg-bg rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+                placeholder="Search your entries by title..."
+              />
+              <button
+                type="button"
+                onClick={() => loadMergeSuggestions(mergeQuery)}
+                className="px-3 py-2 border border-border rounded-sm text-xs text-text-secondary hover:text-text-primary transition-colors"
+              >
+                Search
+              </button>
+            </div>
+
+            {mergeLoading ? (
+              <p className="text-xs text-text-muted animate-pulse">Loading...</p>
+            ) : mergeResults.length > 0 ? (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {mergeResults.map((candidate) => (
+                  <div key={candidate.id} className="flex items-center gap-3 p-2.5 bg-tag-bg border border-border rounded-sm">
+                    <img
+                      src={getEntryPosterUrl(candidate, 'w92') || ''}
+                      alt=""
+                      className="w-8 h-12 object-cover rounded-sm bg-bg flex-shrink-0"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-text-primary truncate">{candidate.title}</p>
+                      <p className="text-xs text-text-muted">
+                        {candidate.year || '—'} · {candidate.status.replace(/_/g, ' ')}
+                        {candidate.watch_date ? ` · watched ${candidate.watch_date}` : ''}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setMergeConfirm(candidate)}
+                      className="px-3 py-1.5 bg-accent text-white rounded-sm text-xs hover:bg-accent-hover transition-colors"
+                    >
+                      Merge into this
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-text-muted">
+                {entry?.tmdb_id ? 'No duplicate found for this movie. Search manually above.' : 'No tmdb match — search manually above.'}
+              </p>
+            )}
+
+            {mergeConfirm && (
+              <div className="p-3 bg-accent-light border border-accent/30 rounded-sm space-y-2">
+                <p className="text-xs text-text-primary">
+                  Merge <strong>{entry?.title}</strong> into <strong>{mergeConfirm.title}</strong>? The rewatch will be
+                  logged on the target and this duplicate will be deleted.
+                </p>
+                {mergeError && <p className="text-xs text-accent">{mergeError}</p>}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleConfirmMerge}
+                    disabled={merging}
+                    className="px-3 py-1.5 bg-accent text-white rounded-sm text-xs hover:bg-accent-hover transition-colors disabled:opacity-50"
+                  >
+                    {merging ? 'Merging...' : 'Confirm merge'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMergeConfirm(null)}
+                    className="px-3 py-1.5 border border-border rounded-sm text-xs text-text-secondary hover:text-text-primary transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

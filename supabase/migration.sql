@@ -610,3 +610,28 @@ DROP POLICY IF EXISTS "Anyone can view posters" ON entry_posters;
 CREATE POLICY "Anyone can view posters"
   ON entry_posters FOR SELECT
   USING (true);
+
+-- Redirects for merged (deleted) entries so old public URLs keep working
+CREATE TABLE IF NOT EXISTS entry_redirects (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  entry_id UUID NOT NULL,
+  target_entry_id UUID NOT NULL REFERENCES entries(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(entry_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_entry_redirects_entry_id ON entry_redirects(entry_id);
+
+ALTER TABLE entry_redirects ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can view redirects" ON entry_redirects;
+CREATE POLICY "Anyone can view redirects"
+  ON entry_redirects FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Users can manage redirects" ON entry_redirects;
+CREATE POLICY "Users can manage redirects"
+  ON entry_redirects FOR ALL
+  USING (
+    auth.uid() IN (SELECT user_id FROM entries WHERE id = target_entry_id)
+  );

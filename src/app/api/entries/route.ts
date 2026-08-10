@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get('sort') || 'created_at'
     const order = searchParams.get('order') || 'desc'
     const search = searchParams.get('search')
+    const tmdbId = searchParams.get('tmdb_id')
     const limit = searchParams.get('limit')
     const offset = searchParams.get('offset')
 
@@ -30,6 +31,7 @@ export async function GET(request: NextRequest) {
     if (status) query = query.eq('status', status)
     if (favorite) query = query.eq('favorite', true)
     if (search) query = query.ilike('title', `%${search}%`)
+    if (tmdbId) query = query.eq('tmdb_id', parseInt(tmdbId))
 
     const allowedSorts = ['watch_date', 'title', 'rating', 'year']
     const sortCol = allowedSorts.includes(sort) ? sort : 'watch_date'
