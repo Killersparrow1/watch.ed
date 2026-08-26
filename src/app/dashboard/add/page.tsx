@@ -17,17 +17,22 @@ export default function AddEntryPage() {
   const [watchProviders, setWatchProviders] = useState<WatchProvider[]>([])
   const [fetchingProviders, setFetchingProviders] = useState(false)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
-  const [mediaType, setMediaType] = useState<'movie' | 'series' | 'book'>('movie')
+  const [showBookForm, setShowBookForm] = useState(false)
 
   const [form, setForm] = useState({
     title: '',
     type: 'movie' as 'movie' | 'series',
     status: 'completed' as string,
-    rating: '',
+    rating: '' as string,
     notes: '',
     watch_date: '',
+    progress: '' as string | null,
     progress_season: '',
     progress_episode: '',
+    authors: '' as string,
+    isbn: '' as string | null,
+    cover_url: '' as string,
+    open_library_id: '' as string,
     badge: '' as string,
     tagline: '' as string,
     cast_crew: '' as string,
@@ -154,49 +159,85 @@ export default function AddEntryPage() {
     setSaving(true)
     setError(null)
 
-    const body: Record<string, unknown> = {
-      title: form.title.trim(),
-      type: form.type,
-      status: form.status,
-      rating: form.rating ? parseInt(form.rating) : null,
-      badge: form.badge || null,
-      progress_season: form.progress_season ? parseInt(form.progress_season) : null,
-      progress_episode: form.progress_episode || null,
-      watch_date: form.watch_date || null,
-      notes: form.notes || null,
-      runtime: form.runtime ? parseInt(form.runtime) : null,
-      custom_poster_url: form.custom_poster_url || null,
-      watch_providers: watchProviders,
-      download_url: form.download_url || null,
+    if (showBookForm) {
+      // Book form submission
+      const progressNum = form.progress ? parseInt(form.progress) : 0
+      const ratingNum = form.rating ? parseInt(form.rating) : null
+
+      const body = {
+        title: form.title.trim(),
+        authors: form.authors.split(',').map((a: string) => a.trim()).filter((a: string) => a.length > 0),
+        isbn: form.isbn || null,
+        status: form.status,
+        rating: ratingNum,
+        progress: progressNum,
+        notes: form.notes.trim(),
+        cover_url: form.cover_url || null,
+        open_library_id: form.open_library_id || null,
+      }
+
+      const res = await fetch('/api/books', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Failed to save book')
+        setSaving(false)
+        return
+      }
+
+      router.push('/dashboard')
+      router.refresh()
+    } else {
+      // Movie/Series form submission (original)
+      const body: Record<string, unknown> = {
+        title: form.title.trim(),
+        type: form.type,
+        status: form.status,
+        rating: form.rating ? parseInt(form.rating) : null,
+        badge: form.badge || null,
+        progress_season: form.progress_season ? parseInt(form.progress_season) : null,
+        progress_episode: form.progress_episode || null,
+        watch_date: form.watch_date || null,
+        notes: form.notes || null,
+        runtime: form.runtime ? parseInt(form.runtime) : null,
+        custom_poster_url: form.custom_poster_url || null,
+        watch_providers: watchProviders,
+        download_url: form.download_url || null,
+      }
+
+      if (selected) {
+        body.tmdb_id = selected.tmdb_id
+        body.poster_path = selected.poster_path
+        body.year = selected.year
+        body.genres = selected.genres
+        body.overview = selected.overview
+        body.runtime = selected.runtime
+        body.tagline = selected.tagline || null
+        body.cast_crew = selected.cast_crew || null
+      }
+
+      const res = await fetch('/api/entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Failed to save entry')
+        setSaving(false)
+        return
+      }
+
+      router.push('/dashboard')
+      router.refresh()
     }
-
-    if (selected) {
-      body.tmdb_id = selected.tmdb_id
-      body.poster_path = selected.poster_path
-      body.year = selected.year
-      body.genres = selected.genres
-      body.overview = selected.overview
-      body.runtime = selected.runtime
-      body.tagline = selected.tagline || null
-      body.cast_crew = selected.cast_crew || null
-    }
-
-    const res = await fetch('/api/entries', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      setError(data.error || 'Failed to save entry')
-      setSaving(false)
-      return
-    }
-
-    router.push('/dashboard')
-    router.refresh()
   }
 
   return (
@@ -213,29 +254,19 @@ export default function AddEntryPage() {
 
       <div className="mb-6 flex gap-2">
         <button
-          onClick={() => setMediaType('movie')}
+          onClick={() => setShowBookForm(false)}
           className={`flex-1 px-4 py-2.5 border rounded-sm text-sm transition-colors ${
-            mediaType === 'movie'
+            !showBookForm
               ? 'border-rating bg-rating/10 text-rating'
               : 'border-border text-text-secondary hover:text-text-primary'
           }`}
         >
-          Movie
+          Movie/Series
         </button>
         <button
-          onClick={() => setMediaType('series')}
+          onClick={() => setShowBookForm(true)}
           className={`flex-1 px-4 py-2.5 border rounded-sm text-sm transition-colors ${
-            mediaType === 'series'
-              ? 'border-rating bg-rating/10 text-rating'
-              : 'border-border text-text-secondary hover:text-text-primary'
-          }`}
-        >
-          Series
-        </button>
-        <button
-          onClick={() => router.push('/dashboard/add-book')}
-          className={`flex-1 px-4 py-2.5 border rounded-sm text-sm transition-colors ${
-            mediaType === 'book'
+            showBookForm
               ? 'border-rating bg-rating/10 text-rating'
               : 'border-border text-text-secondary hover:text-text-primary'
           }`}
@@ -244,7 +275,123 @@ export default function AddEntryPage() {
         </button>
       </div>
 
-      {mediaType === 'movie' || mediaType === 'series' && (
+      {showBookForm && (
+        <div className="mb-8">
+          <h2 className="heading-sm mb-4">Add book</h2>
+
+          <div className="mb-4">
+            <label htmlFor="book_title" className="block text-sm font-medium text-text-primary mb-1.5">
+              Title *
+            </label>
+            <input
+              id="book_title"
+              type="text"
+              value={form.title}
+              onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
+              className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+              required
+            />
+          </div>
+
+          <div className="mb-4">
+            <label htmlFor="book_author" className="block text-sm font-medium text-text-primary mb-1.5">
+              Author
+            </label>
+            <input
+              id="book_author"
+              type="text"
+              value={form.authors || ''}
+              onChange={(e) => setForm(prev => ({ ...prev, authors: e.target.value }))}
+              className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+              placeholder="e.g. J.K. Rowling"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label htmlFor="book_status" className="block text-sm font-medium text-text-primary mb-1.5">
+              Status
+            </label>
+            <select
+              id="book_status"
+              value={form.status}
+              onChange={(e) => setForm(prev => ({ ...prev, status: e.target.value }))}
+              className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+            >
+              <option value="want_to_read">Want to Read</option>
+              <option value="currently_reading">Currently Reading</option>
+              <option value="read">Read</option>
+              <option value="did_not_finish">Did Not Finish</option>
+            </select>
+          </div>
+
+          <div className="mb-4">
+            <label htmlFor="book_rating" className="block text-sm font-medium text-text-primary mb-1.5">
+              Rating (1-10)
+            </label>
+            <div className="relative">
+              <Star className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-rating" />
+              <input
+                id="book_rating"
+                type="number"
+                min="1"
+                max="10"
+                value={form.rating || ''}
+                onChange={(e) => setForm(prev => ({ ...prev, rating: e.target.value }))}
+                className="w-full pl-9 pr-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+                placeholder="Rate 1-10"
+              />
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label htmlFor="book_progress" className="block text-sm font-medium text-text-primary mb-1.5">
+              Pages read
+            </label>
+            <input
+              id="book_progress"
+              type="number"
+              min="0"
+              value={form.progress || ''}
+              onChange={(e) => setForm(prev => ({ ...prev, progress: e.target.value }))}
+              className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+              placeholder="Pages read so far"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="book_notes" className="block text-sm font-medium text-text-primary mb-1.5">
+              Notes / Review
+            </label>
+            <textarea
+              id="book_notes"
+              rows={3}
+              value={form.notes}
+              onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))}
+              className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors resize-y"
+              placeholder="Your thoughts on this book..."
+            />
+          </div>
+
+          <div className="mt-6">
+            <button
+              type="submit"
+              disabled={saving || !form.title.trim()}
+              className="flex items-center gap-2 px-6 py-2.5 bg-accent text-white rounded-sm hover:bg-accent-hover transition-colors disabled:opacity-50 text-sm font-medium"
+            >
+              <Star className="w-4 h-4" />
+              {saving ? 'Saving...' : 'Save book'}
+            </button>
+            <Link
+              href="/dashboard"
+              className="px-6 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-secondary hover:text-text-primary transition-colors"
+            >
+              Cancel
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {!showBookForm && (
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <div className="relative flex-1">
