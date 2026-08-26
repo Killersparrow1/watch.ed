@@ -111,27 +111,69 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="heading-lg">Entries</h1>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/dashboard/add"
-            className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-sm hover:bg-accent-hover transition-colors text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            Add entry
-          </Link>
-          <Link
-            href="/dashboard/add-book"
-            className="flex items-center gap-2 px-4 py-2 bg-surface text-text-primary rounded-sm hover:bg-accent-hover transition-colors text-sm font-medium"
-          >
-            <BookOpen className="w-4 h-4" />
-            Add book
-          </Link>
-        </div>
-      </div>
+<div className="flex items-center justify-between mb-8">
+    <h1 className="heading-lg">Entries</h1>
+    <div className="flex items-center gap-2">
+      <Link
+        href="/dashboard/add"
+        className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-sm hover:bg-accent-hover transition-colors text-sm font-medium"
+      >
+        <Plus className="w-4 h-4" />
+        Add entry
+      </Link>
+      <Link
+        href="/dashboard/add-book"
+        className="flex items-center gap-2 px-4 py-2 bg-surface text-text-primary rounded-sm hover:bg-accent-hover transition-colors text-sm font-medium"
+      >
+        <BookOpen className="w-4 h-4" />
+        Add book
+      </Link>
+    </div>
+  </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+  {books.length > 0 && (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-4">
+      {books.map((book) => (
+        <div key={book.id} className="bg-surface border border-border rounded-sm p-4">
+          <div className="h-24 rounded-sm overflow-hidden mb-3">
+            {book.cover_url ? (
+              <img src={book.cover_url} alt={book.title} className="h-24 w-full object-cover" />
+            ) : (
+              <div className="h-24 bg-tag-bg flex items-center justify-center">
+                <BookOpen className="w-8 h-8 text-text-muted/40" />
+              </div>
+            )}
+          </div>
+          <h3 className="font-medium text-text-primary line-clamp-2">{book.title}</h3>
+          <p className="text-sm text-text-secondary">
+            {book.authors?.join(', ') || 'Unknown author'}
+          </p>
+          <p className="text-xs text-text-secondary">
+            Status: {book.status}
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <select
+              className="w-24 px-2 py-1 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+              onChange={(e) => setBookStatus(book.id, e.target.value)}
+            >
+              <option value="want_to_read">Want to Read</option>
+              <option value="currently_reading">Currently Reading</option>
+              <option value="read">Read</option>
+              <option value="did_not_finish">Did Not Finish</option>
+            </select>
+            <button
+              onClick={() => deleteBook(book.id)}
+              className="px-2 py-1 bg-red-500 text-white text-sm rounded-sm hover:bg-red-600 transition-colors text-sm"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+
+  <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
           <input
