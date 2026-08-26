@@ -1,5 +1,5 @@
 import { createServiceClient, createServerSupabaseClient } from '@/lib/supabase/server'
-import { Film, Tv, Star, Calendar, Timer, Users, List } from 'lucide-react'
+import { Film, Tv, Star, Calendar, Timer, Users, List, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Viewport } from 'next'
