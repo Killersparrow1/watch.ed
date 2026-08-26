@@ -12,6 +12,7 @@ import {
   Film,
   Tv,
   Timer,
+  BookOpen,
 } from 'lucide-react'
 
 type SortKey = 'watch_date' | 'title' | 'rating' | 'year'
@@ -86,6 +87,14 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
         >
           <Plus className="w-4 h-4" />
           Add entry
+        </Link>
+
+        <Link
+          href="/dashboard/add-book"
+          className="flex items-center gap-2 px-4 py-2 bg-surface text-text-primary rounded-sm hover:bg-accent-hover transition-colors text-sm font-medium"
+        >
+          <BookOpen className="w-4 h-4" />
+          Add book
         </Link>
       </div>
 
