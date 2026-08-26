@@ -53,12 +53,26 @@ export default function AddBookPage() {
       return
     }
 
+    // Check if input looks like ISBN (10 or 13 digits, possibly with hyphens/spaces)
+    const isbnPattern = /^\d{10}(\d{3})?$|^\d{13}$/;
+    const cleaned = value.replace(/[\s\-]+/g, '');
+
     debounceRef.current = setTimeout(async () => {
       setSearching(true)
       try {
-        const res = await fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(value)}`)
-        const data = await res.json()
-        setResults(data.docs || [])
+        let results: any[] = []
+        if (isbnPattern.test(cleaned)) {
+          // Search by ISBN
+          const res = await fetch(`https://openlibrary.org/search.json?isbn=${encodeURIComponent(cleaned)}`)
+          const data = await res.json()
+          results = data.docs || []
+        } else {
+          // Search by title
+          const res = await fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(value)}`)
+          const data = await res.json()
+          results = data.docs || []
+        }
+        setResults(results)
       } catch {
         setResults([])
       }
