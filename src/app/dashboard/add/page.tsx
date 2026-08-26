@@ -17,6 +17,7 @@ export default function AddEntryPage() {
   const [watchProviders, setWatchProviders] = useState<WatchProvider[]>([])
   const [fetchingProviders, setFetchingProviders] = useState(false)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
+  const [mediaType, setMediaType] = useState<'movie' | 'series' | 'book'>('movie')
 
   const [form, setForm] = useState({
     title: '',
@@ -210,7 +211,40 @@ export default function AddEntryPage() {
 
       <h1 className="heading-lg mb-8">Add entry</h1>
 
-      {!selected && (
+      <div className="mb-6 flex gap-2">
+        <button
+          onClick={() => setMediaType('movie')}
+          className={`flex-1 px-4 py-2.5 border rounded-sm text-sm transition-colors ${
+            mediaType === 'movie'
+              ? 'border-rating bg-rating/10 text-rating'
+              : 'border-border text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          Movie
+        </button>
+        <button
+          onClick={() => setMediaType('series')}
+          className={`flex-1 px-4 py-2.5 border rounded-sm text-sm transition-colors ${
+            mediaType === 'series'
+              ? 'border-rating bg-rating/10 text-rating'
+              : 'border-border text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          Series
+        </button>
+        <button
+          onClick={() => router.push('/dashboard/add-book')}
+          className={`flex-1 px-4 py-2.5 border rounded-sm text-sm transition-colors ${
+            mediaType === 'book'
+              ? 'border-rating bg-rating/10 text-rating'
+              : 'border-border text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          Book
+        </button>
+      </div>
+
+      {mediaType === 'movie' || mediaType === 'series' && (
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <div className="relative flex-1">
