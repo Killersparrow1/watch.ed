@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Search, BookOpen, ArrowLeft, Star } from 'lucide-react'
+import { Search, BookOpen, ArrowLeft, Star, ShoppingBag, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+import BookProvidersModal from '@/components/book-providers-modal'
 
 interface OpenLibraryResult {
   title: string
@@ -21,6 +22,13 @@ export default function AddBookPage() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<OpenLibraryResult[]>([])
   const [searching, setSearching] = useState(false)
+  const [previewModalBook, setPreviewModalBook] = useState<{
+    title: string
+    authors?: string[]
+    isbn?: string | null
+    open_library_id?: string | null
+    cover_url?: string | null
+  } | null>(null)
   const [form, setForm] = useState({
     title: '',
     authors: '' as string,
@@ -122,7 +130,7 @@ export default function AddBookPage() {
     setForm(prev => ({
       ...prev,
       title: item.title,
-      authors: item.author_name.join(', '),
+      authors: item.author_name ? item.author_name.join(', ') : '',
       isbn: item.isbn?.[0] || null,
       cover_url: item.cover_i ? `https://covers.openlibrary.org/b/id/${item.cover_i}-L.jpg` : '',
       open_library_id: item.title.toLowerCase().replace(/\s+/g, '-'),
@@ -142,10 +150,38 @@ export default function AddBookPage() {
         Back to dashboard
       </Link>
 
-      <h1 className="heading-lg mb-8">Add book</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+        <h1 className="heading-lg">Add book</h1>
+
+        {form.title.trim() && (
+          <button
+            type="button"
+            onClick={() =>
+              setPreviewModalBook({
+                title: form.title.trim(),
+                authors: form.authors
+                  ? form.authors.split(',').map((a) => a.trim()).filter(Boolean)
+                  : [],
+                isbn: form.isbn,
+                open_library_id: form.open_library_id,
+                cover_url: form.cover_url,
+              })
+            }
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface border border-border hover:border-accent text-xs font-medium text-text-primary rounded-sm transition-colors shadow-sm"
+          >
+            <ShoppingBag className="w-3.5 h-3.5 text-accent" />
+            Check Read & Buy Options
+          </button>
+        )}
+      </div>
+
+      {error && (
+        <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-sm">
+          {error}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="max-w-lg space-y-6">
-
         <div>
           <label htmlFor="title" className="block text-sm font-medium text-text-primary mb-1.5">
             Title *
@@ -315,27 +351,71 @@ export default function AddBookPage() {
                 const cover_url = coverId ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg` : undefined
 
                 return (
-                  <button
-                    key={item.title}
-                    onClick={() => handleSelectResult(item)}
-                    className="flex items-center gap-3 px-4 py-2.5 border border-border rounded-sm text-sm transition-colors hover:border-accent"
+                  <div
+                    key={item.title + (item.isbn?.[0] || '')}
+                    className="flex items-center justify-between gap-3 px-3 py-2 border border-border rounded-sm text-sm transition-colors hover:border-accent group"
                   >
-                    <div className="w-12 h-18 rounded-sm overflow-hidden flex-shrink-0">
-                      {coverId ? (
-                        <img src={cover_url} alt={item.title} className="w-full h-full object-cover" loading="lazy" onError={() => setCoverError(prev => prev + 1)} />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <BookOpen className="w-6 h-6 text-text-muted/40" />
-                        </div>
-                      )}
+                    <button
+                      type="button"
+                      onClick={() => handleSelectResult(item)}
+                      className="flex items-center gap-3 flex-1 text-left min-w-0"
+                    >
+                      <div className="w-10 h-14 rounded-sm overflow-hidden flex-shrink-0 bg-tag-bg">
+                        {coverId ? (
+                          <img
+                            src={cover_url}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={() => setCoverError(prev => prev + 1)}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <BookOpen className="w-5 h-5 text-text-muted/40" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium line-clamp-1 group-hover:text-accent transition-colors">
+                          {item.title}
+                        </p>
+                        <p className="body-xs text-text-secondary line-clamp-1">
+                          {item.author_name?.[0] || 'Unknown Author'} · {item.first_publish_year || 'N/A'}
+                        </p>
+                        {item.isbn?.[0] && (
+                          <p className="text-[10px] text-text-muted font-mono">
+                            ISBN: {item.isbn[0]}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPreviewModalBook({
+                            title: item.title,
+                            authors: item.author_name || [],
+                            isbn: item.isbn?.[0] || null,
+                            cover_url,
+                          })
+                        }
+                        className="p-1.5 rounded-sm bg-surface hover:bg-surface-hover border border-border text-text-secondary hover:text-accent transition-colors"
+                        title="Preview Read & Buy Options"
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSelectResult(item)}
+                        className="px-2.5 py-1 bg-accent/10 hover:bg-accent text-accent hover:text-white rounded-sm text-xs font-medium transition-colors"
+                      >
+                        Use
+                      </button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium line-clamp-2">{item.title}</p>
-                      <p className="body-xs text-text-secondary">
-                        {item.author_name[0]} · {item.first_publish_year || 'N/A'}
-                      </p>
-                    </div>
-                  </button>
+                  </div>
                 )
               })}
             </div>
@@ -346,7 +426,7 @@ export default function AddBookPage() {
           )}
         </div>
 
-        <div>
+        <div className="flex items-center gap-3">
           <button
             type="submit"
             disabled={saving || !form.title.trim()}
@@ -363,6 +443,15 @@ export default function AddBookPage() {
           </Link>
         </div>
       </form>
+
+      {previewModalBook && (
+        <BookProvidersModal
+          book={previewModalBook}
+          isOpen={!!previewModalBook}
+          onClose={() => setPreviewModalBook(null)}
+        />
+      )}
     </div>
   )
 }
+
