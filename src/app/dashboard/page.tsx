@@ -9,7 +9,7 @@ export default async function DashboardPage() {
 
   const serviceClient = await createServiceClient()
 
-  const [profileResult, entriesResult] = await Promise.all([
+  const [profileResult, entriesResult, booksResult] = await Promise.all([
     serviceClient
       .from('profiles')
       .select('username, display_name, avatar_url')
@@ -20,15 +20,23 @@ export default async function DashboardPage() {
       .select('*')
       .eq('user_id', user.id)
       .order('watch_date', { ascending: false, nullsFirst: false })
-      .limit(30),
+      .limit(60),
+    serviceClient
+      .from('books')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(60),
   ])
 
   const profile = profileResult.data
   const initialEntries = entriesResult.data || []
+  const initialBooks = booksResult.data || []
 
   return (
     <DashboardClient
       initialEntries={initialEntries}
+      initialBooks={initialBooks}
       profileUsername={profile?.username || ''}
       profileDisplayName={profile?.display_name || ''}
       profileAvatarUrl={profile?.avatar_url || null}

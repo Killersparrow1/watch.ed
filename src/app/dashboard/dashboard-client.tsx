@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { Entry } from '@/types/database'
-import { Book } from '@/types/database'
+import { Entry, Book } from '@/types/database'
 import EntryCard from '@/components/entry-card'
+import BookCard from '@/components/book-card'
 import {
   Plus,
   Search,
@@ -20,13 +20,21 @@ type SortKey = 'watch_date' | 'title' | 'rating' | 'year'
 
 interface Props {
   initialEntries: Entry[]
+  initialBooks?: Book[]
   profileUsername: string
   profileDisplayName: string
   profileAvatarUrl: string | null
 }
 
-export default function DashboardClient({ initialEntries, profileUsername, profileDisplayName, profileAvatarUrl }: Props) {
+export default function DashboardClient({
+  initialEntries,
+  initialBooks = [],
+  profileUsername,
+  profileDisplayName,
+  profileAvatarUrl,
+}: Props) {
   const [entries, setEntries] = useState<Entry[]>(initialEntries)
+  const [books, setBooks] = useState<Book[]>(initialBooks)
   const [loading, setLoading] = useState(false)
   const [filterType, setFilterType] = useState<string>('')
   const [filterStatus, setFilterStatus] = useState<string>('')
@@ -35,56 +43,99 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
   const [order, setOrder] = useState<'desc' | 'asc'>('desc')
   const [search, setSearch] = useState('')
   const [showFilters, setShowFilters] = useState(false)
-  const [goal, setGoal] = useState<{ movie_target: number; series_target: number; episode_target: number; hour_target: number } | null>(null)
-  const [progress, setProgress] = useState<{ movies: number; series: number; episodes: number; hours: number } | null>(null)
-  const [books, setBooks] = useState<Book[]>([])
+  const [goal, setGoal] = useState<{
+    movie_target: number
+    series_target: number
+    episode_target: number
+    hour_target: number
+  } | null>(null)
+  const [progress, setProgress] = useState<{
+    movies: number
+    series: number
+    episodes: number
+    hours: number
+  } | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
 
     async function load() {
       const params = new URLSearchParams()
-      if (filterType) params.set('type', filterType)
-      if (filterStatus) params.set('status', filterStatus)
+      if (filterType && filterType !== 'book') params.set('type', filterType)
       if (filterFavorites) params.set('favorite', 'true')
       params.set('sort', sort)
       params.set('order', order)
       if (search) params.set('search', search)
 
-      const [res, goalsRes] = await Promise.all([
-        fetch(`/api/entries?${params}`, { signal: controller.signal }),
+      const promises: Promise<Response>[] = [
         fetch(`/api/goals?year=${new Date().getFullYear()}`, { signal: controller.signal }),
-      ])
-      if (res.ok) {
-        const data = await res.json()
-        if (!controller.signal.aborted) {
-          setEntries(data.entries || [])
-        }
+      ]
+
+      if (filterType !== 'book') {
+        promises.push(fetch(`/api/entries?${params}`, { signal: controller.signal }))
       }
-      if (goalsRes.ok) {
-        const data = await goalsRes.json()
-        if (!controller.signal.aborted) {
-          setGoal(data.goal)
-          setProgress(data.progress)
-        }
+      if (filterType !== 'movie' && filterType !== 'series' && !filterFavorites) {
+        const bookParams = new URLSearchParams()
+        if (search) bookParams.set('search', search)
+        promises.push(fetch(`/api/books?${bookParams}`, { signal: controller.signal }))
       }
-      const [booksRes] = await Promise.all([
-        fetch(`/api/books`, { signal: controller.signal }),
-      ])
-      if (booksRes.ok) {
-        const data = await booksRes.json()
-        if (!controller.signal.aborted) {
-          setBooks(data.books || [])
+
+      try {
+        const results = await Promise.all(promises)
+        const goalsRes = results[0]
+        if (goalsRes && goalsRes.ok) {
+          const data = await goalsRes.json()
+          if (!controller.signal.aborted) {
+            setGoal(data.goal)
+            setProgress(data.progress)
+          }
         }
+
+        let idx = 1
+        if (filterType !== 'book') {
+          const entriesRes = results[idx++]
+          if (entriesRes && entriesRes.ok) {
+            const data = await entriesRes.json()
+            if (!controller.signal.aborted) {
+              setEntries(data.entries || [])
+            }
+          }
+        } else {
+          setEntries([])
+        }
+
+        if (filterType !== 'movie' && filterType !== 'series' && !filterFavorites) {
+          const booksRes = results[idx++]
+          if (booksRes && booksRes.ok) {
+            const data = await booksRes.json()
+            if (!controller.signal.aborted) {
+              setBooks(data.books || [])
+            }
+          }
+        } else {
+          setBooks([])
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.error('Failed to load dashboard data:', err)
+        }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false)
       }
-      if (!controller.signal.aborted) setLoading(false)
     }
 
     load()
     return () => controller.abort()
-  }, [filterType, filterStatus, filterFavorites, sort, order, search])
+  }, [filterType, filterFavorites, sort, order, search])
 
   async function setBookStatus(bookId: string, newStatus: string) {
+    // Optimistic update
+    setBooks((prevBooks) =>
+      prevBooks.map((b) =>
+        b.id === bookId ? { ...b, status: newStatus as Book['status'] } : b
+      )
+    )
+
     const res = await fetch('/api/books', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -92,93 +143,167 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
     })
     if (res.ok) {
       const data = await res.json()
-      setBooks(prevBooks =>
-        prevBooks.map(b => b.id === bookId ? data.book : b)
-      )
+      if (data.book) {
+        setBooks((prevBooks) =>
+          prevBooks.map((b) => (b.id === bookId ? data.book : b))
+        )
+      }
     }
   }
 
   async function deleteBook(bookId: string) {
+    // Optimistic update
+    setBooks((prevBooks) => prevBooks.filter((b) => b.id !== bookId))
+
     const res = await fetch('/api/books', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: bookId }),
     })
-    if (res.ok) {
-      setBooks(prevBooks => prevBooks.filter(b => b.id !== bookId))
+    if (!res.ok) {
+      // Reload on failure
+      const r = await fetch('/api/books')
+      if (r.ok) {
+        const data = await r.json()
+        setBooks(data.books || [])
+      }
     }
   }
 
+  // Unified items list containing both movie/series entries and books
+  const unifiedItems = useMemo(() => {
+    const items: Array<
+      | { kind: 'entry'; data: Entry; date: string; title: string; rating: number; year: number }
+      | { kind: 'book'; data: Book; date: string; title: string; rating: number; year: number }
+    > = []
+
+    // 1. Add entries
+    for (const entry of entries) {
+      items.push({
+        kind: 'entry',
+        data: entry,
+        date: entry.watch_date || entry.created_at || '',
+        title: entry.title || '',
+        rating: entry.rating ?? -1,
+        year: entry.year ?? 0,
+      })
+    }
+
+    // 2. Add books
+    for (const book of books) {
+      let pubYear = 0
+      if (book.published_date) {
+        pubYear = parseInt(book.published_date) || 0
+      } else if (book.created_at) {
+        pubYear = new Date(book.created_at).getFullYear() || 0
+      }
+
+      items.push({
+        kind: 'book',
+        data: book,
+        date: book.created_at || '',
+        title: book.title || '',
+        rating: book.rating ?? -1,
+        year: pubYear,
+      })
+    }
+
+    // 3. Filter items
+    const q = search.trim().toLowerCase()
+    const filtered = items.filter((item) => {
+      // Type filter
+      if (filterType === 'movie' && (item.kind !== 'entry' || item.data.type !== 'movie')) return false
+      if (filterType === 'series' && (item.kind !== 'entry' || item.data.type !== 'series')) return false
+      if (filterType === 'book' && item.kind !== 'book') return false
+
+      // Status filter
+      if (filterStatus) {
+        if (item.kind === 'entry') {
+          if (item.data.status !== filterStatus) return false
+        } else {
+          const bookStatusMap: Record<string, string> = {
+            watching: 'currently_reading',
+            completed: 'read',
+            dropped: 'did_not_finish',
+            plan_to_watch: 'want_to_read',
+          }
+          if (filterStatus === 'on_hold') return false
+          if (item.data.status !== bookStatusMap[filterStatus]) return false
+        }
+      }
+
+      // Favorites filter
+      if (filterFavorites) {
+        if (item.kind !== 'entry' || !item.data.favorite) return false
+      }
+
+      // Search filter
+      if (q) {
+        if (item.kind === 'entry') {
+          const matchTitle = item.data.title?.toLowerCase().includes(q)
+          const matchOverview = item.data.overview?.toLowerCase().includes(q)
+          const matchCast = item.data.cast_crew?.toLowerCase().includes(q)
+          const matchNotes = item.data.notes?.toLowerCase().includes(q)
+          if (!matchTitle && !matchOverview && !matchCast && !matchNotes) return false
+        } else {
+          const matchTitle = item.data.title?.toLowerCase().includes(q)
+          const matchAuthors = item.data.authors?.some((a) => a.toLowerCase().includes(q))
+          const matchNotes = item.data.notes?.toLowerCase().includes(q)
+          if (!matchTitle && !matchAuthors && !matchNotes) return false
+        }
+      }
+
+      return true
+    })
+
+    // 4. Sort items
+    filtered.sort((a, b) => {
+      let cmp = 0
+      if (sort === 'watch_date') {
+        const timeA = a.date ? new Date(a.date).getTime() : 0
+        const timeB = b.date ? new Date(b.date).getTime() : 0
+        cmp = timeA - timeB
+      } else if (sort === 'title') {
+        cmp = a.title.localeCompare(b.title)
+      } else if (sort === 'rating') {
+        cmp = a.rating - b.rating
+      } else if (sort === 'year') {
+        cmp = a.year - b.year
+      }
+      return order === 'desc' ? -cmp : cmp
+    })
+
+    return filtered
+  }, [entries, books, filterType, filterStatus, filterFavorites, search, sort, order])
+
   return (
     <div>
-<div className="flex items-center justify-between mb-8">
-    <h1 className="heading-lg">Entries</h1>
-    <div className="flex items-center gap-2">
-      <Link
-        href="/dashboard/add"
-        className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-sm hover:bg-accent-hover transition-colors text-sm font-medium"
-      >
-        <Plus className="w-4 h-4" />
-        Add entry
-      </Link>
-      <Link
-        href="/dashboard/add-book"
-        className="flex items-center gap-2 px-4 py-2 bg-surface text-text-primary rounded-sm hover:bg-accent-hover transition-colors text-sm font-medium"
-      >
-        <BookOpen className="w-4 h-4" />
-        Add book
-      </Link>
-    </div>
-  </div>
-
-  {books.length > 0 && (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-4">
-      {books.map((book) => (
-        <div key={book.id} className="bg-surface border border-border rounded-sm p-4">
-          <div className="h-24 rounded-sm overflow-hidden mb-3">
-            {book.cover_url ? (
-              <img src={book.cover_url} alt={book.title} className="h-24 w-full object-cover" />
-            ) : (
-              <div className="h-24 bg-tag-bg flex items-center justify-center">
-                <BookOpen className="w-8 h-8 text-text-muted/40" />
-              </div>
-            )}
-          </div>
-          <h3 className="font-medium text-text-primary line-clamp-2">{book.title}</h3>
-          <p className="text-sm text-text-secondary">
-            {book.authors?.join(', ') || 'Unknown author'}
-          </p>
-          <p className="text-xs text-text-secondary">
-            Status: {book.status}
-          </p>
-          <div className="mt-2 flex items-center gap-2">
-            <select
-              className="w-24 px-2 py-1 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-              onChange={(e) => setBookStatus(book.id, e.target.value)}
-            >
-              <option value="want_to_read">Want to Read</option>
-              <option value="currently_reading">Currently Reading</option>
-              <option value="read">Read</option>
-              <option value="did_not_finish">Did Not Finish</option>
-            </select>
-            <button
-              onClick={() => deleteBook(book.id)}
-              className="px-2 py-1 bg-red-500 text-white text-sm rounded-sm hover:bg-red-600 transition-colors text-sm"
-            >
-              Delete
-            </button>
-          </div>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="heading-lg">Entries</h1>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/dashboard/add"
+            className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-sm hover:bg-accent-hover transition-colors text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            Add entry
+          </Link>
+          <Link
+            href="/dashboard/add-book"
+            className="flex items-center gap-2 px-4 py-2 bg-surface text-text-primary rounded-sm hover:border-accent hover:text-accent transition-colors text-sm font-medium border border-border"
+          >
+            <BookOpen className="w-4 h-4" />
+            Add book
+          </Link>
         </div>
-      ))}
-    </div>
-  )}
+      </div>
 
-  <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
           <input
             type="text"
-            placeholder="Search titles..."
+            placeholder="Search titles, authors, reviews..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
@@ -200,6 +325,7 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
           <button
             onClick={() => setOrder(order === 'desc' ? 'asc' : 'desc')}
             className="px-3 py-2 border border-border bg-surface rounded-sm text-sm text-text-secondary hover:text-text-primary transition-colors"
+            title={order === 'desc' ? 'Descending' : 'Ascending'}
           >
             {order === 'desc' ? '↓' : '↑'}
           </button>
@@ -222,6 +348,7 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
                 ? 'border-accent text-accent bg-accent-light'
                 : 'border-border text-text-secondary bg-surface hover:text-text-primary'
             }`}
+            title="Filters"
           >
             <SlidersHorizontal className="w-4 h-4" />
           </button>
@@ -229,7 +356,7 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
       </div>
 
       {showFilters && (
-        <div className="flex gap-3 mb-6 p-4 bg-surface border border-border rounded-sm">
+        <div className="flex flex-wrap gap-4 mb-6 p-4 bg-surface border border-border rounded-sm">
           <div>
             <label className="block body-xs text-text-muted mb-1">Type</label>
             <select
@@ -240,6 +367,7 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
               <option value="">All</option>
               <option value="movie">Movies</option>
               <option value="series">Series</option>
+              <option value="book">Books</option>
             </select>
           </div>
           <div>
@@ -250,11 +378,11 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
               className="px-3 py-1.5 border border-border bg-bg rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
             >
               <option value="">All</option>
-              <option value="watching">Watching</option>
-              <option value="completed">Completed</option>
+              <option value="watching">Watching / Reading</option>
+              <option value="completed">Completed / Read</option>
               <option value="on_hold">On Hold</option>
-              <option value="dropped">Dropped</option>
-              <option value="plan_to_watch">Plan to Watch</option>
+              <option value="dropped">Dropped / DNF</option>
+              <option value="plan_to_watch">Plan to Watch / Want to Read</option>
             </select>
           </div>
         </div>
@@ -315,69 +443,62 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
             </div>
           ))}
         </div>
-      ) : entries.length === 0 ? (
+      ) : unifiedItems.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-text-secondary mb-2">No entries yet</p>
-          <Link
-            href="/dashboard/add"
-            className="text-accent hover:text-accent-hover text-sm font-medium transition-colors"
-          >
-            Add your first entry
-          </Link>
+          <div className="flex items-center justify-center gap-3">
+            <Link
+              href="/dashboard/add"
+              className="text-accent hover:text-accent-hover text-sm font-medium transition-colors"
+            >
+              Add movie or series
+            </Link>
+            <span className="text-text-muted">·</span>
+            <Link
+              href="/dashboard/add-book"
+              className="text-accent hover:text-accent-hover text-sm font-medium transition-colors"
+            >
+              Add book
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {entries.map((entry) => (
-            <EntryCard key={entry.id} entry={entry} username={profileUsername} displayName={profileDisplayName} avatarUrl={profileAvatarUrl} />
-          ))}
-        </div>
-      )}
-      {books.length > 0 && (
-        <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {books.map((book) => (
-            <div key={book.id} className="bg-surface border border-border rounded-sm p-4">
-              <div className="h-24 rounded-sm overflow-hidden mb-3">
-                {book.cover_url ? (
-                  <img src={book.cover_url} alt={book.title} className="h-24 w-full object-cover" />
-                ) : (
-                  <div className="h-24 bg-tag-bg flex items-center justify-center">
-                    <BookOpen className="w-8 h-8 text-text-muted/40" />
-                  </div>
-                )}
-              </div>
-              <h3 className="font-medium text-text-primary line-clamp-2">{book.title}</h3>
-              <p className="text-sm text-text-secondary">
-                {book.authors?.join(', ') || 'Unknown author'}
-              </p>
-              <p className="text-xs text-text-secondary">
-                Status: {book.status}
-              </p>
-              <div className="mt-2 flex items-center gap-2">
-                <select
-                  className="w-24 px-2 py-1 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-                  onChange={(e) => setBookStatus(book.id, e.target.value)}
-                >
-                  <option value="want_to_read">Want to Read</option>
-                  <option value="currently_reading">Currently Reading</option>
-                  <option value="read">Read</option>
-                  <option value="did_not_finish">Did Not Finish</option>
-                </select>
-                <button
-                  onClick={() => deleteBook(book.id)}
-                  className="px-2 py-1 bg-red-500 text-white text-sm rounded-sm hover:bg-red-600 transition-colors text-sm"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
+          {unifiedItems.map((item) =>
+            item.kind === 'entry' ? (
+              <EntryCard
+                key={`entry-${item.data.id}`}
+                entry={item.data}
+                username={profileUsername}
+                displayName={profileDisplayName}
+                avatarUrl={profileAvatarUrl}
+              />
+            ) : (
+              <BookCard
+                key={`book-${item.data.id}`}
+                book={item.data}
+                onStatusChange={setBookStatus}
+                onDelete={deleteBook}
+              />
+            )
+          )}
         </div>
       )}
     </div>
   )
 }
 
-function GoalBar({ icon, label, current, target }: { icon: React.ReactNode; label: string; current: number; target: number }) {
+function GoalBar({
+  icon,
+  label,
+  current,
+  target,
+}: {
+  icon: React.ReactNode
+  label: string
+  current: number
+  target: number
+}) {
   const pct = Math.min(Math.round((current / target) * 100), 100)
   return (
     <div>
@@ -386,7 +507,9 @@ function GoalBar({ icon, label, current, target }: { icon: React.ReactNode; labe
           {icon}
           {label}
         </span>
-        <span className="text-xs font-medium text-text-primary">{current}/{target}</span>
+        <span className="text-xs font-medium text-text-primary">
+          {current}/{target}
+        </span>
       </div>
       <div className="h-2 bg-tag-bg rounded-sm overflow-hidden">
         <div
