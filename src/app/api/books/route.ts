@@ -99,3 +99,45 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    const supabase = await createServerSupabaseClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { id } = await request.json()
+    const { status } = await request.json()
+
+    if (!id) {
+      return NextResponse.json({ error: 'Book ID is required' }, { status: 400 })
+    }
+
+    const validStatuses = ['want_to_read', 'currently_reading', 'read', 'did_not_finish']
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+    }
+
+    const { data, error } = await supabase
+      .from('books')
+      .update({ status })
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    if (!data) {
+      return NextResponse.json({ error: 'Book not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({ book: data }, { status: 200 })
+  } catch (error) {
+    console.error('PUT /api/books error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
