@@ -6,6 +6,7 @@ import type { Viewport } from 'next'
 import PublicFilters from './public-filters'
 import FollowButton from '@/components/follow-button'
 import ListPosterStrip from '@/components/list-poster-strip'
+import BookCard from '@/components/book-card'
 
 export const revalidate = 60
 
@@ -269,6 +270,29 @@ export default async function PublicProfilePage({ params }: Props) {
         ) : (
           <div className="text-center py-20">
             <p className="text-text-secondary">No entries yet</p>
+          </div>
+        )}
+
+        {books && books.length > 0 ? (
+          <div className="mt-8">
+            <h2 className="heading-sm mb-3 flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-text-muted" />
+              Books
+            </h2>
+            <div className="flex flex-wrap gap-3">
+              {books.map((book) => (
+                <BookCard
+                  key={book.id}
+                  book={book}
+                  showStatus={true}
+                  showProgress={true}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="mt-8 text-center py-8">
+            <p className="text-text-secondary">No books yet</p>
           </div>
         )}
       </main>
