@@ -284,8 +284,8 @@ export default async function PublicProfilePage({ params }: Props) {
                 <BookCard
                   key={book.id}
                   book={book}
-                  onStatusChange={() => {}}
-                  onDelete={() => {}}
+                  onStatusChange={async () => {}}
+                  onDelete={async () => {}}
                 />
               ))}
             </div>
