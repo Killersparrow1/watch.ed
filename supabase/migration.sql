@@ -68,6 +68,25 @@ CREATE TABLE IF NOT EXISTS entries (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Books table
+CREATE TABLE IF NOT EXISTS books (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  authors TEXT[],
+  isbn TEXT,
+  open_library_id TEXT,
+  status TEXT NOT NULL DEFAULT 'want_to_read' CHECK (status IN ('want_to_read', 'currently_reading', 'read', 'did_not_finish')),
+  progress INTEGER DEFAULT 0,
+  rating INTEGER CHECK (rating >= 1 AND rating <= 10),
+  notes TEXT,
+  cover_url TEXT,
+  published_date TEXT,
+  page_count INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Indexes for filtering and sorting
 CREATE INDEX IF NOT EXISTS idx_entries_user_id ON entries(user_id);
 CREATE INDEX IF NOT EXISTS idx_entries_type ON entries(type);
@@ -87,6 +106,21 @@ CREATE POLICY "Users can CRUD their own entries"
 DROP POLICY IF EXISTS "Anyone can view entries" ON entries;
 CREATE POLICY "Anyone can view entries"
   ON entries FOR SELECT
+  USING (true);
+
+-- Books table
+ALTER TABLE books ENABLE ROW LEVEL SECURITY;
+
+-- Users can CRUD their own books
+DROP POLICY IF EXISTS "Users can CRUD their own books" ON books;
+CREATE POLICY "Users can CRUD their own books"
+  ON books FOR ALL
+  USING (auth.uid() = user_id);
+
+-- Public can view books (for public profile page)
+DROP POLICY IF EXISTS "Anyone can view books" ON books;
+CREATE POLICY "Anyone can view books"
+  ON books FOR SELECT
   USING (true);
 
 -- Reactions table

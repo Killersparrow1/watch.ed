@@ -2,6 +2,7 @@ export type MediaType = 'movie' | 'series'
 export type WatchStatus = 'watching' | 'completed' | 'on_hold' | 'dropped' | 'plan_to_watch'
 export type BadgeType = 'golden' | 'absolute appi' | 'MalamCult' | 'wammale cinema' | null
 export type ReactionType = 'like' | 'dislike'
+export type ReadingStatus = 'want_to_read' | 'currently_reading' | 'read' | 'did_not_finish'
 
 export interface WatchProvider {
   provider_id: number
@@ -47,6 +48,24 @@ export interface Entry {
   favorite: boolean
   watch_providers: WatchProvider[] | null
   download_url: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Book {
+  id: string
+  user_id: string
+  title: string
+  authors: string[]
+  isbn: string | null
+  open_library_id: string | null
+  status: ReadingStatus
+  progress: number | null
+  rating: number | null
+  notes: string | null
+  cover_url: string | null
+  published_date: string | null
+  page_count: number | null
   created_at: string
   updated_at: string
 }
