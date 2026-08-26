@@ -57,6 +57,12 @@ export default async function PublicProfilePage({ params }: Props) {
     .eq('user_id', profile.id)
     .order('created_at', { ascending: false })
 
+  const { data: books } = await supabase
+    .from('books')
+    .select('*')
+    .eq('user_id', profile.id)
+    .order('created_at', { ascending: false })
+
   const entryIds = (entries || []).map(e => e.id)
 
   const { data: watchEvents } = await supabase
