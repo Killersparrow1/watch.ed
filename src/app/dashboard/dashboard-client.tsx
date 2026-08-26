@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Entry } from '@/types/database'
+import { Book } from '@/types/database'
 import EntryCard from '@/components/entry-card'
 import {
   Plus,
@@ -36,7 +37,7 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
   const [showFilters, setShowFilters] = useState(false)
   const [goal, setGoal] = useState<{ movie_target: number; series_target: number; episode_target: number; hour_target: number } | null>(null)
   const [progress, setProgress] = useState<{ movies: number; series: number; episodes: number; hours: number } | null>(null)
-  const hasFetched = useRef(false)
+  const [books, setBooks] = useState<Book[]>([])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -50,8 +51,6 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
       params.set('order', order)
       if (search) params.set('search', search)
 
-      if (hasFetched.current) setLoading(true)
-
       const [res, goalsRes] = await Promise.all([
         fetch(`/api/entries?${params}`, { signal: controller.signal }),
         fetch(`/api/goals?year=${new Date().getFullYear()}`, { signal: controller.signal }),
@@ -60,7 +59,6 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
         const data = await res.json()
         if (!controller.signal.aborted) {
           setEntries(data.entries || [])
-          hasFetched.current = true
         }
       }
       if (goalsRes.ok) {
@@ -68,6 +66,15 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
         if (!controller.signal.aborted) {
           setGoal(data.goal)
           setProgress(data.progress)
+        }
+      }
+      const [booksRes] = await Promise.all([
+        fetch(`/api/books`, { signal: controller.signal }),
+      ])
+      if (booksRes.ok) {
+        const data = await booksRes.json()
+        if (!controller.signal.aborted) {
+          setBooks(data.books || [])
         }
       }
       if (!controller.signal.aborted) setLoading(false)
@@ -255,6 +262,30 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {entries.map((entry) => (
             <EntryCard key={entry.id} entry={entry} username={profileUsername} displayName={profileDisplayName} avatarUrl={profileAvatarUrl} />
+          ))}
+        </div>
+      )}
+      {books.length > 0 && (
+        <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {books.map((book) => (
+            <div key={book.id} className="bg-surface border border-border rounded-sm p-4">
+              <div className="h-24 rounded-sm overflow-hidden mb-3">
+                {book.cover_url ? (
+                  <img src={book.cover_url} alt={book.title} className="h-24 w-full object-cover" />
+                ) : (
+                  <div className="h-24 bg-tag-bg flex items-center justify-center">
+                    <BookOpen className="w-8 h-8 text-text-muted/40" />
+                  </div>
+                )}
+              </div>
+              <h3 className="font-medium text-text-primary line-clamp-2">{book.title}</h3>
+              <p className="text-sm text-text-secondary">
+                {book.authors?.join(', ') || 'Unknown author'}
+              </p>
+              <p className="text-xs text-text-secondary">
+                Status: {book.status}
+              </p>
+            </div>
           ))}
         </div>
       )}
