@@ -81,21 +81,22 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="heading-lg">Entries</h1>
-        <Link
-          href="/dashboard/add"
-          className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-sm hover:bg-accent-hover transition-colors text-sm font-medium"
-        >
-          <Plus className="w-4 h-4" />
-          Add entry
-        </Link>
-
-        <Link
-          href="/dashboard/add-book"
-          className="flex items-center gap-2 px-4 py-2 bg-surface text-text-primary rounded-sm hover:bg-accent-hover transition-colors text-sm font-medium"
-        >
-          <BookOpen className="w-4 h-4" />
-          Add book
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/dashboard/add"
+            className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-sm hover:bg-accent-hover transition-colors text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            Add entry
+          </Link>
+          <Link
+            href="/dashboard/add-book"
+            className="flex items-center gap-2 px-4 py-2 bg-surface text-text-primary rounded-sm hover:bg-accent-hover transition-colors text-sm font-medium"
+          >
+            <BookOpen className="w-4 h-4" />
+            Add book
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
