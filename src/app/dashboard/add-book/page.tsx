@@ -34,6 +34,7 @@ export default function AddBookPage() {
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [coverError, setCoverError] = useState<number>(0)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -55,7 +56,7 @@ export default function AddBookPage() {
     debounceRef.current = setTimeout(async () => {
       setSearching(true)
       try {
-        const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(value)}`)
+        const res = await fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(value)}`)
         const data = await res.json()
         setResults(data.docs || [])
       } catch {
@@ -307,7 +308,7 @@ export default function AddBookPage() {
                   >
                     <div className="w-12 h-18 rounded-sm overflow-hidden flex-shrink-0">
                       {coverId ? (
-                        <img src={cover_url} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
+                        <img src={cover_url} alt={item.title} className="w-full h-full object-cover" loading="lazy" onError={() => setCoverError(prev => prev + 1)} />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <BookOpen className="w-6 h-6 text-text-muted/40" />
