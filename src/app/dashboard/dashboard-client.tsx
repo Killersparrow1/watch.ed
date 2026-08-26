@@ -84,6 +84,31 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
     return () => controller.abort()
   }, [filterType, filterStatus, filterFavorites, sort, order, search])
 
+  async function setBookStatus(bookId: string, newStatus: string) {
+    const res = await fetch('/api/books', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: bookId, status: newStatus }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setBooks(prevBooks =>
+        prevBooks.map(b => b.id === bookId ? data.book : b)
+      )
+    }
+  }
+
+  async function deleteBook(bookId: string) {
+    const res = await fetch('/api/books', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: bookId }),
+    })
+    if (res.ok) {
+      setBooks(prevBooks => prevBooks.filter(b => b.id !== bookId))
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -285,6 +310,23 @@ export default function DashboardClient({ initialEntries, profileUsername, profi
               <p className="text-xs text-text-secondary">
                 Status: {book.status}
               </p>
+              <div className="mt-2 flex items-center gap-2">
+                <select
+                  className="w-24 px-2 py-1 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+                  onChange={(e) => setBookStatus(book.id, e.target.value)}
+                >
+                  <option value="want_to_read">Want to Read</option>
+                  <option value="currently_reading">Currently Reading</option>
+                  <option value="read">Read</option>
+                  <option value="did_not_finish">Did Not Finish</option>
+                </select>
+                <button
+                  onClick={() => deleteBook(book.id)}
+                  className="px-2 py-1 bg-red-500 text-white text-sm rounded-sm hover:bg-red-600 transition-colors text-sm"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           ))}
         </div>
