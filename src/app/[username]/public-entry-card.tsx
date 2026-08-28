@@ -190,7 +190,10 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
 
   return (
     <div className="bg-surface border border-border rounded-sm overflow-hidden flex" onContextMenu={(e) => e.preventDefault()}>
-      <div className="w-28 flex-shrink-0 self-start bg-tag-bg relative aspect-[2/3]">
+      <div
+        className="w-28 flex-shrink-0 self-start bg-tag-bg relative aspect-[2/3] cursor-pointer"
+        onClick={() => setShowViewings(true)}
+      >
         {poster ? (
           isTmdbPoster ? (
             <Image

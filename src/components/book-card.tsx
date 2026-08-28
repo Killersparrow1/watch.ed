@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { Book, ReadingStatus } from '@/types/database'
-import { BookOpen, Star, Trash2, ShoppingBag, ExternalLink } from 'lucide-react'
+import { BookOpen, Star, Trash2, ShoppingBag, ExternalLink, Eye } from 'lucide-react'
+import Link from 'next/link'
 import BookProvidersModal from './book-providers-modal'
 
 const bookStatusConfig: Record<ReadingStatus, { label: string; color: string }> = {
@@ -16,9 +17,10 @@ interface Props {
   book: Book
   onStatusChange: (bookId: string, status: string) => Promise<void>
   onDelete: (bookId: string) => Promise<void>
+  isPublic?: boolean
 }
 
-export default function BookCard({ book, onStatusChange, onDelete }: Props) {
+export default function BookCard({ book, onStatusChange, onDelete, isPublic }: Props) {
   const [showDetails, setShowDetails] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -63,7 +65,6 @@ export default function BookCard({ book, onStatusChange, onDelete }: Props) {
               className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-200"
               loading="lazy"
               onError={(e) => {
-                // Hide broken image and fallback to placeholder
                 ;(e.target as HTMLImageElement).style.display = 'none'
               }}
             />
@@ -106,7 +107,7 @@ export default function BookCard({ book, onStatusChange, onDelete }: Props) {
                   Read / Buy
                 </button>
 
-                {!confirmDelete ? (
+                {!isPublic && !confirmDelete ? (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -119,7 +120,7 @@ export default function BookCard({ book, onStatusChange, onDelete }: Props) {
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
-                ) : (
+                ) : !isPublic && confirmDelete ? (
                   <div className="flex items-center gap-1 bg-black/90 p-1 rounded-sm">
                     <button
                       type="button"
@@ -141,7 +142,7 @@ export default function BookCard({ book, onStatusChange, onDelete }: Props) {
                       Cancel
                     </button>
                   </div>
-                )}
+                ) : null}
               </div>
 
               <div className="space-y-1">
@@ -166,12 +167,18 @@ export default function BookCard({ book, onStatusChange, onDelete }: Props) {
 
         <div className="p-3 flex flex-col gap-1.5 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3
-              onClick={() => setShowProvidersModal(true)}
-              className="heading-sm leading-tight text-text-primary line-clamp-2 cursor-pointer hover:text-accent transition-colors"
-            >
-              {book.title}
-            </h3>
+            {isPublic ? (
+              <h3 className="heading-sm leading-tight text-text-primary line-clamp-2">
+                {book.title}
+              </h3>
+            ) : (
+              <Link
+                href={`/dashboard/edit/${book.id}`}
+                className="heading-sm leading-tight text-text-primary line-clamp-2 hover:text-accent transition-colors"
+              >
+                {book.title}
+              </Link>
+            )}
           </div>
 
           <div className="flex items-center gap-2 text-xs text-text-muted">
@@ -192,24 +199,40 @@ export default function BookCard({ book, onStatusChange, onDelete }: Props) {
           </div>
 
           <div className="mt-auto pt-2 flex items-center justify-between gap-1.5">
-            <select
-              value={status}
-              onChange={(e) => handleStatusChange(e.target.value)}
-              className={`text-xs px-2 py-1 rounded-sm font-medium border border-border/60 bg-surface focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer flex-1 min-w-0 ${statusInfo.color}`}
-            >
-              <option value="want_to_read">Want to Read</option>
-              <option value="currently_reading">Reading</option>
-              <option value="read">Read</option>
-              <option value="did_not_finish">Did Not Finish</option>
-            </select>
+            {isPublic ? (
+              <span className={`inline-flex self-start text-xs px-2 py-0.5 rounded-sm font-medium flex-1 min-w-0 text-center ${statusInfo.color}`}>
+                {statusInfo.label}
+              </span>
+            ) : (
+              <>
+                <select
+                  value={status}
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                  className={`text-xs px-2 py-1 rounded-sm font-medium border border-border/60 bg-surface focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer flex-1 min-w-0 ${statusInfo.color}`}
+                >
+                  <option value="want_to_read">Want to Read</option>
+                  <option value="currently_reading">Reading</option>
+                  <option value="read">Read</option>
+                  <option value="did_not_finish">Did Not Finish</option>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={() => setShowProvidersModal(true)}
+                  className="p-1.5 rounded-sm bg-surface hover:bg-surface-hover border border-border text-text-muted hover:text-accent hover:border-accent transition-colors flex-shrink-0"
+                  title="Where to Read & Buy"
+                >
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
 
             <button
-              type="button"
               onClick={() => setShowProvidersModal(true)}
-              className="p-1.5 rounded-sm bg-surface hover:bg-surface-hover border border-border text-text-muted hover:text-accent hover:border-accent transition-colors flex-shrink-0"
-              title="Where to Read & Buy"
+              className="inline-flex items-center gap-1 text-xs text-accent/70 hover:text-accent transition-colors"
             >
-              <ShoppingBag className="w-3.5 h-3.5" />
+              <Eye className="w-3.5 h-3.5" />
+              View opinion
             </button>
           </div>
         </div>
@@ -225,4 +248,3 @@ export default function BookCard({ book, onStatusChange, onDelete }: Props) {
     </>
   )
 }
-

@@ -300,9 +300,11 @@ export default function UnifiedTimeline({
             <EntryCard
               key={`entry-${item.data.id}`}
               entry={item.data}
+              isPublic={true}
               username={profileUsername}
               displayName={profileDisplayName}
               avatarUrl={profileAvatarUrl}
+              entryWatchEvents={[]}
             />
           ) : (
             <BookCard
@@ -310,6 +312,7 @@ export default function UnifiedTimeline({
               book={item.data}
               onStatusChange={setBookStatus}
               onDelete={deleteBook}
+              isPublic={true}
             />
           )
         )}

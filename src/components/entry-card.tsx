@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { getEntryPosterUrl } from '@/lib/tmdb'
-import { Entry } from '@/types/database'
-import { Film, Tv, Star, Award, Zap, Share2, Heart, ExternalLink } from 'lucide-react'
+import { Entry, WatchEvent } from '@/types/database'
+import { Film, Tv, Star, Award, Share2, Heart, ExternalLink, Eye } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import ShareModal from './share-modal'
 import CastModal from './cast-modal'
+import OpinionModal from './opinion-modal'
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   watching: { label: 'Watching', color: 'text-status-watching bg-status-watching/10' },
@@ -23,15 +24,17 @@ interface Props {
   username?: string
   displayName?: string
   avatarUrl?: string | null
+  entryWatchEvents?: WatchEvent[]
 }
 
-export default function EntryCard({ entry, isPublic, username, displayName, avatarUrl }: Props) {
+export default function EntryCard({ entry, isPublic, username, displayName, avatarUrl, entryWatchEvents = [] }: Props) {
   const poster = getEntryPosterUrl(entry, 'w342')
   const isTmdbPoster = !!poster && poster.startsWith('https://image.tmdb.org/')
   const status = statusConfig[entry.status]
   const [showDetails, setShowDetails] = useState(false)
   const [showShare, setShowShare] = useState(false)
   const [showCast, setShowCast] = useState(false)
+  const [showOpinion, setShowOpinion] = useState(false)
   const [favorite, setFavorite] = useState(entry.favorite)
 
   async function toggleFavorite(e: React.MouseEvent) {
@@ -49,9 +52,9 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
       onMouseEnter={() => setShowDetails(true)}
       onMouseLeave={() => setShowDetails(false)}
     >
-      <Link
-        href={isPublic ? `/${entry.user_id}` : `/dashboard/edit/${entry.id}`}
-        className="block aspect-[2/3] bg-tag-bg overflow-hidden relative"
+      <div
+        className="block aspect-[2/3] bg-tag-bg overflow-hidden relative cursor-pointer"
+        onClick={() => setShowOpinion(true)}
       >
         {poster ? (
           isTmdbPoster ? (
@@ -142,7 +145,7 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
             {entry.rating}
           </div>
         )}
-      </Link>
+      </div>
 
       <div className="p-3 flex flex-col gap-1.5 flex-1">
         <div className="flex items-start justify-between gap-2">
@@ -185,18 +188,27 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
           </button>
         )}
 
-        {entry.download_url && (
-          <a
-            href={entry.download_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1 text-xs text-accent/70 hover:text-accent transition-colors"
+        <div className="flex items-center gap-2 mt-auto pt-2 border-t border-border-light">
+          {entry.download_url && (
+            <a
+              href={entry.download_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 text-xs text-accent/70 hover:text-accent transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Download
+            </a>
+          )}
+          <button
+            onClick={() => setShowOpinion(true)}
+            className="inline-flex items-center gap-1 text-xs text-accent/70 hover:text-accent transition-colors ml-auto"
           >
-            <ExternalLink className="w-3 h-3" />
-            Download
-          </a>
-        )}
+            <Eye className="w-3.5 h-3.5" />
+            View opinion
+          </button>
+        </div>
       </div>
 
       {showCast && (
@@ -215,6 +227,15 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
           displayName={displayName}
           avatarUrl={avatarUrl || null}
           onClose={() => setShowShare(false)}
+        />
+      )}
+
+      {showOpinion && (
+        <OpinionModal
+          entry={entry}
+          entryWatchEvents={entryWatchEvents}
+          isOpen={showOpinion}
+          onClose={() => setShowOpinion(false)}
         />
       )}
     </div>
