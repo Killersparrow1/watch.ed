@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { Entry, Book } from '@/types/database'
 import EntryCard from '@/components/entry-card'
 import BookCard from '@/components/book-card'
-import { Search, SlidersHorizontal, Film, Tv, BookOpen } from 'lucide-react'
+import { Search, SlidersHorizontal, Film, Tv, BookOpen, X } from 'lucide-react'
 
 type SortKey = 'date' | 'title' | 'rating' | 'year'
 
@@ -31,6 +31,22 @@ export default function UnifiedTimeline({
   const [order, setOrder] = useState<'desc' | 'asc'>('desc')
   const [search, setSearch] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+
+  const typeFilters = [
+    { key: '', label: 'All', icon: null },
+    { key: 'movie', label: 'Movies', icon: Film },
+    { key: 'series', label: 'Series', icon: Tv },
+    { key: 'book', label: 'Books', icon: BookOpen },
+  ]
+
+  const statusFilters = [
+    { key: '', label: 'All' },
+    { key: 'watching', label: 'Watching / Reading' },
+    { key: 'completed', label: 'Completed / Read' },
+    { key: 'on_hold', label: 'On Hold' },
+    { key: 'dropped', label: 'Dropped / DNF' },
+    { key: 'plan_to_watch', label: 'Plan to Watch / Want to Read' },
+  ]
 
   async function setBookStatus(bookId: string, newStatus: string) {
     setBooks((prevBooks) =>
@@ -172,6 +188,13 @@ export default function UnifiedTimeline({
     )
   }
 
+  const sortOptions = [
+    { key: 'date' as const, label: 'Date logged' },
+    { key: 'title' as const, label: 'Title' },
+    { key: 'rating' as const, label: 'Rating' },
+    { key: 'year' as const, label: 'Year' },
+  ]
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -186,26 +209,26 @@ export default function UnifiedTimeline({
           />
         </div>
 
-        <div className="flex gap-2">
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="px-3 py-2 border border-border bg-surface rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
-          >
-            <option value="date">Date logged</option>
-            <option value="title">Title</option>
-            <option value="rating">Rating</option>
-            <option value="year">Year</option>
-          </select>
-
-          <button
-            onClick={() => setOrder(order === 'desc' ? 'asc' : 'desc')}
-            className="px-3 py-2 border border-border bg-surface rounded-sm text-sm text-text-secondary hover:text-text-primary transition-colors"
-            title={order === 'desc' ? 'Descending' : 'Ascending'}
-          >
-            {order === 'desc' ? '↓' : '↑'}
-          </button>
-
+        <div className="flex items-center gap-1 ml-auto">
+          <div className="flex items-center gap-0.5 mr-2 pr-2 border-r border-border">
+            {sortOptions.map(opt => (
+              <button
+                key={opt.key}
+                onClick={() => {
+                  if (sort === opt.key) setOrder(order === 'desc' ? 'asc' : 'desc')
+                  else { setSort(opt.key); setOrder('desc') }
+                }}
+                className={`px-2 py-1 text-xs rounded-sm transition-colors ${
+                  sort === opt.key
+                    ? 'text-text-primary bg-surface border border-border'
+                    : 'text-text-muted hover:text-text-primary'
+                }`}
+              >
+                {opt.label}
+                {sort === opt.key && <span className="ml-1">{order === 'desc' ? '↓' : '↑'}</span>}
+              </button>
+            ))}
+          </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`px-3 py-2 border rounded-sm text-sm transition-colors ${
@@ -224,32 +247,50 @@ export default function UnifiedTimeline({
         <div className="flex flex-wrap gap-4 mb-6 p-4 bg-surface border border-border rounded-sm">
           <div>
             <label className="block body-xs text-text-muted mb-1">Type</label>
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-3 py-1.5 border border-border bg-bg rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
-            >
-              <option value="">All</option>
-              <option value="movie">Movies</option>
-              <option value="series">Series</option>
-              <option value="book">Books</option>
-            </select>
+            <div className="flex flex-wrap gap-1.5 bg-bg border border-border rounded-sm p-1.5">
+              {typeFilters.map(t => (
+                <button
+                  key={t.key}
+                  onClick={() => setFilterType(t.key)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-sm transition-colors ${
+                    filterType === t.key
+                      ? 'bg-accent text-white'
+                      : 'text-text-muted hover:text-text-primary hover:bg-background'
+                  }`}
+                >
+                  {t.icon && <t.icon className="w-3 h-3" />}
+                  {t.label}
+                </button>
+              ))}
+            </div>
           </div>
           <div>
             <label className="block body-xs text-text-muted mb-1">Status</label>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-1.5 border border-border bg-bg rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
-            >
-              <option value="">All</option>
-              <option value="watching">Watching / Reading</option>
-              <option value="completed">Completed / Read</option>
-              <option value="on_hold">On Hold</option>
-              <option value="dropped">Dropped / DNF</option>
-              <option value="plan_to_watch">Plan to Watch / Want to Read</option>
-            </select>
+            <div className="flex flex-wrap gap-1.5 bg-bg border border-border rounded-sm p-1.5">
+              {statusFilters.map(s => (
+                <button
+                  key={s.key}
+                  onClick={() => setFilterStatus(s.key)}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-sm transition-colors ${
+                    filterStatus === s.key
+                      ? 'bg-accent text-white'
+                      : 'text-text-muted hover:text-text-primary hover:bg-background'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
           </div>
+          {(filterType || filterStatus) && (
+            <button
+              onClick={() => { setFilterType(''); setFilterStatus(''); }}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs text-text-muted hover:text-accent transition-colors bg-bg border border-border rounded-sm self-end"
+            >
+              <X className="w-3 h-3" />
+              Clear filters
+            </button>
+          )}
         </div>
       )}
 
