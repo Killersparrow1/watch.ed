@@ -1,12 +1,11 @@
 import { createServiceClient, createServerSupabaseClient } from '@/lib/supabase/server'
-import { Film, Tv, Star, Calendar, Timer, Users, List, BookOpen } from 'lucide-react'
+import { Film, Tv, Star, Calendar, Timer, Users, List } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Viewport } from 'next'
-import PublicFilters from './public-filters'
+import UnifiedTimeline from './unified-timeline'
 import FollowButton from '@/components/follow-button'
 import ListPosterStrip from '@/components/list-poster-strip'
-import BookCard from '@/components/book-card'
 
 export const revalidate = 60
 
@@ -66,17 +65,6 @@ export default async function PublicProfilePage({ params }: Props) {
 
   const entryIds = (entries || []).map(e => e.id)
 
-  const { data: watchEvents } = await supabase
-    .from('watch_events')
-    .select('*')
-    .in('entry_id', entryIds.length > 0 ? entryIds : ['none'])
-    .order('watch_date', { ascending: false })
-
-  const { data: reactions } = await supabase
-    .from('reactions')
-    .select('entry_id, reaction')
-    .in('entry_id', entryIds.length > 0 ? entryIds : ['none'])
-
   const { data: publicLists } = await supabase
     .from('lists')
     .select('*')
@@ -110,17 +98,6 @@ export default async function PublicProfilePage({ params }: Props) {
     entry_count: listCounts[list.id] || 0,
     preview_entries: listPreviews[list.id] || [],
   }))
-
-  const reactionCounts: Record<string, { likes: number; dislikes: number }> = {}
-  for (const entry of entries || []) {
-    reactionCounts[entry.id] = { likes: 0, dislikes: 0 }
-  }
-  for (const r of reactions || []) {
-    if (reactionCounts[r.entry_id]) {
-      if (r.reaction === 'like') reactionCounts[r.entry_id].likes++
-      else reactionCounts[r.entry_id].dislikes++
-    }
-  }
 
   const watched = (entries || []).filter(e => e.status !== 'plan_to_watch')
   const movies = watched?.filter(e => e.type === 'movie').length || 0
@@ -258,43 +235,13 @@ export default async function PublicProfilePage({ params }: Props) {
           </div>
         )}
 
-        {entries && entries.length > 0 ? (
-          <PublicFilters
-            entries={entries}
-            watchEvents={watchEvents || []}
-            reactionCounts={reactionCounts}
-            profileUsername={profile.username}
-            profileDisplayName={profile.display_name}
-            profileAvatarUrl={profile.avatar_url}
-          />
-        ) : (
-          <div className="text-center py-20">
-            <p className="text-text-secondary">No entries yet</p>
-          </div>
-        )}
-
-        {books && books.length > 0 ? (
-          <div className="mt-8">
-            <h2 className="heading-sm mb-3 flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-text-muted" />
-              Books
-            </h2>
-            <div className="flex flex-wrap gap-3">
-              {books.map((book) => (
-                <BookCard
-                  key={book.id}
-                  book={book}
-                  onStatusChange={async () => {}}
-                  onDelete={async () => {}}
-                />
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="mt-8 text-center py-8">
-            <p className="text-text-secondary">No books yet</p>
-          </div>
-        )}
+        <UnifiedTimeline
+          initialEntries={entries || []}
+          initialBooks={books || []}
+          profileUsername={profile.username}
+          profileDisplayName={profile.display_name}
+          profileAvatarUrl={profile.avatar_url}
+        />
       </main>
     </div>
   )
