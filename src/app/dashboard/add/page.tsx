@@ -4,8 +4,9 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { WatchProvider } from '@/types/database'
 import { TMDBResult, getPosterUrl } from '@/lib/tmdb'
+import { BookSearchResult } from '@/lib/book-providers'
 import { createClient } from '@/lib/supabase/client'
-import { Search, Plus, Star, Film, Tv, ArrowLeft, Award, Zap, ThumbsDown, Sparkles, Undo2 } from 'lucide-react'
+import { Search, Plus, Star, Film, Tv, ArrowLeft, Award, Zap, ThumbsDown, Sparkles, Undo2, BookOpen, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
 export default function AddEntryPage() {
@@ -18,6 +19,11 @@ export default function AddEntryPage() {
   const [fetchingProviders, setFetchingProviders] = useState(false)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
   const [showBookForm, setShowBookForm] = useState(false)
+  const [bookQuery, setBookQuery] = useState('')
+  const [bookResults, setBookResults] = useState<BookSearchResult[]>([])
+  const [bookSearching, setBookSearching] = useState(false)
+  const [selectedBook, setSelectedBook] = useState<BookSearchResult | null>(null)
+  const bookDebounceRef = useRef<NodeJS.Timeout | null>(null)
 
   const [form, setForm] = useState({
     title: '',
@@ -154,6 +160,56 @@ export default function AddEntryPage() {
     }))
   }
 
+  function handleBookSearch(value: string) {
+    setBookQuery(value)
+    if (bookDebounceRef.current) clearTimeout(bookDebounceRef.current)
+
+    if (value.length < 2) {
+      setBookResults([])
+      return
+    }
+
+    bookDebounceRef.current = setTimeout(async () => {
+      setBookSearching(true)
+      try {
+        const res = await fetch(`/api/books/search?query=${encodeURIComponent(value)}&limit=10`)
+        const data = await res.json()
+        setBookResults(data.results || [])
+      } catch {
+        setBookResults([])
+      }
+      setBookSearching(false)
+    }, 400)
+  }
+
+  function selectBookResult(item: BookSearchResult) {
+    setSelectedBook(item)
+    setForm(prev => ({
+      ...prev,
+      title: item.title,
+      authors: item.authors?.join(', ') || '',
+      isbn: item.isbn || null,
+      cover_url: item.cover_url || '',
+      open_library_id: item.open_library_id || '',
+      status: 'want_to_read',
+    }))
+    setBookQuery('')
+    setBookResults([])
+  }
+
+  function clearSelectedBook() {
+    setSelectedBook(null)
+    setForm(prev => ({
+      ...prev,
+      title: '',
+      authors: '',
+      isbn: null,
+      cover_url: '',
+      open_library_id: '',
+      status: 'want_to_read',
+    }))
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -280,113 +336,238 @@ export default function AddEntryPage() {
           <h2 className="heading-sm mb-4">Add book</h2>
 
           <div className="mb-4">
-            <label htmlFor="book_title" className="block text-sm font-medium text-text-primary mb-1.5">
-              Title *
-            </label>
-            <input
-              id="book_title"
-              type="text"
-              value={form.title}
-              onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
-              className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-              required
-            />
-          </div>
-
-          <div className="mb-4">
-            <label htmlFor="book_author" className="block text-sm font-medium text-text-primary mb-1.5">
-              Author
-            </label>
-            <input
-              id="book_author"
-              type="text"
-              value={form.authors || ''}
-              onChange={(e) => setForm(prev => ({ ...prev, authors: e.target.value }))}
-              className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-              placeholder="e.g. J.K. Rowling"
-            />
-          </div>
-
-          <div className="mb-4">
-            <label htmlFor="book_status" className="block text-sm font-medium text-text-primary mb-1.5">
-              Status
-            </label>
-            <select
-              id="book_status"
-              value={form.status}
-              onChange={(e) => setForm(prev => ({ ...prev, status: e.target.value }))}
-              className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
-            >
-              <option value="want_to_read">Want to Read</option>
-              <option value="currently_reading">Currently Reading</option>
-              <option value="read">Read</option>
-              <option value="did_not_finish">Did Not Finish</option>
-            </select>
-          </div>
-
-          <div className="mb-4">
-            <label htmlFor="book_rating" className="block text-sm font-medium text-text-primary mb-1.5">
-              Rating (1-10)
-            </label>
-            <div className="relative">
-              <Star className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-rating" />
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               <input
-                id="book_rating"
-                type="number"
-                min="1"
-                max="10"
-                value={form.rating || ''}
-                onChange={(e) => setForm(prev => ({ ...prev, rating: e.target.value }))}
+                type="text"
+                placeholder="Search Open Library / Google Books..."
+                value={bookQuery}
+                onChange={(e) => handleBookSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-                placeholder="Rate 1-10"
               />
             </div>
           </div>
 
-          <div className="mb-4">
-            <label htmlFor="book_progress" className="block text-sm font-medium text-text-primary mb-1.5">
-              Pages read
-            </label>
-            <input
-              id="book_progress"
-              type="number"
-              min="0"
-              value={form.progress || ''}
-              onChange={(e) => setForm(prev => ({ ...prev, progress: e.target.value }))}
-              className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-              placeholder="Pages read so far"
-            />
-          </div>
+          {bookSearching && (
+            <p className="text-sm text-text-muted mb-4">Searching...</p>
+          )}
 
-          <div>
-            <label htmlFor="book_notes" className="block text-sm font-medium text-text-primary mb-1.5">
-              Notes / Review
-            </label>
-            <textarea
-              id="book_notes"
-              rows={3}
-              value={form.notes}
-              onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))}
-              className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors resize-y"
-              placeholder="Your thoughts on this book..."
-            />
-          </div>
+          {bookResults.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-4">
+              {bookResults.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => selectBookResult(item)}
+                  className="bg-surface border border-border rounded-sm overflow-hidden text-left hover:border-accent transition-colors group"
+                >
+                  <div className="aspect-[2/3] bg-tag-bg overflow-hidden">
+                    {item.cover_url ? (
+                      <img src={item.cover_url} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <BookOpen className="w-6 h-6 text-text-muted/40" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-sm font-medium leading-tight line-clamp-2">{item.title}</p>
+                    <p className="body-xs text-text-muted mt-1">
+                      {item.authors?.[0] || 'Unknown Author'}
+                      {item.published_date && ` · ${item.published_date}`}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
 
-          <div className="mt-6">
-            <button
-              type="submit"
-              disabled={saving || !form.title.trim()}
-              className="flex items-center gap-2 px-6 py-2.5 bg-accent text-white rounded-sm hover:bg-accent-hover transition-colors disabled:opacity-50 text-sm font-medium"
-            >
-              <Star className="w-4 h-4" />
-              {saving ? 'Saving...' : 'Save book'}
-            </button>
-            <Link
-              href="/dashboard"
-              className="px-6 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-secondary hover:text-text-primary transition-colors"
-            >
-              Cancel
-            </Link>
+          {selectedBook && (
+            <div className="mb-4 p-4 bg-surface border border-border rounded-sm">
+              <div className="flex gap-4 items-start">
+                <div className="w-20 flex-shrink-0">
+                  {selectedBook.cover_url ? (
+                    <img src={selectedBook.cover_url} alt={selectedBook.title} className="w-full rounded-sm" />
+                  ) : (
+                    <div className="aspect-[2/3] bg-tag-bg rounded-sm flex items-center justify-center">
+                      <BookOpen className="w-5 h-5 text-text-muted/40" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="heading-sm">{selectedBook.title}</p>
+                  <p className="body-small text-text-secondary mt-1">
+                    {selectedBook.authors?.join(', ') || 'Unknown Author'}
+                    {selectedBook.published_date && ` · ${selectedBook.published_date}`}
+                    {selectedBook.page_count && ` · ${selectedBook.page_count} pages`}
+                  </p>
+                </div>
+                <button
+                  onClick={clearSelectedBook}
+                  className="text-xs text-accent hover:text-accent-hover whitespace-nowrap"
+                >
+                  Change
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="book_title" className="block text-sm font-medium text-text-primary mb-1.5">
+                Title *
+              </label>
+              <input
+                id="book_title"
+                type="text"
+                value={form.title}
+                onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
+                className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="book_author" className="block text-sm font-medium text-text-primary mb-1.5">
+                Author
+              </label>
+              <input
+                id="book_author"
+                type="text"
+                value={form.authors || ''}
+                onChange={(e) => setForm(prev => ({ ...prev, authors: e.target.value }))}
+                className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+                placeholder="e.g. J.K. Rowling"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="book_status" className="block text-sm font-medium text-text-primary mb-1.5">
+                  Status
+                </label>
+                <select
+                  id="book_status"
+                  value={form.status}
+                  onChange={(e) => setForm(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  <option value="want_to_read">Want to Read</option>
+                  <option value="currently_reading">Currently Reading</option>
+                  <option value="read">Read</option>
+                  <option value="did_not_finish">Did Not Finish</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="book_rating" className="block text-sm font-medium text-text-primary mb-1.5">
+                  Rating (1-10)
+                </label>
+                <div className="relative">
+                  <Star className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-rating" />
+                  <input
+                    id="book_rating"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={form.rating || ''}
+                    onChange={(e) => setForm(prev => ({ ...prev, rating: e.target.value }))}
+                    className="w-full pl-9 pr-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+                    placeholder="Rate 1-10"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="book_progress" className="block text-sm font-medium text-text-primary mb-1.5">
+                  Pages read
+                </label>
+                <input
+                  id="book_progress"
+                  type="number"
+                  min="0"
+                  value={form.progress || ''}
+                  onChange={(e) => setForm(prev => ({ ...prev, progress: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+                  placeholder="Pages read so far"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="book_cover" className="block text-sm font-medium text-text-primary mb-1.5">
+                  Cover URL
+                </label>
+                <input
+                  id="book_cover"
+                  type="url"
+                  value={form.cover_url || ''}
+                  onChange={(e) => setForm(prev => ({ ...prev, cover_url: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+                  placeholder="https://example.com/cover.jpg"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-1.5">
+                Notes / Review
+              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2">
+                  {originalNotes !== null && (
+                    <button
+                      type="button"
+                      onClick={handleUndo}
+                      className="flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors"
+                    >
+                      <Undo2 className="w-3 h-3" />
+                      Undo
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleRephrase}
+                    disabled={rephrasing || !form.notes.trim()}
+                    className="flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Sparkles className={`w-3 h-3 ${rephrasing ? 'animate-pulse' : ''}`} />
+                    {rephrasing ? 'Rephrasing...' : 'Rephrase'}
+                  </button>
+                </div>
+              </div>
+              <textarea
+                id="book_notes"
+                rows={3}
+                value={form.notes}
+                onChange={(e) => {
+                  setForm(prev => ({ ...prev, notes: e.target.value }))
+                  setOriginalNotes(null)
+                }}
+                className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors resize-y"
+                placeholder="Your thoughts on this book..."
+              />
+              {rephraseError && (
+                <p className="mt-1 text-xs text-accent">{rephraseError}</p>
+              )}
+            </div>
+
+            <div className="mt-6">
+              <button
+                type="submit"
+                disabled={saving || !form.title.trim()}
+                className="flex items-center gap-2 px-6 py-2.5 bg-accent text-white rounded-sm hover:bg-accent-hover transition-colors disabled:opacity-50 text-sm font-medium"
+              >
+                <Star className="w-4 h-4" />
+                {saving ? 'Saving...' : 'Save book'}
+              </button>
+              <Link
+                href="/dashboard"
+                className="px-6 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-secondary hover:text-text-primary transition-colors"
+              >
+                Cancel
+              </Link>
+            </div>
           </div>
         </div>
       )}
