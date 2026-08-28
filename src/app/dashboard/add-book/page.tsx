@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Search, BookOpen, ArrowLeft, Star, ShoppingBag, ExternalLink } from 'lucide-react'
+import { Search, BookOpen, ArrowLeft, Star, ShoppingBag, ExternalLink, Sparkles, Undo2 } from 'lucide-react'
 import Link from 'next/link'
 import BookProvidersModal from '@/components/book-providers-modal'
 
@@ -44,6 +44,9 @@ export default function AddBookPage() {
   const [error, setError] = useState<string | null>(null)
   const [coverError, setCoverError] = useState<number>(0)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
+  const [rephrasing, setRephrasing] = useState(false)
+  const [originalNotes, setOriginalNotes] = useState<string | null>(null)
+  const [rephraseError, setRephraseError] = useState<string | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -86,6 +89,41 @@ export default function AddBookPage() {
       }
       setSearching(false)
     }, 400)
+  }
+
+  async function handleRephrase() {
+    const text = form.notes.trim()
+    if (!text) {
+      setRephraseError('Write a review first')
+      return
+    }
+    setRephrasing(true)
+    setRephraseError(null)
+    setOriginalNotes(form.notes)
+
+    try {
+      const res = await fetch('/api/rephrase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, title: form.title }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to rephrase')
+      setForm(prev => ({ ...prev, notes: data.rephrased }))
+    } catch (e) {
+      setRephraseError(e instanceof Error ? e.message : 'Failed to rephrase')
+      setOriginalNotes(null)
+    } finally {
+      setRephrasing(false)
+    }
+  }
+
+  function handleUndo() {
+    if (originalNotes !== null) {
+      setForm(prev => ({ ...prev, notes: originalNotes }))
+      setOriginalNotes(null)
+      setRephraseError(null)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -283,14 +321,43 @@ export default function AddBookPage() {
           <label htmlFor="notes" className="block text-sm font-medium text-text-primary mb-1.5">
             Notes / Review
           </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-2">
+              {originalNotes !== null && (
+                <button
+                  type="button"
+                  onClick={handleUndo}
+                  className="flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors"
+                >
+                  <Undo2 className="w-3 h-3" />
+                  Undo
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleRephrase}
+                disabled={rephrasing || !form.notes.trim()}
+                className="flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Sparkles className={`w-3 h-3 ${rephrasing ? 'animate-pulse' : ''}`} />
+                {rephrasing ? 'Rephrasing...' : 'Rephrase'}
+              </button>
+            </div>
+          </div>
           <textarea
             id="notes"
             rows={3}
             value={form.notes}
-            onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))}
+            onChange={(e) => {
+              setForm(prev => ({ ...prev, notes: e.target.value }))
+              setOriginalNotes(null)
+            }}
             className="w-full px-4 py-2.5 border border-border bg-surface rounded-sm text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors resize-y"
             placeholder="Your thoughts on this book..."
           />
+          {rephraseError && (
+            <p className="mt-1 text-xs text-accent">{rephraseError}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
