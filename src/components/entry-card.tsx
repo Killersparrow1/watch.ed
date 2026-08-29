@@ -150,7 +150,7 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
       <div className="p-3 flex flex-col gap-1.5 flex-1">
         <div className="flex items-start justify-between gap-2">
           <Link
-            href={isPublic ? `/${entry.user_id}` : `/dashboard/edit/${entry.id}`}
+            href={isPublic ? `/${entry.user_id}/${entry.id}` : `/dashboard/edit/${entry.id}`}
             className="heading-sm leading-tight hover:text-accent transition-colors line-clamp-2"
           >
             {entry.title}
@@ -200,6 +200,15 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
               <ExternalLink className="w-3 h-3" />
               Download
             </a>
+          )}
+          {username && displayName && (
+            <button
+              onClick={(e) => { e.preventDefault(); setShowShare(true) }}
+              className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              Share
+            </button>
           )}
           <button
             onClick={() => setShowOpinion(true)}
