@@ -2,6 +2,7 @@ import { getEntryPosterUrl } from '@/lib/tmdb'
 import { Entry } from '@/types/database'
 import { Film, Tv, Star, Heart, User } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { renderNotes } from '@/lib/render-notes'
 
 const statusColors: Record<string, string> = {
@@ -37,9 +38,15 @@ export default function FeedCard({ entry }: Props) {
 
   return (
     <div className="flex items-start gap-3 bg-surface border border-border rounded-sm p-3 transition-colors">
-      <div className="w-10 h-14 flex-shrink-0 bg-tag-bg rounded-sm overflow-hidden">
+      <div className="w-10 h-14 flex-shrink-0 bg-tag-bg rounded-sm overflow-hidden relative">
         {poster ? (
-          <img src={poster} alt="" className="w-full h-full object-cover" loading="lazy" />
+          <Image
+            src={poster}
+            alt=""
+            fill
+            className="object-cover"
+            sizes="40px"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             {entry.type === 'movie' ? (

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Book, ReadingStatus } from '@/types/database'
 import { BookOpen, Star, Trash2, ShoppingBag, ExternalLink, Eye, Share2 } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import BookProvidersModal from './book-providers-modal'
 import ShareModal from './share-modal'
 
@@ -64,13 +65,15 @@ export default function BookCard({ book, onStatusChange, onDelete, isPublic, use
           onClick={() => setShowProvidersModal(true)}
         >
           {book.cover_url ? (
-            <img
+            <Image
               src={book.cover_url}
               alt={book.title}
-              className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-200"
-              loading="lazy"
+              fill
+              className="object-cover group-hover:scale-[1.02] transition-transform duration-200"
+              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
               onError={(e) => {
-                ;(e.target as HTMLImageElement).style.display = 'none'
+                const target = e.target as HTMLImageElement
+                target.style.display = 'none'
               }}
             />
           ) : (

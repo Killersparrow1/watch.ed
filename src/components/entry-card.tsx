@@ -29,7 +29,6 @@ interface Props {
 
 export default function EntryCard({ entry, isPublic, username, displayName, avatarUrl, entryWatchEvents = [] }: Props) {
   const poster = getEntryPosterUrl(entry, 'w342')
-  const isTmdbPoster = !!poster && poster.startsWith('https://image.tmdb.org/')
   const status = statusConfig[entry.status]
   const [showDetails, setShowDetails] = useState(false)
   const [showShare, setShowShare] = useState(false)
@@ -56,8 +55,7 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
         className="block aspect-[2/3] bg-tag-bg overflow-hidden relative cursor-pointer"
         onClick={() => setShowOpinion(true)}
       >
-        {poster ? (
-          isTmdbPoster ? (
+{poster ? (
             <Image
               src={poster}
               alt={entry.title}
@@ -66,14 +64,6 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
               sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
             />
           ) : (
-            <img
-              src={poster}
-              alt={entry.title}
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
-          )
-        ) : (
           <div className="w-full h-full flex items-center justify-center">
             {entry.type === 'movie' ? (
               <Film className="w-8 h-8 text-text-muted/40" />
