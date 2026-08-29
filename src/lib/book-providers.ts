@@ -101,67 +101,7 @@ export function getBookProviderOptions(params: {
     accentColor: 'from-amber-600 to-amber-700',
   })
 
-  // 2. Google Books Preview & Reader
-  const googleBooksUrl = cleanIsbnValue
-    ? `https://books.google.com/books?vid=ISBN${cleanIsbnValue}`
-    : `https://www.google.com/search?tbm=bks&q=${encodedQuery}`
-
-  readOptions.push({
-    id: 'google_books',
-    name: 'Google Books',
-    category: 'read',
-    url: googleBooksUrl,
-    description: 'Digital preview, table of contents & sample reader',
-    iconName: 'book-open',
-    badge: 'Preview / Reader',
-    isDirect: !!cleanIsbnValue,
-    accentColor: 'from-blue-600 to-indigo-600',
-  })
-
-  // 3. Internet Archive
-  const archiveUrl = cleanIsbnValue
-    ? `https://archive.org/search?query=isbn%3A${cleanIsbnValue}`
-    : `https://archive.org/search?query=${encodedQuery}&sin=TXT`
-
-  readOptions.push({
-    id: 'internet_archive',
-    name: 'Internet Archive',
-    category: 'read',
-    url: archiveUrl,
-    description: 'Universal digital library with millions of scannable books',
-    iconName: 'globe',
-    badge: 'Lending Library',
-    isDirect: !!cleanIsbnValue,
-    accentColor: 'from-zinc-700 to-zinc-800',
-  })
-
-  // 4. Project Gutenberg
-  readOptions.push({
-    id: 'project_gutenberg',
-    name: 'Project Gutenberg',
-    category: 'read',
-    url: `https://www.gutenberg.org/ebooks/search/?query=${encodedTitle}`,
-    description: '70,000+ public domain classic books in ePub and Kindle format',
-    iconName: 'book-open',
-    badge: 'Public Domain',
-    isDirect: false,
-    accentColor: 'from-emerald-600 to-teal-700',
-  })
-
-  // 5. Standard Ebooks
-  readOptions.push({
-    id: 'standard_ebooks',
-    name: 'Standard Ebooks',
-    category: 'read',
-    url: `https://standardebooks.org/ebooks?query=${encodedTitle}`,
-    description: 'Beautifully formatted, typography-curated free editions',
-    iconName: 'sparkles',
-    badge: 'Curated Free',
-    isDirect: false,
-    accentColor: 'from-cyan-600 to-blue-700',
-  })
-
-  // 6. Libby by OverDrive (Public Libraries)
+  // 2. Libby by OverDrive (Public Libraries)
   readOptions.push({
     id: 'libby',
     name: 'Libby / OverDrive',
@@ -205,47 +145,7 @@ export function getBookProviderOptions(params: {
     accentColor: 'from-red-600 to-rose-700',
   })
 
-  // 3. Barnes & Noble
-  const bnQuery = cleanIsbnValue || baseQuery
-  buyOptions.push({
-    id: 'barnes_and_noble',
-    name: 'Barnes & Noble',
-    category: 'buy',
-    url: `https://www.barnesandnoble.com/s/${encodeURIComponent(bnQuery)}`,
-    description: 'NOOK ebooks, signed copies, hardcover & paperback',
-    iconName: 'shopping-bag',
-    badge: 'Store',
-    isDirect: !!cleanIsbnValue,
-    accentColor: 'from-emerald-700 to-emerald-900',
-  })
-
-  // 4. Google Play Books
-  buyOptions.push({
-    id: 'google_play',
-    name: 'Google Play Books',
-    category: 'buy',
-    url: `https://play.google.com/store/search?q=${encodedQuery}&c=books`,
-    description: 'Instant digital reading synced across Android, iOS & Web',
-    iconName: 'shopping-bag',
-    badge: 'Digital Ebook',
-    isDirect: false,
-    accentColor: 'from-blue-500 to-indigo-600',
-  })
-
-  // 5. Apple Books
-  buyOptions.push({
-    id: 'apple_books',
-    name: 'Apple Books',
-    category: 'buy',
-    url: `https://books.apple.com/search?term=${encodedQuery}`,
-    description: 'Optimized for iPhone, iPad, Mac & Apple ecosystem',
-    iconName: 'shopping-bag',
-    badge: 'Apple Ebook',
-    isDirect: false,
-    accentColor: 'from-zinc-600 to-zinc-800',
-  })
-
-  // 6. ThriftBooks (Pre-owned & Used)
+  // 3. ThriftBooks (Pre-owned & Used)
   const thriftQuery = cleanIsbnValue || baseQuery
   buyOptions.push({
     id: 'thriftbooks',
@@ -257,20 +157,6 @@ export function getBookProviderOptions(params: {
     badge: 'Used / Deals',
     isDirect: !!cleanIsbnValue,
     accentColor: 'from-teal-600 to-cyan-700',
-  })
-
-  // 7. Goodreads (Community & editions)
-  const goodreadsQuery = cleanIsbnValue || baseQuery
-  buyOptions.push({
-    id: 'goodreads',
-    name: 'Goodreads',
-    category: 'buy',
-    url: `https://www.goodreads.com/search?q=${encodeURIComponent(goodreadsQuery)}`,
-    description: 'Explore community reviews, ratings, editions & quotes',
-    iconName: 'globe',
-    badge: 'Community',
-    isDirect: !!cleanIsbnValue,
-    accentColor: 'from-stone-600 to-stone-800',
   })
 
   // --- Audiobook Providers ---
