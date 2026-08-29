@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { Book, ReadingStatus } from '@/types/database'
-import { BookOpen, Star, Trash2, ShoppingBag, ExternalLink, Eye } from 'lucide-react'
+import { BookOpen, Star, Trash2, ShoppingBag, ExternalLink, Eye, Share2 } from 'lucide-react'
 import Link from 'next/link'
 import BookProvidersModal from './book-providers-modal'
+import ShareModal from './share-modal'
 
 const bookStatusConfig: Record<ReadingStatus, { label: string; color: string }> = {
   want_to_read: { label: 'Want to Read', color: 'text-status-plan bg-status-plan/10' },
@@ -18,13 +19,17 @@ interface Props {
   onStatusChange: (bookId: string, status: string) => Promise<void>
   onDelete: (bookId: string) => Promise<void>
   isPublic?: boolean
+  username?: string
+  displayName?: string
+  avatarUrl?: string | null
 }
 
-export default function BookCard({ book, onStatusChange, onDelete, isPublic }: Props) {
+export default function BookCard({ book, onStatusChange, onDelete, isPublic, username, displayName, avatarUrl }: Props) {
   const [showDetails, setShowDetails] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showProvidersModal, setShowProvidersModal] = useState(false)
+  const [showShare, setShowShare] = useState(false)
   const [status, setStatus] = useState<ReadingStatus>(book.status || 'want_to_read')
   const statusInfo = bookStatusConfig[status] || bookStatusConfig.want_to_read
 
@@ -198,7 +203,7 @@ export default function BookCard({ book, onStatusChange, onDelete, isPublic }: P
             ) : null}
           </div>
 
-          <div className="mt-auto pt-2 flex items-center justify-between gap-1.5">
+          <div className="mt-auto pt-2 flex flex-wrap items-center gap-1.5">
             {isPublic ? (
               <span className={`inline-flex self-start text-xs px-2 py-0.5 rounded-sm font-medium flex-1 min-w-0 text-center ${statusInfo.color}`}>
                 {statusInfo.label}
@@ -227,6 +232,16 @@ export default function BookCard({ book, onStatusChange, onDelete, isPublic }: P
               </>
             )}
 
+            {username && displayName && (
+              <button
+                onClick={() => setShowShare(true)}
+                className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                Share
+              </button>
+            )}
+
             <button
               onClick={() => setShowProvidersModal(true)}
               className="inline-flex items-center gap-1 text-xs text-accent/70 hover:text-accent transition-colors"
@@ -243,6 +258,51 @@ export default function BookCard({ book, onStatusChange, onDelete, isPublic }: P
           book={book}
           isOpen={showProvidersModal}
           onClose={() => setShowProvidersModal(false)}
+        />
+      )}
+
+      {showShare && username && displayName && (
+        <ShareModal
+          entry={{
+            id: book.id,
+            title: book.title,
+            year: book.published_date ? new Date(book.published_date).getFullYear() : null,
+            poster_path: null,
+            custom_poster_url: book.cover_url,
+            notes: book.notes,
+            rating: book.rating,
+            type: 'movie' as const,
+            user_id: book.user_id,
+            status: (() => {
+              switch (book.status) {
+                case 'currently_reading': return 'watching'
+                case 'read': return 'completed'
+                case 'did_not_finish': return 'dropped'
+                case 'want_to_read':
+                default: return 'plan_to_watch'
+              }
+            })(),
+            favorite: false,
+            overview: null,
+            tagline: null,
+            cast_crew: book.authors?.join(', ') || null,
+            runtime: null,
+            tmdb_id: null,
+            progress_season: null,
+            progress_episode: null,
+            watch_date: null,
+            badge: null,
+            download_url: null,
+            created_at: book.created_at,
+            updated_at: book.created_at,
+            watch_providers: [],
+            imdb_id: null,
+            genres: [],
+          }}
+          username={username}
+          displayName={displayName}
+          avatarUrl={avatarUrl || null}
+          onClose={() => setShowShare(false)}
         />
       )}
     </>

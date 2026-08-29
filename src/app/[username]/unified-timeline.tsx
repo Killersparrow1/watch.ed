@@ -313,6 +313,9 @@ export default function UnifiedTimeline({
               onStatusChange={setBookStatus}
               onDelete={deleteBook}
               isPublic={true}
+              username={profileUsername}
+              displayName={profileDisplayName}
+              avatarUrl={profileAvatarUrl}
             />
           )
         )}
