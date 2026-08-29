@@ -62,6 +62,11 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
               fill
               className="object-cover"
               sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement
+                target.src = '/placeholder-poster.svg'
+                target.alt = entry.title
+              }}
             />
           ) : (
           <div className="w-full h-full flex items-center justify-center">

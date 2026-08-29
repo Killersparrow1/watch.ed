@@ -39,16 +39,20 @@ export default function FeedCard({ entry }: Props) {
   return (
     <div className="flex items-start gap-3 bg-surface border border-border rounded-sm p-3 transition-colors">
       <div className="w-10 h-14 flex-shrink-0 bg-tag-bg rounded-sm overflow-hidden relative">
-        {poster ? (
-          <Image
-            src={poster}
-            alt=""
-            fill
-            className="object-cover"
-            sizes="40px"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
+          {poster ? (
+            <Image
+              src={poster}
+              alt=""
+              fill
+              className="object-cover"
+              sizes="40px"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement
+                target.src = '/placeholder-poster.svg'
+              }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
             {entry.type === 'movie' ? (
               <Film className="w-4 h-4 text-text-muted/40" />
             ) : (

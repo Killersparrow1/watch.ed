@@ -3,13 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: 'image.tmdb.org' },
-      { protocol: 'https', hostname: 'i.postimg.cc' },
-      { protocol: 'https', hostname: 'postimg.cc' },
-      { protocol: 'https', hostname: 'covers.openlibrary.org' },
-      { protocol: 'https', hostname: 'media.giphy.com' },
-      { protocol: 'https', hostname: 'i.imgur.com' },
-      { protocol: 'https', hostname: 'i.imgflip.com' },
+      // Allow any HTTPS domain for user-pasted custom poster URLs
+      { protocol: 'https', hostname: '**' },
     ],
   },
   headers: async () => [

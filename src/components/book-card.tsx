@@ -73,7 +73,8 @@ export default function BookCard({ book, onStatusChange, onDelete, isPublic, use
               sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
               onError={(e) => {
                 const target = e.target as HTMLImageElement
-                target.style.display = 'none'
+                target.src = '/placeholder-poster.svg'
+                target.alt = book.title
               }}
             />
           ) : (

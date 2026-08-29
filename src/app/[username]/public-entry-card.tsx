@@ -200,6 +200,11 @@ export default function PublicEntryCard({ entry, entryWatchEvents, likes: initia
               fill
               className="object-cover"
               sizes="112px"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement
+                target.src = '/placeholder-poster.svg'
+                target.alt = entry.title
+              }}
             />
           ) : (
           <div className="w-full h-full flex items-center justify-center">
