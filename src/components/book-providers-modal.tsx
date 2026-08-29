@@ -369,6 +369,18 @@ export default function BookProvidersModal({ book, isOpen, onClose }: Props) {
                 )}
               </div>
 
+              {book.notes && (
+                <div className="mb-3 p-3 bg-surface rounded-md border border-border/80">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary mb-1">
+                    <Info className="w-3.5 h-3.5 text-accent" />
+                    Your Notes
+                  </div>
+                  <p className="text-xs text-text-primary/90 italic leading-relaxed">
+                    &ldquo;{book.notes}&rdquo;
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {readOptions.map((opt) => (
                   <a
@@ -421,18 +433,6 @@ export default function BookProvidersModal({ book, isOpen, onClose }: Props) {
                   </a>
                 ))}
               </div>
-
-              {book.notes && (
-                <div className="mt-4 p-3 bg-surface rounded-md border border-border/80">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary mb-1">
-                    <Info className="w-3.5 h-3.5 text-accent" />
-                    Your Notes
-                  </div>
-                  <p className="text-xs text-text-primary/90 italic leading-relaxed">
-                    &ldquo;{book.notes}&rdquo;
-                  </p>
-                </div>
-              )}
             </div>
           )}
 

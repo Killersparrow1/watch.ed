@@ -188,7 +188,7 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
           </button>
         )}
 
-        <div className="flex items-center gap-2 mt-auto pt-2 border-t border-border-light">
+        <div className="flex flex-wrap items-center gap-2 mt-auto pt-2 border-t border-border-light">
           {entry.download_url && (
             <a
               href={entry.download_url}
@@ -212,7 +212,7 @@ export default function EntryCard({ entry, isPublic, username, displayName, avat
           )}
           <button
             onClick={() => setShowOpinion(true)}
-            className="inline-flex items-center gap-1 text-xs text-accent/70 hover:text-accent transition-colors ml-auto"
+            className="inline-flex items-center gap-1 text-xs text-accent/70 hover:text-accent transition-colors"
           >
             <Eye className="w-3.5 h-3.5" />
             View opinion
